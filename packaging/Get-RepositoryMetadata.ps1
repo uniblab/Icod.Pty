@@ -30,7 +30,10 @@ $result = [ordered]@{
 
 if (-not [string]::IsNullOrWhiteSpace($GitHubOutputPath)) {
     "has_solution=$($hasSolution.ToString().ToLowerInvariant())" >> $GitHubOutputPath
-    "solution_path=$($result.SolutionPath)" >> $GitHubOutputPath
+    $portableSolutionPath = if ($hasSolution) {
+        [System.IO.Path]::GetRelativePath($repositoryRoot, $solutionPath)
+    } else { '' }
+    "solution_path=$portableSolutionPath" >> $GitHubOutputPath
     "has_executables=$($hasExecutables.ToString().ToLowerInvariant())" >> $GitHubOutputPath
 }
 
