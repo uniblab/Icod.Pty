@@ -14,8 +14,8 @@ the managed Unix helper, xUnit, CMD/SH/PowerShell 5.1-compatible tooling.
 
 **Spec:** [Process-group cleanup design](Process-Group-Cleanup-Design.md).
 Also read the [main roadmap](../ROADMAP.md). The user selected the feature set on 2026-10-04;
-the design and implementation sequence were approved on 2026-10-04. PG01 native feasibility passed across all six platforms and three frameworks. Ownership backends are
-being implemented; subsequent public dispatch and lifecycle acceptance remain in progress.
+the design and implementation sequence were approved on 2026-10-04. Implementation and independent code review are complete. Native ownership/control acceptance passed all
+six platforms before the final backpressure fix; the final six-platform/package gate is being rerun.
 
 ## Global constraints
 
@@ -47,14 +47,14 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Native gate passed |
-| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Implemented; local tests passed |
-| PG03 | Windows job ownership before application execution | PG02 | Native ownership/control matrix passed; final regression pending |
-| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Native ownership/control matrix passed; final regression pending |
-| PG05 | Scoped control and native Unix signals | PG03-PG04 | Implemented; native matrix passed |
-| PG06 | Shutdown targeting and deterministic disposal | PG05 | Implemented; final fault acceptance in progress |
-| PG07 | Adversarial lifecycle integration | PG03-PG06 | Implemented; local integration passed |
-| PG08 | Samples, XML documentation, and package consumers | PG07 | Implemented; local smoke passed, package matrix pending |
+| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Implemented; evidence below |
+| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Implemented; evidence below |
+| PG03 | Windows job ownership before application execution | PG02 | Implemented; evidence below |
+| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Implemented; evidence below |
+| PG05 | Scoped control and native Unix signals | PG03-PG04 | Implemented; evidence below |
+| PG06 | Shutdown targeting and deterministic disposal | PG05 | Implemented; evidence below |
+| PG07 | Adversarial lifecycle integration | PG03-PG06 | Implemented; evidence below |
+| PG08 | Samples, XML documentation, and package consumers | PG07 | Implemented; evidence below |
 | PG09 | Six-platform acceptance and completion review | PG01-PG08 | In progress |
 
 Execute sequentially; each tranche ends with focused verification and a commit.
@@ -332,3 +332,30 @@ passed Windows/Linux x64/ARM64 including the new scope package consumers. Both m
 backpressured owned-disposal timeout: native exit could wait for terminal drain before the owner released
 terminal resources. The fix releases streams before waiting while preserving the identity anchor through
 final group control/reap. The existing owned-backpressure regression remains enabled; native rerun is required.
+
+### Final verification checkpoint (2026-10-04)
+
+- Source head `ddcf5b503690adb16c0ce92879e0129c43fadcd7`: Release builds zero warnings/errors; Linux local full suite **137/137 on each of net8.0, net9.0, and net10.0**.
+- Local fresh package-only consumers passed `--scope-smoke` on all three frameworks and published net10.0 output. SDK reference packs came from a separate local feed; the Icod.Pty package came exclusively from the freshly packed artifact.
+- [Run 37202755507](https://github.com/uniblab/Icod.Pty/actions/runs/37202755507) passed Windows x64/ARM64, Linux x64/ARM64, and macOS ARM64, including package consumers and Windows PowerShell 5.1 where applicable. macOS ARM64 confirmed the backpressure regression fix.
+- macOS x64 remained in SDK installation for more than twelve minutes without reaching build/tests. This documentation checkpoint starts a fresh CI attempt; no C# or package-tooling changes were made after the source head above. The [PR checks](https://github.com/uniblab/Icod.Pty/pull/3/checks) are the current acceptance gate.
+- Independent whole-branch review reported two important findings, both fixed in the single review-fix pass with deterministic coverage and the 137/137 suites. No critical or minor findings remain.
+- Windows laptop acceptance remains pending. Version 0.1.0-alpha.1 is unchanged; no merge, tag, or publication was performed.
+
+### Recorded implementation decisions
+
+| Decision | Reason and practical cost |
+| --- | --- |
+| Local xUnit runner/single-node builds; normal dotnet test in CI | Local test-host sockets are restricted. Local transport differs, test bodies do not. |
+| Exclusive Unix wait ownership; reject PID1, SIG_IGN, SA_NOCLDWAIT | An external reaper cannot be synchronized by a private lock; violating this condition can defeat identity safety. |
+| Keep PG tranche names and maintain execution ledger manually | The execution helper expects Task headings; no runtime effect. |
+| Add public control dispatch in PG05, contracts in PG02 | Avoid public placeholder implementations; intermediate commits are not release candidates. |
+| Stop/observe primary before final rollback group request/reap | Prevent a helper creating its group after an early failed lookup; correctness depends on retained exclusive identity. |
+| Linux glibc2.34+ close-from; Darwin CLOEXEC_DEFAULT | Prevent unrelated descriptor inheritance; older libc cannot use PlatformScope. |
+| Separate UnixSpawn from UnixChildLifetime | Launch/pipes and wait/control lifetime have separate responsibilities; differs from the provisional filename map. |
+| Inspect anchored Darwin group only after EPERM | Distinguish zombie-only groups conservatively; inventory failures still report native errors. Enumerated PIDs never become control targets. |
+| Deferred Unix reap after denied primary termination | Avoid indefinite disposal blocking; the retained observer may live until natural exit, with no cleanup guarantee for inaccessible descendants. |
+| Preserve startup plus cleanup errors in AggregateException | Prevent rollback failure hiding cancellation/native error; aggregate is exceptional rollback-failure behavior. |
+| DispatchUnconfirmed for default Unix primary requests | Process.Kill cannot prove native acceptance; consumers of the new result must handle a third status. |
+| Keep escaped groups/external-service launches outside scope | Platform ownership cannot promise universal containment; such processes may survive. |
+| Require current native CI evidence and retain laptop acceptance separately | Prior green code is insufficient for final native changes; unchecked acceptance must not be inferred from local or other-architecture tests. |

@@ -50,7 +50,8 @@ planning PR, the full current option menu, and a development roadmap.
 
 **Status:** design and development roadmap approved for implementation on 2026-10-04 in
 [PR #3](https://github.com/uniblab/Icod.Pty/pull/3); the native feasibility gate and initial ownership/control matrix passed on all six platforms.
-Lifecycle fault tests and packaged scope checks are implemented; final acceptance/review is in progress. Package version remains 0.1.0-alpha.1; version selection is separate.
+Implementation, lifecycle fault tests, package checks, and independent review fixes are complete.
+The final automated acceptance gate is the [PR checks](https://github.com/uniblab/Icod.Pty/pull/3/checks); Windows laptop acceptance remains pending. Package version remains 0.1.0-alpha.1; version selection is separate.
 
 The selection combines option 1, the scoped Unix signal operations from option 2, and the ownership-specific
 diagnostics from option 4. It adds opt-in ownership with explicit platform boundaries, preserves existing
