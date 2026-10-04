@@ -4,6 +4,11 @@ using Xunit;
 namespace Icod.Pty.Tests;
 
 public sealed class ProcessScopeIntegrationTests {
+	[Fact]
+	public async Task Darwin_repeated_cleanup_after_descendant_exit() {
+		if (!OperatingSystem.IsMacOS()) return;
+		for (int iteration = 0; iteration < 12; iteration++) await Owned_cleanup_stops_known_descendant_after_primary_exit(false);
+	}
 	[Theory]
 	[InlineData(false)] [InlineData(true)]
 	public async Task Owned_cleanup_stops_known_descendant_after_primary_exit(bool dispose) {

@@ -5,12 +5,13 @@ namespace Icod.Pty.Unix;
 internal static class DarwinProcessGroup {
 	// This inventory only disambiguates XNU's EPERM for zombie-only groups. It
 	// never supplies control targets; only the anchored group is ever signaled.
-	internal static bool IsWithoutLiveMembers(int group) {
+	internal static bool IsWithoutLiveMembers(int group, out string diagnostic) {
+		diagnostic = "inventory remained truncated";
 		int capacity = 64;
 		for (int attempt = 0; attempt < 8; attempt++, capacity *= 2) {
 			int[] pids = new int[capacity];
 			int bytes = proc_listpids(2, (uint)group, pids, checked(capacity * sizeof(int)));
-			if (bytes <= 0 || bytes % sizeof(int) != 0) return false;
+			if (bytes <= 0 || bytes % sizeof(int) != 0) { diagnostic = $"proc_listpids returned {bytes}, errno {Marshal.GetLastPInvokeError()}"; return false; }
 			if (bytes == capacity * sizeof(int)) continue; // A truncated inventory proves nothing.
 			bool anchor = false;
 			foreach (int pid in pids.AsSpan(0, bytes / sizeof(int))) {
@@ -18,9 +19,10 @@ internal static class DarwinProcessGroup {
 				byte[] info = new byte[64]; // proc_bsdshortinfo: fixed uint32 fields plus 16-byte name.
 				int size = proc_pidinfo(pid, 13, 1, info, info.Length); // arg=1 includes zombies.
 				if (size == 0 && Marshal.GetLastPInvokeError() == 3) continue; // Member has gone.
-				if (size != info.Length) return false; // Permission/ABI failure is not emptiness.
-				if (BitConverter.ToInt32(info, 8) == group && BitConverter.ToInt32(info, 12) != 5) return false;
+				if (size != info.Length) { diagnostic = $"proc_pidinfo({pid}) returned {size}, errno {Marshal.GetLastPInvokeError()}"; return false; }
+				if (BitConverter.ToInt32(info, 8) == group && BitConverter.ToInt32(info, 12) != 5) { diagnostic = $"member {pid} has status {BitConverter.ToInt32(info, 12)}, flags {BitConverter.ToUInt32(info, 32)}"; return false; }
 			}
+			diagnostic = anchor ? "only zombie members remain" : $"anchor absent from {bytes / sizeof(int)} members";
 			return anchor;
 		}
 		return false;
