@@ -30,7 +30,7 @@ public sealed class PtyTests {
 		await using PtyProcess process = PtyProcess.Start(info);
 		string ready = await ReadUntil(process.Output, "READY:", "\n");
 		int start = ready.IndexOf("READY:", StringComparison.Ordinal) + 6;
-		using JsonDocument json = JsonDocument.Parse(StripAnsi(ready[start..]).Trim());
+		using JsonDocument json = ParseReady(StripAnsi(ready[start..]).Trim());
 		Assert.True(json.RootElement.GetProperty("Terminal").GetBoolean());
 		Assert.True(json.RootElement.GetProperty("ControllingTerminal").GetBoolean());
 		Assert.Equal(args, json.RootElement.GetProperty("Arguments").EnumerateArray().Select(x => x.GetString()).ToArray());
@@ -46,11 +46,9 @@ public sealed class PtyTests {
 	public async Task Resize_and_bidirectional_io_work() {
 		await using PtyProcess process = PtyProcess.Start(Child());
 		await ReadUntil(process.Output, "READY:", "\n");
-		await Send(process, "size\n");
-		Assert.Contains("SIZE:93,31", await ReadUntil(process.Output, "SIZE:", "\n"));
+		await ExpectSize(process, "93,31");
 		process.Resize(new PtySize(101, 42));
-		await Send(process, "size\n");
-		Assert.Contains("SIZE:101,42", await ReadUntil(process.Output, "SIZE:", "\n"));
+		await ExpectSize(process, "101,42");
 		await Send(process, "hello-雪\n");
 		Assert.Contains("ECHO:hello-雪", await ReadUntil(process.Output, "ECHO:", "\n"));
 		Assert.Equal(new PtySize(101, 42), process.Size);
@@ -103,6 +101,23 @@ public sealed class PtyTests {
 		process.Terminate(); Assert.True(process.HasExited);
 	}
 	[Fact]
+	public async Task Unix_PATH_search_skips_nonexecutable_shadow() {
+		if (OperatingSystem.IsWindows()) return;
+		string root = Path.Combine(Path.GetTempPath(), "icod-pty-path-" + Guid.NewGuid().ToString("N"));
+		try {
+			string first = Directory.CreateDirectory(Path.Combine(root, "first")).FullName;
+			string second = Directory.CreateDirectory(Path.Combine(root, "second")).FullName;
+			string name = "icod-pty-command";
+			File.WriteAllText(Path.Combine(first, name), "not executable");
+			File.SetUnixFileMode(Path.Combine(first, name), UnixFileMode.UserRead | UnixFileMode.UserWrite);
+			File.WriteAllText(Path.Combine(second, name), "#!/bin/sh\nexit 37\n");
+			File.SetUnixFileMode(Path.Combine(second, name), UnixFileMode.UserRead | UnixFileMode.UserExecute);
+			PtyStartInfo info = new(name); info.Environment["PATH"] = first + Path.PathSeparator + second;
+			await using PtyProcess process = PtyProcess.Start(info);
+			Assert.Equal(37, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20)));
+		} finally { Directory.Delete(root, true); }
+	}
+	[Fact]
 	public void Unix_exec_failure_is_reported_during_start() {
 		if (OperatingSystem.IsWindows()) return;
 		string path = Path.GetTempFileName();
@@ -141,6 +156,24 @@ public sealed class PtyTests {
 		Assert.NotEqual(first.ProcessId, second.ProcessId);
 	}
 	private static Task Send(PtyProcess process, string value) => process.Input.WriteAsync(Encoding.UTF8.GetBytes(OperatingSystem.IsWindows() ? value.Replace("\n", "\r") : value)).AsTask();
+	private static JsonDocument ParseReady(string value) {
+		// ConPTY can append VT title/cursor sequences after the complete JSON value.
+		Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(value));
+		return JsonDocument.ParseValue(ref reader);
+	}
+	private static async Task ExpectSize(PtyProcess process, string expected) {
+		DateTime deadline = DateTime.UtcNow.AddSeconds(20);
+		string observed;
+		do {
+			// A resize can repaint earlier output. Unique request IDs distinguish a fresh reply.
+			string id = Guid.NewGuid().ToString("N")[..8];
+			await Send(process, "size:" + id + "\n");
+			observed = await ReadUntil(process.Output, "SIZE:" + id + ":", "\n");
+			if (observed.Contains("SIZE:" + id + ":" + expected, StringComparison.Ordinal)) return;
+			await Task.Delay(50);
+		} while (DateTime.UtcNow < deadline);
+		Assert.Fail("Terminal dimensions did not become " + expected + ": " + observed);
+	}
 	private static async Task<string> ReadToEnd(Stream stream) { using StreamReader reader = new(stream, Encoding.UTF8, false, 1024, true); return await reader.ReadToEndAsync(); }
 	private static async Task<string> ReadUntil(Stream stream, string marker, string ending) {
 		using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20));

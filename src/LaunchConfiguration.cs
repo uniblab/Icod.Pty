@@ -37,14 +37,15 @@ internal sealed class LaunchConfiguration {
 	}
 	internal static string ResolveExecutable(string name, string directory, IReadOnlyDictionary<string, string> environment) {
 		IEnumerable<string> candidates;
-		if (Path.IsPathRooted(name) || name.Contains(Path.DirectorySeparatorChar) || name.Contains(Path.AltDirectorySeparatorChar)) candidates = [Path.GetFullPath(name, directory)];
+		bool explicitPath = Path.IsPathRooted(name) || name.Contains(Path.DirectorySeparatorChar) || name.Contains(Path.AltDirectorySeparatorChar);
+		if (explicitPath) candidates = [Path.GetFullPath(name, directory)];
 		else {
 			IEnumerable<string> paths = environment.TryGetValue("PATH", out string? path) ? path.Split(Path.PathSeparator).Select(p => Path.GetFullPath(p.Length == 0 ? directory : p, directory)) : [];
 			if (OperatingSystem.IsWindows()) paths = new[] { directory, System.Environment.SystemDirectory }.Concat(paths);
 			candidates = paths.Select(p => Path.Combine(p, name));
 		}
 		foreach (string candidate in candidates) {
-			if (File.Exists(candidate)) return candidate;
+			if (File.Exists(candidate) && (explicitPath || OperatingSystem.IsWindows() || Unix.UnixNative.CanExecute(candidate))) return candidate;
 			if (OperatingSystem.IsWindows() && Path.GetExtension(candidate).Length == 0 && File.Exists(candidate + ".exe")) return candidate + ".exe";
 		}
 		throw new FileNotFoundException($"Executable '{name}' was not found.", name);

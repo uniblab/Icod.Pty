@@ -11,7 +11,15 @@ internal static class UnixNative {
 	internal static nuint SetWindowSize => OperatingSystem.IsMacOS() ? 0x80087467u : 0x5414u;
 	internal static nuint SetControllingTerminal => OperatingSystem.IsMacOS() ? 0x20007461u : 0x540Eu;
 	internal static int NonBlocking => OperatingSystem.IsMacOS() ? 4 : 0x800;
-	[DllImport("libc", SetLastError = true)] internal static extern int openpty(out int master, out int slave, [Out] byte[] name, nint termios, ref WindowSize size);
+	internal static int openpty(out int master, out int slave, byte[] name, nint termios, ref WindowSize size) {
+		try { return OpenPty(out master, out slave, name, termios, ref size); }
+		catch (EntryPointNotFoundException) when (OperatingSystem.IsLinux()) { return OpenPtyLibUtil(out master, out slave, name, termios, ref size); }
+	}
+	[DllImport("libc", EntryPoint = "openpty", SetLastError = true)] private static extern int OpenPty(out int master, out int slave, [Out] byte[] name, nint termios, ref WindowSize size);
+	// glibc versions before 2.34 keep openpty in the OS libutil library.
+	[DllImport("libutil.so.1", EntryPoint = "openpty", SetLastError = true)] private static extern int OpenPtyLibUtil(out int master, out int slave, [Out] byte[] name, nint termios, ref WindowSize size);
+	internal static bool CanExecute(string path) => faccessat(OperatingSystem.IsMacOS() ? -2 : -100, path, 1, OperatingSystem.IsMacOS() ? 0x10 : 0x200) == 0;
+	[DllImport("libc", SetLastError = true)] private static extern int faccessat(int directory, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int mode, int flags);
 	// Darwin ARM64 puts variadic arguments on the stack. Fill x2..x7 so the
 	// single integer/pointer vararg occupies the first stack slot. Other ABIs
 	// used here pass this argument in a register. No floating-point varargs are used.

@@ -25,14 +25,14 @@ Console.WriteLine("READY:" + (args.Length == 0 ? "ok" : JsonSerializer.Serialize
 using StreamReader input = new(Console.OpenStandardInput(), Encoding.UTF8);
 while (input.ReadLine() is string line) {
 	if (line == "quit") { Console.WriteLine("BYE-MARKER"); return 23; }
-	if (line == "size") {
+	if (line.StartsWith("size:", StringComparison.Ordinal)) {
 		int columns, rows;
 		if (OperatingSystem.IsWindows()) { columns = Console.WindowWidth; rows = Console.WindowHeight; }
 		else {
 			if (Native.GetSize(out Native.WindowSize size) != 0) throw new IOException("TIOCGWINSZ failed.");
 			columns = size.Columns; rows = size.Rows;
 		}
-		Console.WriteLine($"SIZE:{columns},{rows}");
+		Console.WriteLine($"SIZE:{line[5..]}:{columns},{rows}");
 	} else Console.WriteLine("ECHO:" + line);
 }
 return 0;
