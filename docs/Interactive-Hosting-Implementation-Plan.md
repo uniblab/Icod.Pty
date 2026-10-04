@@ -34,14 +34,14 @@ The design and development sequence were approved for implementation on 2026-10-
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| IH01 | Shared asynchronous startup ownership and Windows creation | Approved design/plan | Implemented; integrated checks pending |
-| IH02 | Asynchronous Unix handshake and cancellation cleanup | IH01 | Implemented; integrated checks pending |
-| IH03 | Terminal interrupt input contract | IH01-IH02 | Implemented; integrated checks pending |
-| IH04 | Controlled shutdown contracts and coordinator | IH01-IH03 | Implemented; integrated checks pending |
-| IH05 | Immediate-input sample and host-console restoration | IH01-IH04 | Implemented; integrated checks pending |
-| IH06 | Interactive integration and failure-path acceptance | IH03-IH05 | Implemented; integrated checks pending |
-| IH07 | Package consumer coverage and documentation | IH01-IH06 | Implemented; integrated checks pending |
-| IH08 | Six-platform verification and completion review | IH01-IH07 | Implemented; integrated checks pending |
+| IH01 | Shared asynchronous startup ownership and Windows creation | Approved design/plan | Complete |
+| IH02 | Asynchronous Unix handshake and cancellation cleanup | IH01 | Complete |
+| IH03 | Terminal interrupt input contract | IH01-IH02 | Complete |
+| IH04 | Controlled shutdown contracts and coordinator | IH01-IH03 | Complete |
+| IH05 | Immediate-input sample and host-console restoration | IH01-IH04 | Complete |
+| IH06 | Interactive integration and failure-path acceptance | IH03-IH05 | Automated coverage complete; native limitation recorded |
+| IH07 | Package consumer coverage and documentation | IH01-IH06 | Complete |
+| IH08 | Six-platform verification and completion review | IH01-IH07 | Automated verification/review complete; laptop acceptance pending |
 
 Implement these sequentially. Each tranche ends with focused verification and a commit. New behavior uses a failing test before implementation; document-only corrections do not require artificial tests. Run the broader matrix after the integrated changes, and repeat it only when changes or failures warrant it.
 
@@ -196,11 +196,11 @@ Assert.Equal(1, sampleExitCode); // retained terminal drain timeout
 - `PackageSmokeChecks` implements `Task<int> RunLifecycleAsync()`, `Task<int> RunCancelledStartAsync()`, `Task<int> RunInterruptAsync()`, and `Task<int> RunInterruptChildAsync()`; each mode has a 30-second outer verification deadline, deterministic cleanup, and returns 0 only after its assertions pass.
 - These are documented verification commands, not hidden runtime hooks. `--smoke` remains compatible. All smoke modes are valid with redirected host input/output.
 
-- [ ] Add the three new smoke modes and managed verification-child dispatch; keep their implementation in `PackageSmokeChecks.cs`. Resolve the current program's launch form correctly for both `dotnet Consumer.dll` and an apphost executable. Start output draining before awaiting any acknowledgement or exit.
-- [ ] Extend the fresh-package consumer verifier from IH05 to run all four smoke modes for net8.0/net9.0/net10.0 and after net10.0 publication. Continue compiling C# 13/AnyCPU from the freshly packed local package in an isolated cache. Verify the complete sample source and managed helper assets accompany the consumer.
-- [ ] Update README examples for async start, interrupt, graceful request, timeout/force result, and output draining. Document single-writer coordination, partial-write cancellation, primary-child ownership, Unix timeout meaning, and interactive versus line sample behavior. Avoid implying that cancelled startup has a hard native deadline or that a Ctrl+C request proves termination.
-- [ ] Run `dotnet build Icod.Pty.sln -c Release`, `dotnet pack Icod.Pty.csproj -c Release --no-build -o artifacts`, then `powershell -NoProfile -File packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts` on Windows or the equivalent `pwsh -NoProfile -File ...` on Unix. Expect one package and every consumer/publish check to pass. Actual PowerShell 5.1 execution remains mandatory on Windows x64 CI.
-- [ ] Commit as `docs: verify and document interactive PTY package usage`.
+- [x] Add the three new smoke modes and managed verification-child dispatch; keep their implementation in `PackageSmokeChecks.cs`. Resolve the current program's launch form correctly for both `dotnet Consumer.dll` and an apphost executable. Start output draining before awaiting any acknowledgement or exit.
+- [x] Extend the fresh-package consumer verifier from IH05 to run all four smoke modes for net8.0/net9.0/net10.0 and after net10.0 publication. Continue compiling C# 13/AnyCPU from the freshly packed local package in an isolated cache. Verify the complete sample source and managed helper assets accompany the consumer.
+- [x] Update README examples for async start, interrupt, graceful request, timeout/force result, and output draining. Document single-writer coordination, partial-write cancellation, primary-child ownership, Unix timeout meaning, and interactive versus line sample behavior. Avoid implying that cancelled startup has a hard native deadline or that a Ctrl+C request proves termination.
+- [x] Run `dotnet build Icod.Pty.sln -c Release`, `dotnet pack Icod.Pty.csproj -c Release --no-build -o artifacts`, then `powershell -NoProfile -File packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts` on Windows or the equivalent `pwsh -NoProfile -File ...` on Unix. Expect one package and every consumer/publish check to pass. Actual PowerShell 5.1 execution remains mandatory on Windows x64 CI.
+- [x] Commit as `docs: verify and document interactive PTY package usage`.
 
 ### IH08: integrated validation and handoff
 
@@ -208,12 +208,12 @@ Assert.Equal(1, sampleExitCode); // retained terminal drain timeout
 
 **Interfaces:** consumes the completed API, sample, fixtures, and package verifier from IH01-IH07. Produces reviewable evidence; it does not authorize merge or publication.
 
-- [ ] Run the complete Release build/test locally for all three target frameworks. Require zero build warnings/errors and no regression in the existing foundation tests.
-- [ ] Push the implementation and inspect PR checks for Windows x64 (`windows-latest`), Windows ARM64 (`windows-11-arm`), Linux x64 (`ubuntu-latest`), Linux ARM64 (`ubuntu-24.04-arm`), macOS x64 (`macos-26-intel`), and macOS ARM64 (`macos-latest`). Record run URL, head SHA, frameworks, and any genuine skip with its reason. Platform-specific fixture branches must not hide a missing implementation of common behavior.
-- [ ] Verify package contents and fresh/published consumers, including actual Windows PowerShell 5.1 tooling. Preserve AnyCPU, helper deployment, and library-only package output.
+- [x] Run the complete Release build/test locally for all three target frameworks. Require zero build warnings/errors and no regression in the existing foundation tests.
+- [x] Push the implementation and inspect PR checks for Windows x64 (`windows-latest`), Windows ARM64 (`windows-11-arm`), Linux x64 (`ubuntu-latest`), Linux ARM64 (`ubuntu-24.04-arm`), macOS x64 (`macos-26-intel`), and macOS ARM64 (`macos-latest`). Record run URL, head SHA, frameworks, and any genuine skip with its reason. Platform-specific fixture branches must not hide a missing implementation of common behavior.
+- [x] Verify package contents and fresh/published consumers, including actual Windows PowerShell 5.1 tooling. Preserve AnyCPU, helper deployment, and library-only package output.
 - [ ] Have the user run the documented Windows laptop acceptance on build 10.0.26200.9457 or later; record exact build, shell, runtime, and outcomes. CI evidence does not substitute for this check.
-- [ ] Review resource ownership, cancellation boundaries, stream exclusivity, mode restoration, disposal races, and unsupported-platform behavior against the design. Resolve actionable findings and rerun only affected gates plus required CI.
-- [ ] Mark each verified tranche complete, update the main roadmap, and report readiness for user review. Leave merging, version/tag selection, and publication to a separate instruction.
+- [x] Review resource ownership, cancellation boundaries, stream exclusivity, mode restoration, disposal races, and unsupported-platform behavior against the design. Resolve actionable findings and rerun only affected gates plus required CI.
+- [x] Mark each verified tranche complete, update the main roadmap, and report readiness for user review. Leave merging, version/tag selection, and publication to a separate instruction.
 
 ## Requirement coverage
 
@@ -227,7 +227,7 @@ Assert.Equal(1, sampleExitCode); // retained terminal drain timeout
 
 ## Evidence record
 
-Implementation baseline: main commit `2613ba527955d341fe04d81317d633ce28df58fb`, following merged PR #1. The user approved implementation on 2026-10-04. PR #2 implements IH01-IH07; IH08 is in progress.
+Implementation baseline: main commit `2613ba527955d341fe04d81317d633ce28df58fb`, following merged PR #1. The user approved implementation on 2026-10-04. PR #2 implements IH01-IH07. IH08 automated verification and review are complete; user laptop acceptance remains pending.
 
 Local Linux x64 verification uses SDK 10.0.401 and runtimes 8.0.31, 9.0.20, and 10.0.12. The sandbox denies the IPC sockets required by the normal test runner, so compilation uses single-process MSBuild and tests use the official xUnit front controller in-process. Hosted CI uses standard `dotnet test`.
 
@@ -240,9 +240,22 @@ Local Linux x64 verification uses SDK 10.0.401 and runtimes 8.0.31, 9.0.20, and 
 | IH05 | `d45fe4f`: interactive sample; 59 tests passed per framework. |
 | IH06 | `c38c1ea`: same-terminal restoration/failure probes, inherited-descriptor fix, bounded macOS output read-ahead. |
 | IH07 | `d50ee92`: four package smoke modes and user documentation; 72 tests passed per framework before the additional stalled-drain case (73 passed on net10.0). |
-| IH08 | Six-platform CI and fresh whole-branch review in progress. Windows laptop interactive acceptance pending. |
+| IH08 | `a18d23c`: final implementation verification below; fresh review's blocked-output finding fixed in `a48fed7`. Windows laptop interactive acceptance pending. |
 
-Release builds report zero warnings and errors. Packing produces one `Icod.Pty.0.1.0-alpha.1.nupkg` plus symbols. A fresh local consumer restored this package from the artifact directory (SDK reference/apphost packages came from the existing local SDK cache), compiled with C# 13/AnyCPU, and passed all four smoke modes on every target framework and after net10.0 publication. All three managed helper publish assets were present. Hosted checks run the complete PowerShell verifier, including actual Windows PowerShell 5.1.
+Final implementation head: **`a18d23c946f015af0e7b32e3de949442a796db84`**. [Six-platform CI run 22](https://github.com/uniblab/Icod.Pty/actions/runs/37192831712) completed successfully on 2026-10-04. All three frameworks run in each job. Subsequent evidence-only documentation changes do not change this tested source tree.
+
+| Platform | Runner | Result per framework | Package/consumer/publish |
+| --- | --- | --- | --- |
+| Windows x64 | `windows-latest` | 76 passed, 1 skipped theory, 0 failed | Passed, using actual Windows PowerShell 5.1 |
+| Windows ARM64 | `windows-11-arm` | 76 passed, 1 skipped theory, 0 failed | Passed |
+| Linux x64 | `ubuntu-latest` | 78 passed, 0 skipped, 0 failed | Passed |
+| Linux ARM64 | `ubuntu-24.04-arm` | 78 passed, 0 skipped, 0 failed | Passed |
+| macOS x64 | `macos-26-intel` | 78 passed, 0 skipped, 0 failed | Passed |
+| macOS ARM64 | `macos-latest` | 78 passed, 0 skipped, 0 failed | Passed |
+
+The Windows skip is `Native_terminal_preserves_split_query_reply`, explicitly tracking the native limitation below. xUnit represents the skipped theory as one case; on Unix its direct and nested data rows execute separately. Windows still requires split Unicode/arrow input, complete-query native delivery, and the actual sample pump's arbitrary-chunk byte preservation. Local Linux x64 Release verification passed **78/78 on each framework**, with zero warnings/errors. Hosted Staging builds and Release package-consumer builds also reported zero warnings/errors.
+
+Packing produces one library package plus symbols. A fresh local consumer restored the Release `Icod.Pty.0.1.0-alpha.1.nupkg` from the artifact directory (SDK reference/apphost packages came from the existing local SDK cache), compiled with C# 13/AnyCPU, and passed all four smoke modes on every target framework and after net10.0 publication. All three managed helper publish assets were present. Every final hosted job passed the complete package-artifact and PowerShell consumer verifier, including all four modes on each target framework and published net10.0 output; Windows x64 executed it with actual Windows PowerShell 5.1.
 
 Implementation adjustments supported by regression evidence:
 
