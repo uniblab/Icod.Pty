@@ -318,3 +318,17 @@ then requests group cleanup before releasing the anchor; this prevents group cre
 - Scope package smoke RED: unsupported switch; GREEN: all five sample smoke modes passed locally. Fresh/published consumers now include `--scope-smoke`; current-head native package acceptance is pending.
 - Local test transport uses the existing xUnit runner because this environment blocks standard test-host sockets. CI continues to use standard `dotnet test`.
 - Final review and Windows laptop acceptance remain pending; only the latter requires user observations.
+
+### Final review and acceptance fixes
+
+The independent whole-branch review found two important primary-control issues: a void termination call could
+be reported as native acceptance after an exit race, and default Unix native failures escaped as Win32Exception.
+Result-aware Windows dispatch and a documented DispatchUnconfirmed outcome for the default Unix managed
+path address the first; IOException normalization with native context addresses the second. Deterministic
+race, native-success, denial, and managed-uncertainty tests cover these boundaries. No minor findings were raised.
+
+[Run 37202208981](https://github.com/uniblab/Icod.Pty/actions/runs/37202208981), head `c405d0c184040cad59da050dd6fa660acbeb4823`,
+passed Windows/Linux x64/ARM64 including the new scope package consumers. Both macOS jobs exposed a
+backpressured owned-disposal timeout: native exit could wait for terminal drain before the owner released
+terminal resources. The fix releases streams before waiting while preserving the identity anchor through
+final group control/reap. The existing owned-backpressure regression remains enabled; native rerun is required.

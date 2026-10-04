@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 namespace Icod.Pty.Unix;
 
 internal static class UnixSpawn {
-	internal static async Task<UnixChildLifetime> StartAsync(LaunchConfiguration launch, CancellationToken token) {
+	internal static async Task<UnixChildLifetime> StartAsync(LaunchConfiguration launch, CancellationToken token, Action releaseTerminal) {
 		UnixChildLifetime.ValidateHost(); token.ThrowIfCancellationRequested();
 		using Pipe input = new(false); using Pipe status = new(true); using Pipe error = new(true);
 		// glibc actions/attributes are 80/336 bytes on supported 64-bit ABIs;
@@ -38,7 +38,7 @@ internal static class UnixSpawn {
 			catch (OperationCanceledException) when (timeout.IsCancellationRequested) { throw new TimeoutException("The Unix PTY helper did not complete startup within StartTimeout."); }
 			return child;
 		} catch (Exception failure) {
-			CleanupActions.AfterFailure(failure, () => child?.Dispose()); throw;
+			CleanupActions.AfterFailure(failure, releaseTerminal, () => child?.Dispose()); throw;
 		} finally {
 			if (actionsReady) posix_spawn_file_actions_destroy(actions);
 			if (attributesReady) posix_spawnattr_destroy(attributes);

@@ -146,7 +146,10 @@ check `SignalOwnedScope` in `Capabilities` first. The other named signals are Ha
 Windows rejects this API. `SendInterruptAsync` still writes one ETX byte and works according to the child's terminal modes.
 
 `Requested` means native dispatch succeeded; `TargetUnavailable` means no target was available at observation.
-Neither confirms all descendants exited. Capability flags describe support, not liveness, and remain readable after disposal.
+Default Unix primary requests use the existing managed Process backend: a successful void Kill call returns
+`DispatchUnconfirmed`, because .NET may silently skip native dispatch during an exit race. Windows and opted-in
+Unix requests report native acceptance directly. None of these statuses confirms all descendants exited.
+Capability flags describe support, not liveness, and remain readable after disposal.
 Native permission failures remain IOExceptions. On macOS a zombie-only group also produces EPERM; the library
 checks that group's members before classifying it unavailable, without using enumerated PIDs as control targets.
 

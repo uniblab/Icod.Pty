@@ -5,7 +5,10 @@ public enum PtyControlStatus {
 	/// <summary>The native request succeeded; this does not prove every member received it or exited.</summary>
 	Requested,
 	/// <summary>The target was unavailable at dispatch; this does not assert all descendants have exited.</summary>
-	TargetUnavailable
+	TargetUnavailable,
+	/// <summary>The managed primary termination call completed, but its void API cannot distinguish native
+	/// acceptance from a concurrent exit. Used by default Unix sessions; not proof of delivery or exit.</summary>
+	DispatchUnconfirmed
 }
 
 /// <summary>Records the selected target and native dispatch outcome.</summary>

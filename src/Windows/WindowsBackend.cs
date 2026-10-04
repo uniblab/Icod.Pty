@@ -22,8 +22,9 @@ internal sealed class WindowsBackend : IPtyBackend {
 			ObjectDisposedException.ThrowIf(disposed, this);
 			if (target == PtyProcessTarget.OwnedScope) return (job ?? throw new InvalidOperationException("OwnedScope requires platform-scope ownership at launch.")).RequestTermination();
 			if (target != PtyProcessTarget.PrimaryProcess) throw new ArgumentOutOfRangeException(nameof(target));
-			if (WindowsNative.WaitForSingleObject(process, 0) == 0) return new(target, PtyControlStatus.TargetUnavailable);
-			Terminate(); return new(target, PtyControlStatus.Requested);
+			return PrimaryProcessControl.RequestNative(
+				() => { uint state = WindowsNative.WaitForSingleObject(process, 0); if (state == uint.MaxValue) throw Error("WaitForSingleObject PrimaryProcess"); return state == 0; },
+				() => WindowsNative.TerminateProcess(process, 1), Marshal.GetLastPInvokeError);
 		}
 	}
 	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) => throw new PlatformNotSupportedException("Native Unix signals are not available on Windows.");

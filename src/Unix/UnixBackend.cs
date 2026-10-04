@@ -23,8 +23,7 @@ internal sealed class UnixBackend : IPtyBackend {
 			if (child != null) return child.RequestTermination(target);
 			if (!Enum.IsDefined(target)) throw new ArgumentOutOfRangeException(nameof(target));
 			if (target == PtyProcessTarget.OwnedScope) throw new InvalidOperationException("OwnedScope requires platform-scope ownership.");
-			if (process!.HasExited) return new(target, PtyControlStatus.TargetUnavailable);
-			Terminate(); return new(target, PtyControlStatus.Requested);
+			return PrimaryProcessControl.RequestManaged(() => process!.HasExited, () => process!.Kill());
 		}
 	}
 	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) {
@@ -53,7 +52,7 @@ internal sealed class UnixBackend : IPtyBackend {
 			UnixNative.Check(UnixNative.fcntl(masterFd, 4, flags | UnixNative.NonBlocking), "F_SETFL");
 			launch.SlaveName = Encoding.UTF8.GetString(name, 0, Array.IndexOf(name, (byte)0));
 			if (launch.Ownership == PtyProcessOwnership.PlatformScope) {
-				child = await UnixSpawn.StartAsync(launch, cancellationToken).ConfigureAwait(false);
+				child = await UnixSpawn.StartAsync(launch, cancellationToken, master.Dispose).ConfigureAwait(false);
 				UnixBackend owned = new(master, null, OperatingSystem.IsMacOS() ? slave : null, child);
 				if (OperatingSystem.IsMacOS()) slave = null!;
 				return owned;
@@ -125,8 +124,10 @@ internal sealed class UnixBackend : IPtyBackend {
 		lock (gate) { if (disposed) return; disposed = true; }
 		bool terminated = false;
 		CleanupActions.Run(
-			() => { if (child != null) child.Dispose(); else Terminate(); terminated = true; },
+			() => { Terminate(); terminated = true; },
 			Input.Dispose, master.Dispose, Output.Dispose,
-			() => { if (terminated) Exit.GetAwaiter().GetResult(); }, () => process?.Dispose());
+			// Darwin exit may wait for terminal output to drain. Release terminal resources
+			// before waiting, while the native child still anchors all final group control.
+			() => { if (child != null) child.Dispose(); else if (terminated) Exit.GetAwaiter().GetResult(); }, () => process?.Dispose());
 	}
 }

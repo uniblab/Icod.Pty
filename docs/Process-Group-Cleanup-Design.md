@@ -54,7 +54,7 @@ Public names below are implemented; revisions must update both documents.
 public enum PtyProcessOwnership { PrimaryProcess, PlatformScope }
 public enum PtyProcessTarget { PrimaryProcess, OwnedScope }
 public enum PtySignal { Hangup, Interrupt, Terminate, Kill }
-public enum PtyControlStatus { Requested, TargetUnavailable }
+public enum PtyControlStatus { Requested, TargetUnavailable, DispatchUnconfirmed }
 
 [Flags]
 public enum PtyProcessCapabilities {
@@ -237,3 +237,18 @@ Additional primary sources: [Darwin group signal semantics](https://github.com/a
 [Darwin fixed-width process layout](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/proc_info.h),
 [Darwin spawn flags](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/spawn.h),
 [glibc spawn definitions](https://github.com/bminor/glibc/blob/master/posix/spawn.h).
+
+### Primary-dispatch result refinement from final review
+
+Windows primary control now uses result-aware native dispatch: a concurrent exit that prevents dispatch
+returns TargetUnavailable. Default Unix sessions intentionally retain System.Diagnostics.Process. Its void
+Kill method can silently skip native dispatch or absorb ESRCH; successful return therefore cannot prove native
+acceptance. These calls return **DispatchUnconfirmed** rather than Requested. This third status is an explicit
+refinement of the original two-status proposal. Already observed exit still returns TargetUnavailable; native
+failures become IOException with operation/primary target/native code and the original exception.
+PlatformScope Unix control retains the stronger native Requested/TargetUnavailable result. Legacy Terminate
+remains unchanged, and ForcedTerminationRequested continues to mean an escalation attempt.
+
+Darwin backpressured teardown closes/cancels terminal streams before awaiting primary exit, while retaining
+the wait identity through final group signaling and reaping. Failed native startup uses the same terminal-first
+release before waiting. This avoids exit-time terminal draining deadlocking ownership cleanup.

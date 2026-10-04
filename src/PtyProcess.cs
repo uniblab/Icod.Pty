@@ -89,7 +89,8 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	/// <summary>Forcibly terminates a live primary child; repeated calls after exit have no effect.</summary>
 	public void Terminate() { lock (gate) { ThrowIfDisposed(); backend.Terminate(); } }
 	/// <summary>Requests forced termination of the primary child or the opted-in platform scope.</summary>
-	/// <remarks>Success reports native request acceptance, not completion or universal descendant cleanup.
+	/// <remarks>Requested reports native acceptance, not completion or universal descendant cleanup.
+	/// Default Unix primary control returns DispatchUnconfirmed because Process.Kill cannot report native dispatch.
 	/// OwnedScope requires PlatformScope at launch. On Unix it covers only the initial process group.</remarks>
 	/// <exception cref="ArgumentOutOfRangeException">The target is not a defined value.</exception>
 	/// <exception cref="InvalidOperationException">OwnedScope was requested without launch opt-in.</exception>
