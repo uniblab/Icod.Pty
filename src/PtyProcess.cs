@@ -76,16 +76,49 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 		var snapshot = options.Capture();
 		lock (gate) {
 			ThrowIfDisposed(); cancellationToken.ThrowIfCancellationRequested();
+			ValidateTarget(snapshot.Target);
 			if (Interlocked.CompareExchange(ref shutdownActive, 1, 0) != 0) throw new InvalidOperationException("A shutdown operation is already in progress.");
 		}
-		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, cancellationToken);
+		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken);
 	}
-	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, CancellationToken cancellationToken) {
-		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken).ConfigureAwait(false); }
+	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, PtyProcessTarget target, CancellationToken cancellationToken) {
+		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken, target).ConfigureAwait(false); }
 		finally { Interlocked.Exchange(ref shutdownActive, 0); }
 	}
 	/// <summary>Forcibly terminates a live primary child; repeated calls after exit have no effect.</summary>
 	public void Terminate() { lock (gate) { ThrowIfDisposed(); backend.Terminate(); } }
+	/// <summary>Requests forced termination of the primary child or the opted-in platform scope.</summary>
+	/// <remarks>Success reports native request acceptance, not completion or universal descendant cleanup.
+	/// OwnedScope requires PlatformScope at launch. On Unix it covers only the initial process group.</remarks>
+	/// <exception cref="ArgumentOutOfRangeException">The target is not a defined value.</exception>
+	/// <exception cref="InvalidOperationException">OwnedScope was requested without launch opt-in.</exception>
+	/// <exception cref="ObjectDisposedException">The session has been disposed.</exception>
+	/// <exception cref="IOException">Native control failed or Unix child identity was lost.</exception>
+	public PtyControlResult RequestTermination(PtyProcessTarget target) {
+		lock (gate) { ThrowIfDisposed(); ValidateTarget(target); return backend.RequestTermination(target); }
+	}
+	/// <summary>Sends a named Unix signal to an anchored primary child or its initial group.</summary>
+	/// <remarks>Requires PlatformScope even for a primary target. This is independent of terminal modes;
+	/// SendInterruptAsync instead writes a Ctrl+C input byte. Windows does not support native Unix signals.</remarks>
+	/// <exception cref="ArgumentOutOfRangeException">The signal or target is not defined.</exception>
+	/// <exception cref="PlatformNotSupportedException">The platform is Windows.</exception>
+	/// <exception cref="InvalidOperationException">PlatformScope was not selected at launch.</exception>
+	/// <exception cref="ObjectDisposedException">The session has been disposed.</exception>
+	/// <exception cref="IOException">Native delivery failed or child identity was lost.</exception>
+	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) {
+		lock (gate) {
+			ThrowIfDisposed();
+			if (!Enum.IsDefined(signal)) throw new ArgumentOutOfRangeException(nameof(signal));
+			if (!Enum.IsDefined(target)) throw new ArgumentOutOfRangeException(nameof(target));
+			if (OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Native Unix signals are not available on Windows.");
+			if (Ownership != PtyProcessOwnership.PlatformScope) throw new InvalidOperationException("Native signals require platform-scope ownership at launch.");
+			return backend.SendSignal(signal, target);
+		}
+	}
+	private void ValidateTarget(PtyProcessTarget target) {
+		if (!Enum.IsDefined(target)) throw new ArgumentOutOfRangeException(nameof(target));
+		if (target == PtyProcessTarget.OwnedScope && Ownership != PtyProcessOwnership.PlatformScope) throw new InvalidOperationException("OwnedScope requires platform-scope ownership at launch.");
+	}
 	/// <summary>Closes the terminal, terminates and reaps the primary child, and releases owned resources.</summary>
 	public void Dispose() { lock (gate) { if (disposed) return; disposed = true; backend.Dispose(); } }
 	/// <summary>Performs disposal without blocking the calling thread.</summary>

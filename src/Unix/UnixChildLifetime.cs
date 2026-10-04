@@ -56,6 +56,10 @@ internal sealed class UnixChildLifetime : IDisposable {
 		if (kill(nativeTarget, value) == 0) return new(target, PtyControlStatus.Requested);
 		int error = Marshal.GetLastPInvokeError();
 		if (error == 3) return new(target, PtyControlStatus.TargetUnavailable);
+		// XNU excludes zombies from group delivery and returns EPERM for a group
+		// containing only zombies. Do not confuse that with a live permission failure.
+		if (error == 1 && target == PtyProcessTarget.OwnedScope && OperatingSystem.IsMacOS() && DarwinProcessGroup.IsWithoutLiveMembers(ProcessId))
+			return new(target, PtyControlStatus.TargetUnavailable);
 		throw UnixNative.Error($"kill signal {value}, target {target} ({nativeTarget})", error);
 	}
 	public void Dispose() {

@@ -73,8 +73,9 @@ public sealed class WindowsOwnershipTests {
 		IOException failure = await Assert.ThrowsAsync<IOException>(() => WindowsBackend.StartAsync(fixture.Launch(), default,
 			process => {
 				using WindowsJob outer = WindowsJob.CreateAssigned(process);
-				using WindowsJob restricted = new(); uint restrictions = 0x40;
-				Assert.True(SetJobUiRestrictions(outer.Handle, 4, ref restrictions, 4));
+				using WindowsJob restricted = new();
+				WindowsNative.ExtendedLimitInformation limits = new() { Basic = new() { LimitFlags = 0x2008, ActiveProcesses = 0 } };
+				Assert.True(WindowsNative.SetInformationJobObject(restricted.Handle, 9, ref limits, (uint)Marshal.SizeOf<WindowsNative.ExtendedLimitInformation>()));
 				restricted.Assign(process); throw new InvalidOperationException("Restricted nested assignment unexpectedly succeeded.");
 			}, WindowsNative.ResumeThread));
 		Assert.Contains("AssignProcessToJobObject", failure.Message);
@@ -96,6 +97,4 @@ public sealed class WindowsOwnershipTests {
 		internal int ChildId() => int.Parse(File.ReadAllText(Path.Combine(directory, "child-ready")), System.Globalization.CultureInfo.InvariantCulture);
 		public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 	}
-	[DllImport("kernel32.dll", EntryPoint = "SetInformationJobObject", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetJobUiRestrictions(SafeJobHandle job, int kind, ref uint limits, uint length);
 }
