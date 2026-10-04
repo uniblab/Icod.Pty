@@ -1,7 +1,7 @@
 # Process-Group Control and Descendant Cleanup Design
 
-**Status:** proposed design for the selection recorded on 2026-10-04.
-This planning PR adds documentation only. Implementation starts after review.
+**Status:** approved for implementation on 2026-10-04; PG01 feasibility work is in progress.
+Public ownership APIs are not implemented yet. Findings below qualify the proposed native mechanism.
 **Companion:** [development roadmap](Process-Group-Cleanup-Implementation-Plan.md).
 
 ## Purpose and success criteria
@@ -203,3 +203,24 @@ These references justify candidate primitives, not the unimplemented design's co
 PG01 records current macOS SDK definitions and runtime evidence for wait semantics and ABI layouts.
 Do not assume Linux constants/layouts are valid on Darwin or that foreground lookup from a PTY master is
 portable. Foreground retargeting is deferred rather than hidden behind an assumed primary-group equivalence.
+
+### PG01 initial findings
+
+Linux x64 probes retain an unregistered native child through non-reaping exit observation while ordinary
+.NET children are collected. They also signal a surviving initial-group child after the leader exits.
+An explicit competing reap is detectable through ECHILD, but detection is not an atomic lock against
+another component reaping between a check and a signal. Exclusive wait ownership remains a host precondition.
+
+Ignoring SIGCHLD discards the wait record. Owned launch must reject SIG_IGN and SA_NOCLDWAIT, and reject a
+PID-1 host because .NET's native signal dispatcher can reap unregistered children in that role. These checks
+must precede child creation. The host must not subsequently change these settings or run a competing global
+reaper. No runtime-private lock or global signal-handler replacement is an acceptable implementation.
+The native-spawn probe also completes the existing managed helper's configuration/status/exec protocol on
+Linux x64. Cross-platform validation remains pending.
+
+Evidence sources:
+- [.NET 8 child reaping](https://github.com/dotnet/runtime/blob/v8.0.0/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/ProcessWaitState.Unix.cs).
+- [.NET 10 child reaping](https://github.com/dotnet/runtime/blob/v10.0.0/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/ProcessWaitState.Unix.cs).
+- [.NET signal dispatch](https://github.com/dotnet/runtime/blob/v10.0.0/src/native/libs/System.Native/pal_signal.c).
+- [Darwin wait flags](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/wait.h).
+- [Darwin siginfo layout](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/signal.h).

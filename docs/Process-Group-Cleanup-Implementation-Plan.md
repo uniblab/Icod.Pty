@@ -1,8 +1,7 @@
 # Process-Group Control and Descendant Cleanup Implementation Plan
 
 > **For agentic workers:** use `superpowers:executing-plans` to implement this plan task by task.
-> Recommended execution is native work in the current session. Do not start implementation from this planning PR.
-> Review the design and this roadmap first. Steps use checkboxes; a checked box requires recorded evidence.
+> Native execution was approved on 2026-10-04. Steps use checkboxes; a checked box requires recorded evidence.
 
 **Goal:** Add opt-in process-scope ownership and explicit cleanup beyond the primary child with truthful platform limits.
 
@@ -15,7 +14,8 @@ the managed Unix helper, xUnit, CMD/SH/PowerShell 5.1-compatible tooling.
 
 **Spec:** [Process-group cleanup design](Process-Group-Cleanup-Design.md).
 Also read the [main roadmap](../ROADMAP.md). The user selected the feature set on 2026-10-04;
-the contracts and implementation sequence below are proposed, not implemented or accepted by test evidence.
+the design and implementation sequence were approved on 2026-10-04. PG01 is in progress; dependent stages
+remain gated on its evidence, and no public ownership implementation is complete.
 
 ## Global constraints
 
@@ -47,7 +47,7 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Planned |
+| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | In progress |
 | PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Planned |
 | PG03 | Windows job ownership before application execution | PG02 | Planned |
 | PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Planned |
@@ -112,6 +112,7 @@ These are internal experiments; no public API is committed by their existence.
 - [ ] Commit the proven fixtures and design findings as `test: establish process scope ownership feasibility`.
 
 ### PG02: contracts and capture
+
 
 **Files:** create the five public contract files in the map and
 `src/Tests/Icod.Pty.Tests/PtyOwnershipTests.cs`; modify start info, launch configuration, process/backend

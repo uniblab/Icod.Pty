@@ -48,7 +48,8 @@ Its opt-in reproducer and independent byte-forwarding tests remain in place.
 **Decision, 2026-10-04:** the user selected process-group control and descendant cleanup and requested a new
 planning PR, the full current option menu, and a development roadmap.
 
-**Status:** selected for development; design and implementation plan proposed for review.
+**Status:** design and development roadmap approved for implementation on 2026-10-04 in
+[PR #3](https://github.com/uniblab/Icod.Pty/pull/3); PG01 feasibility work is in progress.
 No implementation tranche is complete. Package version remains 0.1.0-alpha.1; version selection is separate.
 
 The selection combines option 1, the scoped Unix signal operations from option 2, and the ownership-specific
