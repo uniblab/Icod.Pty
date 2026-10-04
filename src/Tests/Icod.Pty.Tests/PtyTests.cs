@@ -62,6 +62,14 @@ public sealed class PtyTests {
 		Assert.True(process.HasExited); Assert.Equal(37, process.ExitCode);
 	}
 	[Fact]
+	public async Task Output_can_be_read_after_fast_child_has_exited() {
+		for (int i = 0; i < 10; i++) {
+			await using PtyProcess process = await PtyProcess.StartAsync(Child("exit"));
+			Assert.Equal(37, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20)));
+			Assert.Contains("FINAL-MARKER", await ReadToEnd(process.Output).WaitAsync(TimeSpan.FromSeconds(20)));
+		}
+	}
+	[Fact]
 	public async Task Cancelled_wait_and_read_leave_process_usable() {
 		await using PtyProcess process = PtyProcess.Start(Child());
 		await ReadUntil(process.Output, "READY:", "\n");

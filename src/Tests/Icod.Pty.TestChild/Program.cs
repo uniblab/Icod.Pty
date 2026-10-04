@@ -31,10 +31,13 @@ if (args is ["interrupt-handler"]) {
 	try {
 		Console.WriteLine("INTERRUPT-READY");
 		using StreamReader commands = new(Console.OpenStandardInput(), Encoding.UTF8);
-		while (commands.ReadLine() is string command) {
+		while (true) {
+			string? command = commands.ReadLine();
+			// Windows ReadFile can report a successful zero-byte console read on Ctrl+C.
+			// That is not EOF for this fixture: only the explicit quit command ends it.
+			if (command == null) { if (OperatingSystem.IsWindows()) continue; return 0; }
 			if (command == "quit") { Console.WriteLine("BYE-MARKER"); return 23; }
 		}
-		return 0;
 	} finally { Console.CancelKeyPress -= handler; }
 }
 bool terminal = OperatingSystem.IsWindows() ? !Console.IsInputRedirected : Native.isatty(0) == 1 && Native.isatty(1) == 1 && Native.isatty(2) == 1;
