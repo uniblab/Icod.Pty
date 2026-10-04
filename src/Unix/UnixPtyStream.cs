@@ -6,9 +6,13 @@ namespace Icod.Pty.Unix;
 internal sealed class UnixPtyStream : Stream {
 	private readonly SafeFileHandle handle;
 	private readonly bool readable;
+	private SafeFileHandle? retainedSlave;
+	private readonly Func<bool>? childExited;
 	private readonly SemaphoreSlim operation = new(1, 1);
 	private int disposed;
-	internal UnixPtyStream(SafeFileHandle handle, bool readable) { this.handle = handle; this.readable = readable; }
+	internal UnixPtyStream(SafeFileHandle handle, bool readable, SafeFileHandle? retainedSlave = null, Func<bool>? childExited = null) {
+		this.handle = handle; this.readable = readable; this.retainedSlave = retainedSlave; this.childExited = childExited;
+	}
 	public override bool CanRead => readable && Volatile.Read(ref disposed) == 0;
 	public override bool CanWrite => !readable && Volatile.Read(ref disposed) == 0;
 	public override bool CanSeek => false;
@@ -60,6 +64,11 @@ internal sealed class UnixPtyStream : Stream {
 				if (read && OperatingSystem.IsLinux() && error == 5) return 0;
 				if (error == 4) continue;
 				if (error != (OperatingSystem.IsMacOS() ? 35 : 11)) throw UnixNative.Error(read ? "read PTY" : "write PTY", error);
+				if (read && retainedSlave != null && childExited!()) {
+					// Do not manufacture EOF: closing only our reference lets a surviving
+					// descendant keep the actual terminal open, as on other platforms.
+					Interlocked.Exchange(ref retainedSlave, null)?.Dispose(); continue;
+				}
 				UnixNative.PollDescriptor descriptor = new() { FileDescriptor = fd, Events = (short)(read ? 1 : 4) };
 				int polled = UnixNative.poll(ref descriptor, 1, 50);
 				if (polled < 0 && Marshal.GetLastPInvokeError() != 4) throw UnixNative.Error("poll PTY");
@@ -68,5 +77,7 @@ internal sealed class UnixPtyStream : Stream {
 	}
 	private void CheckDisposed() => ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
 	private void CheckDirection(bool read) { CheckDisposed(); if (read != readable) throw new NotSupportedException(); }
-	protected override void Dispose(bool disposing) { Interlocked.Exchange(ref disposed, 1); base.Dispose(disposing); }
+	protected override void Dispose(bool disposing) {
+		Interlocked.Exchange(ref disposed, 1); Interlocked.Exchange(ref retainedSlave, null)?.Dispose(); base.Dispose(disposing);
+	}
 }

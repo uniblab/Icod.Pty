@@ -12,11 +12,18 @@
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
 		<ProjectReference Include="../../Icod.Pty.csproj" />
 		<ProjectReference Include="../Icod.Pty.TestChild/Icod.Pty.TestChild.csproj" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="../../samples/Icod.Pty.Sample/Icod.Pty.Sample.csproj" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<Target Name="CopyTestChild" AfterTargets="Build">
 		<ItemGroup>
 			<TestChildFiles Include="../Icod.Pty.TestChild/bin/$(Configuration)/$(TargetFramework)/Icod.Pty.TestChild.*" />
 		</ItemGroup>
 		<Copy SourceFiles="@(TestChildFiles)" DestinationFolder="$(OutDir)child" />
+	</Target>
+	<Target Name="CopySample" AfterTargets="Build">
+		<ItemGroup>
+			<SampleFiles Include="../../samples/Icod.Pty.Sample/bin/$(Configuration)/$(TargetFramework)/**/*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(SampleFiles)" DestinationFiles="@(SampleFiles->'$(OutDir)sample/%(RecursiveDir)%(Filename)%(Extension)')" />
 	</Target>
 </Project>

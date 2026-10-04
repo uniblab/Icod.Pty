@@ -27,6 +27,7 @@ $xml = @"
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
@@ -36,7 +37,13 @@ $xml = @"
 </Project>
 "@
 [System.IO.File]::WriteAllText($project, $xml, [System.Text.UTF8Encoding]::new($false))
-Copy-Item -LiteralPath (Join-Path $root 'src/Sample/Program.cs') -Destination (Join-Path $consumer 'Program.cs')
+$sampleRoot = Join-Path $root 'src/Sample'
+foreach ($source in @(Get-ChildItem -LiteralPath $sampleRoot -Filter '*.cs' -Recurse -File)) {
+    $relative = $source.FullName.Substring($sampleRoot.Length).TrimStart([char[]]@('\', '/'))
+    $destination = Join-Path $consumer $relative
+    New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+    Copy-Item -LiteralPath $source.FullName -Destination $destination
+}
 Invoke-DotNet -Arguments @('restore', $project, '--source', $ArtifactDirectory, '--packages', (Join-Path $consumer 'packages'))
 foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
     Invoke-DotNet -Arguments @('run', '--project', $project, '--framework', $framework, '--no-restore', '--', '--smoke')

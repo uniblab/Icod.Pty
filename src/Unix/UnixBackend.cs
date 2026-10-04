@@ -15,9 +15,10 @@ internal sealed class UnixBackend : IPtyBackend {
 	public Stream Output { get; }
 	public int ProcessId { get; }
 	public Task<int> Exit { get; }
-	private UnixBackend(SafeFileHandle master, Process process) {
+	private UnixBackend(SafeFileHandle master, Process process, SafeFileHandle? retainedSlave) {
 		this.master = master; this.process = process; ProcessId = process.Id;
-		Input = new UnixPtyStream(master, false); Output = new UnixPtyStream(master, true);
+		Input = new UnixPtyStream(master, false);
+		Output = new UnixPtyStream(master, true, retainedSlave, () => process.HasExited);
 		Exit = ObserveExit(process);
 	}
 	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) {
@@ -25,7 +26,7 @@ internal sealed class UnixBackend : IPtyBackend {
 		UnixNative.WindowSize size = new() { Columns = (ushort)launch.Columns, Rows = (ushort)launch.Rows };
 		byte[] name = new byte[1024];
 		UnixNative.Check(UnixNative.openpty(out int masterFd, out int slaveFd, name, 0, ref size), "openpty");
-		SafeFileHandle master = new(masterFd, true);
+		SafeFileHandle master = new(masterFd, true), slave = new(slaveFd, true);
 		Process? process = null;
 		try {
 			UnixNative.Check(UnixNative.fcntl(masterFd, 2, 1), "FD_CLOEXEC master");
@@ -43,7 +44,11 @@ internal sealed class UnixBackend : IPtyBackend {
 			try { await Handshake(process, launch, timeout.Token).ConfigureAwait(false); }
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException(cancellationToken); }
 			catch (OperationCanceledException) when (timeout.IsCancellationRequested) { throw new TimeoutException("The Unix PTY helper did not complete startup within StartTimeout."); }
-			return new UnixBackend(master, process);
+			// Darwin flushes unread output on the last slave close. Keep our slave reference
+			// until the output reader has consumed pending bytes after primary-child exit.
+			UnixBackend backend = new(master, process, OperatingSystem.IsMacOS() ? slave : null);
+			if (OperatingSystem.IsMacOS()) slave = null!; // Output now owns this reference.
+			return backend;
 		} catch {
 			master.Dispose();
 			if (process != null) {
@@ -53,7 +58,7 @@ internal sealed class UnixBackend : IPtyBackend {
 				} finally { process.Dispose(); }
 			}
 			throw;
-		} finally { UnixNative.close(slaveFd); }
+		} finally { slave?.Dispose(); }
 	}
 	private static async Task Handshake(Process process, LaunchConfiguration launch, CancellationToken token) {
 		using CancellationTokenSource io = CancellationTokenSource.CreateLinkedTokenSource(token);
