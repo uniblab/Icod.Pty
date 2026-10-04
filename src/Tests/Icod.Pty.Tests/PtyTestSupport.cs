@@ -15,7 +15,11 @@ internal static class PtyTestSupport {
 		using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20));
 		using MemoryStream bytes = new(); byte[] one = new byte[1];
 		while (bytes.Length < 200000) {
-			if (await output.ReadAsync(one, timeout.Token) == 0) throw new IOException("Unexpected EOF: " + Encoding.UTF8.GetString(bytes.ToArray()));
+			try {
+				if (await output.ReadAsync(one, timeout.Token) == 0) throw new IOException("Unexpected EOF: " + Encoding.UTF8.GetString(bytes.ToArray()));
+			} catch (OperationCanceledException error) when (timeout.IsCancellationRequested) {
+				throw new TimeoutException("Waiting for " + marker + "; received: " + Encoding.UTF8.GetString(bytes.ToArray()), error);
+			}
 			bytes.WriteByte(one[0]);
 			string text = Encoding.UTF8.GetString(bytes.GetBuffer(), 0, (int)bytes.Length);
 			if (text.Contains(marker, StringComparison.Ordinal)) return text;

@@ -6,6 +6,29 @@ Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 if (args is ["exit"]) { Console.WriteLine("FINAL-MARKER"); return 37; }
 if (args is ["flood"]) { while (true) Console.Write(new string('x', 4096)); }
+if (args is ["raw-input"]) {
+	using IDisposable mode = TerminalModes.EnterRawInput();
+	Console.WriteLine("RAW-READY");
+	int value;
+	while ((value = TerminalModes.ReadByte()) >= 0) {
+		Console.WriteLine($"BYTE:{value:X2}");
+		if (value == 4) return 23;
+	}
+	return 0;
+}
+if (args is ["interrupt-handler"]) {
+	using IDisposable mode = TerminalModes.EnterProcessedInput();
+	ConsoleCancelEventHandler handler = (_, e) => { e.Cancel = true; Console.WriteLine("INTERRUPT-ACK"); };
+	Console.CancelKeyPress += handler;
+	try {
+		Console.WriteLine("INTERRUPT-READY");
+		using StreamReader commands = new(Console.OpenStandardInput(), Encoding.UTF8);
+		while (commands.ReadLine() is string command) {
+			if (command == "quit") { Console.WriteLine("BYE-MARKER"); return 23; }
+		}
+		return 0;
+	} finally { Console.CancelKeyPress -= handler; }
+}
 bool terminal = OperatingSystem.IsWindows() ? !Console.IsInputRedirected : Native.isatty(0) == 1 && Native.isatty(1) == 1 && Native.isatty(2) == 1;
 bool controlling = true;
 if (!OperatingSystem.IsWindows()) {

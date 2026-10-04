@@ -51,6 +51,17 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	}
 	/// <summary>Waits for process exit. Cancellation stops only this wait, not the process.</summary>
 	public Task<int> WaitForExitAsync(CancellationToken cancellationToken = default) => backend.Exit.WaitAsync(cancellationToken);
+	/// <summary>Sends terminal Ctrl+C input (one byte, 0x03) to the child terminal.</summary>
+	/// <remarks>The child's terminal modes determine whether this interrupts a foreground job or is ordinary input.
+	/// Coordinate with other input writers. Cancellation may occur after the byte was delivered; it never terminates the child.</remarks>
+	public ValueTask SendInterruptAsync(CancellationToken cancellationToken = default) {
+		lock (gate) {
+			ThrowIfDisposed();
+			if (HasExited) throw new InvalidOperationException("The child has exited.");
+			cancellationToken.ThrowIfCancellationRequested();
+			return backend.Input.WriteAsync(new byte[] { 0x03 }, cancellationToken);
+		}
+	}
 	/// <summary>Forcibly terminates a live primary child; repeated calls after exit have no effect.</summary>
 	public void Terminate() { lock (gate) { ThrowIfDisposed(); backend.Terminate(); } }
 	/// <summary>Closes the terminal, terminates and reaps the primary child, and releases owned resources.</summary>
