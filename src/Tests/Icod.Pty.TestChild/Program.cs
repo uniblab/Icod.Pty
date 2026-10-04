@@ -26,14 +26,16 @@ if (args is ["final-output"]) {
 	Console.WriteLine("FINAL-END");
 	return 23;
 }
-if (args is ["raw-sequence", string length, string trace]) {
+if (args is ["raw-sequence", string length, string trace, string readSize]) {
 	using IDisposable mode = TerminalModes.EnterRawInput();
 	using FileStream received = new(trace, FileMode.Create, FileAccess.Write, FileShare.Read | FileShare.Delete, 1);
 	Console.WriteLine("RAW-READY");
 	byte[] bytes = new byte[int.Parse(length, System.Globalization.CultureInfo.InvariantCulture)];
-	for (int i = 0; i < bytes.Length; i++) {
-		int value = TerminalModes.ReadByte(); if (value < 0) return 2; bytes[i] = (byte)value;
-		received.WriteByte((byte)value); received.Flush();
+	byte[] block = new byte[int.Parse(readSize, System.Globalization.CultureInfo.InvariantCulture)];
+	for (int i = 0; i < bytes.Length;) {
+		int count = TerminalModes.Read(block); if (count == 0 || count > bytes.Length - i) return 2;
+		block.AsSpan(0, count).CopyTo(bytes.AsSpan(i)); i += count;
+		received.Write(block, 0, count); received.Flush();
 	}
 	Console.WriteLine("SEQUENCE:" + Convert.ToHexString(bytes));
 	return TerminalModes.ReadByte() == 4 ? 23 : 2;

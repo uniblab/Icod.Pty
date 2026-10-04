@@ -84,14 +84,15 @@ public sealed class InteractiveSampleTests {
 		Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 	}
 	[Theory]
-	[InlineData(false)]
-	[InlineData(true)]
-	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks(bool nested) {
+	[InlineData(false, 1)]
+	[InlineData(false, 4096)]
+	[InlineData(true, 4096)]
+	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks(bool nested, int readSize) {
 		byte[] bytes = Encoding.UTF8.GetBytes("雪\u001b[A\u001b[12;34R");
 		string trace = Path.Combine(Path.GetTempPath(), "icod-pty-raw-" + Guid.NewGuid().ToString("N"));
 		try {
 			for (int attempt = 0; attempt < 5; attempt++) {
-				string[] arguments = ["raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), trace];
+				string[] arguments = ["raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), trace, readSize.ToString(System.Globalization.CultureInfo.InvariantCulture)];
 				await using PtyProcess outer = await PtyProcess.StartAsync(nested ? Sample(arguments) : PtyTestSupport.Child(arguments));
 				try {
 					await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
@@ -104,7 +105,7 @@ public sealed class InteractiveSampleTests {
 					Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 				} catch (Exception error) {
 					string received = File.Exists(trace) ? Convert.ToHexString(ReadTrace(trace)) : "<no trace>";
-					throw new IOException($"Raw input attempt {attempt}, nested={nested}, exited={outer.HasExited}, received={received}.", error);
+					throw new IOException($"Raw input attempt {attempt}, nested={nested}, readSize={readSize}, exited={outer.HasExited}, received={received}.", error);
 				}
 			}
 		} finally { File.Delete(trace); }

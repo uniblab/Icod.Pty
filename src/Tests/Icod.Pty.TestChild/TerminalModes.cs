@@ -37,6 +37,19 @@ internal static class TerminalModes {
 			if (Marshal.GetLastPInvokeError() != 4) Check(false);
 		}
 	}
+	internal static unsafe int Read(Span<byte> buffer) {
+		fixed (byte* pointer = buffer) {
+			while (true) {
+				if (OperatingSystem.IsWindows()) {
+					Check(ReadBuffer(GetStdHandle(-10), (nint)pointer, (uint)buffer.Length, out uint count, 0));
+					return checked((int)count);
+				}
+				nint countUnix = ReadBufferUnix(0, (nint)pointer, (nuint)buffer.Length);
+				if (countUnix >= 0) return checked((int)countUnix);
+				if (Marshal.GetLastPInvokeError() != 4) Check(false);
+			}
+		}
+	}
 	private static IDisposable Enter(bool raw) {
 		if (OperatingSystem.IsWindows()) {
 			nint input = GetStdHandle(-10);
@@ -72,6 +85,8 @@ internal static class TerminalModes {
 	[DllImport("kernel32.dll")] private static extern uint GetConsoleOutputCP();
 	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ReadFile(nint handle, out byte value, uint length, out uint read, nint overlapped);
 	[DllImport("libc", EntryPoint = "read", SetLastError = true)] private static extern nint NativeRead(int fd, out byte value, nuint count);
+	[DllImport("kernel32.dll", EntryPoint = "ReadFile", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ReadBuffer(nint handle, nint buffer, uint length, out uint read, nint overlapped);
+	[DllImport("libc", EntryPoint = "read", SetLastError = true)] private static extern nint ReadBufferUnix(int fd, nint buffer, nuint count);
 	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetConsoleMode(nint handle, out uint mode);
 	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetConsoleMode(nint handle, uint mode);
 	[DllImport("libc", SetLastError = true)] private static extern int tcgetattr(int fd, nint state);
