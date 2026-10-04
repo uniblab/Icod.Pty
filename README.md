@@ -49,7 +49,7 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 
 Install the .NET 10 SDK and .NET 8/9 runtimes. Run `build.cmd` from CMD on Windows, or `./build.sh` from SH on Unix with PowerShell installed. Tooling is compatible with Windows PowerShell 5.1. No C or Python source or build step is required.
 
-The root contains `Icod.Pty.sln` and `Icod.Pty.csproj`. Production sources are under `src/`; the helper project links its sources from `src/Host/`. Tests and the sample keep their sources in their respective `src/` directories.
+The root contains `Icod.Pty.sln` and `Icod.Pty.csproj`. All C# sources are under the root `src/` tree, including helper sources in `src/Host/`, tests in `src/Tests/`, and the sample in `src/Sample/`. Supporting projects link their sources from these directories.
 
 Direct commands:
 

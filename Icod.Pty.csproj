@@ -33,7 +33,7 @@
 		<WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
 	</PropertyGroup>
 	<ItemGroup>
-		<Compile Include="src/**/*.cs" Exclude="src/Host/**" />
+		<Compile Include="src/**/*.cs" Exclude="src/Host/**;src/Tests/**;src/Sample/**" />
 		<None Include="README.md" Pack="true" PackagePath="" />
 		<None Include="LICENSE" Pack="true" PackagePath="" />
 		<None Include="packaging/buildTransitive/Icod.Pty.targets" Pack="true" PackagePath="buildTransitive/Icod.Pty.targets" />

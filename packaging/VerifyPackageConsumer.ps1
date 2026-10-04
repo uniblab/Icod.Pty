@@ -36,7 +36,7 @@ $xml = @"
 </Project>
 "@
 [System.IO.File]::WriteAllText($project, $xml, [System.Text.UTF8Encoding]::new($false))
-Copy-Item -LiteralPath (Join-Path $root 'samples/Icod.Pty.Sample/src/Program.cs') -Destination (Join-Path $consumer 'Program.cs')
+Copy-Item -LiteralPath (Join-Path $root 'src/Sample/Program.cs') -Destination (Join-Path $consumer 'Program.cs')
 Invoke-DotNet -Arguments @('restore', $project, '--source', $ArtifactDirectory, '--packages', (Join-Path $consumer 'packages'))
 foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
     Invoke-DotNet -Arguments @('run', '--project', $project, '--framework', $framework, '--no-restore', '--', '--smoke')
