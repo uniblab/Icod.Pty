@@ -7,6 +7,9 @@ public sealed class PtyStartInfo {
 	public PtyStartInfo(string fileName) { ArgumentNullException.ThrowIfNull(fileName); FileName = fileName; }
 	/// <summary>Gets the executable. Scripts require an explicit interpreter.</summary>
 	public string FileName { get; }
+	/// <summary>Gets or sets launch-time ownership. Defaults to the primary process only.</summary>
+	/// <remarks>PlatformScope selects a Windows job or an anchored Unix initial group; escaped Unix groups are not owned.</remarks>
+	public PtyProcessOwnership Ownership { get; set; } = PtyProcessOwnership.PrimaryProcess;
 	/// <summary>Gets the arguments, without shell quoting or expansion.</summary>
 	public IList<string> ArgumentList { get; } = new List<string>();
 	/// <summary>Gets environment overrides. A null value removes a variable.</summary>

@@ -4,6 +4,7 @@ namespace Icod.Pty;
 
 internal sealed class LaunchConfiguration {
 	public string FileName { get; set; } = "";
+	public PtyProcessOwnership Ownership { get; set; }
 	public string[] Arguments { get; set; } = [];
 	public string WorkingDirectory { get; set; } = "";
 	public Dictionary<string, string> Environment { get; set; } = new();
@@ -16,6 +17,8 @@ internal sealed class LaunchConfiguration {
 #if !PTY_HELPER
 	internal static LaunchConfiguration Capture(PtyStartInfo info) {
 		ArgumentNullException.ThrowIfNull(info);
+		PtyProcessOwnership ownership = info.Ownership;
+		if (!Enum.IsDefined(ownership)) throw new ArgumentOutOfRangeException(nameof(info.Ownership));
 		ValidateText(info.FileName, nameof(info.FileName), true);
 		_ = new PtySize(info.Size.Columns, info.Size.Rows);
 		if (info.StartTimeout <= TimeSpan.Zero || info.StartTimeout.TotalMilliseconds > int.MaxValue) throw new ArgumentOutOfRangeException(nameof(info.StartTimeout));
@@ -33,7 +36,7 @@ internal sealed class LaunchConfiguration {
 		}
 		string[] arguments = info.ArgumentList.ToArray();
 		foreach (string argument in arguments) ValidateText(argument, "argument", false);
-		return new LaunchConfiguration { FileName = ResolveExecutable(info.FileName, directory, environment), Arguments = arguments, WorkingDirectory = directory, Environment = environment, Columns = info.Size.Columns, Rows = info.Size.Rows, StartTimeout = info.StartTimeout, DotNetHostPath = info.DotNetHostPath };
+		return new LaunchConfiguration { FileName = ResolveExecutable(info.FileName, directory, environment), Ownership = ownership, Arguments = arguments, WorkingDirectory = directory, Environment = environment, Columns = info.Size.Columns, Rows = info.Size.Rows, StartTimeout = info.StartTimeout, DotNetHostPath = info.DotNetHostPath };
 	}
 	internal static string ResolveExecutable(string name, string directory, IReadOnlyDictionary<string, string> environment) {
 		IEnumerable<string> candidates;

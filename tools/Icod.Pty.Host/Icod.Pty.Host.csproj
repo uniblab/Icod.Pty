@@ -11,5 +11,6 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Include="../../src/Host/**/*.cs;../../src/Unix/UnixNative.cs;../../src/LaunchConfiguration.cs" />
+		<Compile Include="../../src/PtyProcessOwnership.cs" />
 	</ItemGroup>
 </Project>

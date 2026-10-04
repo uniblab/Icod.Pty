@@ -39,6 +39,10 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	public Stream Output { get { lock (gate) { ThrowIfDisposed(); return backend.Output; } } }
 	/// <summary>Gets the primary child's process identifier.</summary>
 	public int ProcessId => backend.ProcessId;
+	/// <summary>Gets the ownership policy captured at launch; available after disposal.</summary>
+	public PtyProcessOwnership Ownership => backend.Ownership;
+	/// <summary>Gets supported optional controls. Capabilities do not imply that a target is still alive.</summary>
+	public PtyProcessCapabilities Capabilities => backend.Capabilities;
 	/// <summary>Gets the most recently applied terminal dimensions.</summary>
 	public PtySize Size { get { lock (gate) return size; } }
 	/// <summary>Gets whether exit status has been collected.</summary>

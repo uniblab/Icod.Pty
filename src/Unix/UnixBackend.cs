@@ -14,6 +14,10 @@ internal sealed class UnixBackend : IPtyBackend {
 	public Stream Input { get; }
 	public Stream Output { get; }
 	public int ProcessId { get; }
+	public PtyProcessOwnership Ownership => PtyProcessOwnership.PrimaryProcess;
+	public PtyProcessCapabilities Capabilities => PtyProcessCapabilities.None;
+	public PtyControlResult RequestTermination(PtyProcessTarget target) => throw new PlatformNotSupportedException("Scoped controls are not implemented yet.");
+	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) => throw new InvalidOperationException("Native signals require platform-scope ownership.");
 	public Task<int> Exit { get; }
 	private UnixBackend(SafeFileHandle master, Process process, SafeFileHandle? retainedSlave) {
 		this.master = master; this.process = process; ProcessId = process.Id;
@@ -23,6 +27,7 @@ internal sealed class UnixBackend : IPtyBackend {
 		Exit = ObserveExit(process);
 	}
 	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) {
+		if (launch.Ownership == PtyProcessOwnership.PlatformScope) throw new PlatformNotSupportedException("Unix platform-scope creation is not implemented yet.");
 		cancellationToken.ThrowIfCancellationRequested();
 		UnixNative.WindowSize size = new() { Columns = (ushort)launch.Columns, Rows = (ushort)launch.Rows };
 		byte[] name = new byte[1024];

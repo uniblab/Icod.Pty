@@ -4,6 +4,14 @@ internal sealed class ControlledBackend : IPtyBackend {
 	internal readonly TaskCompletionSource<int> Completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
 	internal int DisposeCount { get; private set; }
 	internal int TerminateCount { get; private set; }
+	internal int ScopeTerminationCount { get; private set; }
+	public PtyProcessOwnership Ownership { get; set; }
+	public PtyProcessCapabilities Capabilities { get; set; }
+	public PtyControlResult RequestTermination(PtyProcessTarget target) {
+		if (target == PtyProcessTarget.OwnedScope) ScopeTerminationCount++; else Terminate();
+		return new(target, PtyControlStatus.Requested);
+	}
+	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) => new(target, PtyControlStatus.Requested);
 	internal bool CompleteOnTerminate { get; set; } = true;
 	public Stream Input { get; set; } = new MemoryStream();
 	public Stream Output { get; set; } = new MemoryStream();
