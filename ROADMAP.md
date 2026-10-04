@@ -2,7 +2,8 @@
 
 ## Direction and constraints
 
-Icod.Pty provides pseudoterminal process hosting for consumers that supply their own terminal interface. Development prioritizes reliable interactive sessions, explicit process ownership, and consistent resource cleanup.
+Icod.Pty provides pseudoterminal process hosting for consumers that supply their own terminal interface.
+Development prioritizes reliable interactive sessions, explicit process ownership, and consistent resource cleanup.
 
 - C# 13; net8.0, net9.0, and net10.0; AnyCPU assemblies.
 - Windows, Linux, and macOS, each on x64 and ARM64.
@@ -12,49 +13,91 @@ Icod.Pty provides pseudoterminal process hosting for consumers that supply their
 - One NuGet library package; retain LGPL-3.0-or-later and the shared repository conventions.
 - Unix uses OS PTYs and the managed helper, with an installed .NET runtime and `dotnet` host.
 
-## Completed foundation
+## Completed milestones
 
-[PR #1](https://github.com/uniblab/Icod.Pty/pull/1) was merged on 2026-10-04. It delivers process launch, arguments, environment and working-directory settings, byte streams, resize, exit status, cancellation-aware waiting, forced termination, and disposal. It also establishes packaging and verification across six OS/architecture combinations and three target frameworks.
+### Foundation
 
-The user reported successful net10.0 smoke and interactive CMD/Windows PowerShell 5.1 command checks on Windows build 10.0.26200.9457. These establish command input and output; full interactive acceptance remains part of the next milestone.
+[PR #1](https://github.com/uniblab/Icod.Pty/pull/1) was merged on 2026-10-04.
+It delivers process launch, arguments, environment and working-directory settings, byte streams, resize,
+exit status, cancellation-aware waiting, primary-process forced termination, disposal, and package verification.
 
-Historical documents: [foundation design](docs/PTY-Design.md) and [foundation implementation plan](docs/PTY-Implementation-Plan.md).
+The user reported successful net10.0 smoke and CMD/Windows PowerShell 5.1 command checks on Windows
+10.0.26200.9457. These establish command input/output; they do not establish later interactive-host acceptance.
 
-## Selected milestone: interactive hosting and controlled shutdown
+Historical documents: [foundation design](docs/PTY-Design.md) and
+[foundation implementation plan](docs/PTY-Implementation-Plan.md).
 
-**Decision:** approved for planning and implementation on 2026-10-04. The selection consists of these five features:
+### Interactive hosting and controlled shutdown
 
-1. A fully interactive sample with immediate input, resize forwarding, and host-terminal restoration.
-2. A terminal interrupt operation with explicit, mode-dependent Ctrl+C semantics.
-3. Controlled shutdown using an application-specific request, a grace period, and optional forced termination.
-4. Cancellable asynchronous startup with resource cleanup before failure is reported.
-5. Expanded interactive verification across all six supported platforms.
+[PR #2](https://github.com/uniblab/Icod.Pty/pull/2) was merged on 2026-10-04.
+It adds immediate sample input, resize forwarding, host-console restoration, terminal Ctrl+C input,
+application-directed shutdown with optional primary termination, cancellable asynchronous startup, and
+expanded interactive verification.
 
-**Acceptance goal:** launch a shell, interact without waiting for Enter, resize it, interrupt a running command, and close the session cleanly while preserving final output under the documented draining contract.
+The [design](docs/Interactive-Hosting-Design.md) and
+[development roadmap](docs/Interactive-Hosting-Implementation-Plan.md) retain IH01-IH08 and acceptance evidence.
+Automated verification passed in
+[six-platform CI run 22](https://github.com/uniblab/Icod.Pty/actions/runs/37192831712).
+Windows laptop acceptance of the new interactive host remains unrecorded and separate from hosted CI.
 
-The [selected design](docs/Interactive-Hosting-Design.md) specifies the approved contracts. [PR #2](https://github.com/uniblab/Icod.Pty/pull/2) implements them; the [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md) records tranches IH01-IH08 and verification evidence. The APIs, interactive host, package checks, and completion review are implemented and verified in [six-platform CI run 22](https://github.com/uniblab/Icod.Pty/actions/runs/37192831712). Windows laptop acceptance of the interactive host remains pending. Package version remains 0.1.0-alpha.1; release preparation will select the next package version separately.
+The [native ConPTY fragmented-query limitation](docs/ConPTY-Input-Limitations.md) remains documented.
+Its opt-in reproducer and independent byte-forwarding tests remain in place.
 
-Verification also exposed a [native ConPTY fragmented-query limitation](docs/ConPTY-Input-Limitations.md), reproduced without the sample. The host's byte forwarding is verified independently; arbitrary fragmented query-reply delivery on Windows remains a native limitation, with an opt-in reproducer. A VT parser or replacement native console is outside this milestone.
+## Selected milestone: process-group control and descendant cleanup
 
-## Options considered and deferred
+**Decision, 2026-10-04:** the user selected process-group control and descendant cleanup and requested a new
+planning PR, the full current option menu, and a development roadmap.
 
-| Option | Decision | Value | Reason for deferral / return condition |
+**Status:** selected for development; design and implementation plan proposed for review.
+No implementation tranche is complete. Package version remains 0.1.0-alpha.1; version selection is separate.
+
+The selection combines option 1, the scoped Unix signal operations from option 2, and the ownership-specific
+diagnostics from option 4. It adds opt-in ownership with explicit platform boundaries, preserves existing
+primary-process defaults, and distinguishes native requests from confirmed primary exit and output EOF.
+
+- Windows: establish job ownership before child application code runs; clean associated descendants even
+  after primary exit.
+- Unix: safely identify and signal the initial process group, including members surviving primary exit.
+  Prove the identity lifetime before shipping; a cached numeric PGID is insufficient.
+- Preserve the distinction between an initial group, a shell's changing foreground group, and all descendants.
+  Arbitrary foreground-job retargeting and escaped/background groups outside the initial group are deferred.
+- Integrate explicit scope selection with shutdown and opt-in disposal; preserve caller-owned output draining.
+- Verify cancellation, failure rollback, primary-before-descendant exit, and resource cleanup on all six platforms.
+
+**Acceptance goal:** a consumer can deliberately own and clean the documented scope, identify unsupported
+operations and native failures, and avoid interpreting primary exit as proof that every descendant stopped.
+
+Read the [proposed design](docs/Process-Group-Cleanup-Design.md) and
+[development roadmap](docs/Process-Group-Cleanup-Implementation-Plan.md).
+PG01 is an explicit feasibility gate for Unix identity and Windows launch ownership, not a completed finding.
+
+## Full current menu
+
+Effort is relative, not a schedule. Deferred options remain available and are not release commitments.
+
+| # | Option | Decision | Value and return condition |
 | --- | --- | --- | --- |
-| Interactive hosting and controlled shutdown | Selected | Make ordinary shells and interactive applications practical consumers of the existing PTY foundation. | Current milestone; see the five features above. |
-| Process-group and descendant management | Deferred | Explicit Unix signals and foreground-job control; stronger Windows process ownership; cleanup of child-launched programs. | Requires separate ownership contracts for background jobs, changed process groups, detached descendants, and Windows jobs. Revisit when a consumer requires session-wide cleanup beyond the primary child. |
-| High-concurrency I/O and deployment | Deferred | Lower Unix worker-thread use, measured session capacity, and wider deployment validation. | First obtain a representative server workload and deployment target. This option includes the two workstreams below. |
+| 1 | Process ownership and descendant cleanup | Selected; large | Explicit Windows job and Unix initial-group ownership; predictable scoped cleanup. |
+| 2 | Native signals and foreground-job control | Focused subset selected; medium-large | Include Unix hangup, interrupt, terminate, and kill for the primary/owned initial group. Defer arbitrary signals, foreground retargeting, and suspend/resume until a consumer needs broader job control and identity rules are proved. |
+| 3 | Reusable session orchestration | Deferred; medium | Coordinate input/output pumps, cancellation, draining, shutdown, and completion. Recommended follow-on to ownership. |
+| 4 | Diagnostics and capability discovery | Focused subset selected; small-medium | Include ownership mode, supported targets, request outcomes, and native operation/error context. Defer general tracing, metrics, and raw transcript logging. |
+| 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs and measure throughput, memory, and cancellation latency. Return with a representative concurrent-session workload. |
+| 6 | Deployment and runtime portability | Deferred; medium-large | Validate trimming, NativeAOT, single-file and self-contained consumers, plus wider Unix coverage. Prioritize when a concrete distribution target requires it; retain the managed helper/runtime requirement meanwhile. |
+| 7 | Terminal configuration controls | Deferred; medium-large | Explicit terminal modes, echo, canonical input, and control characters. Requires honest platform-specific capabilities. |
+| 8 | Recording, replay, and automation | Deferred; medium | Timestamped output/resize recording and bounded output-matching helpers. Input capture must be opt-in; screen-aware assertions need a separate terminal model. |
+| 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the recorded fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; not a prerequisite for this milestone. |
+| 10 | Resource controls | Deferred; large | Platform-supported process, CPU, and memory limits. Requires its own contracts; not a security sandbox. |
+| 11 | Persistent sessions and detach/reattach | Deferred; very large | Survive client disconnects with a broker, buffered output, protocol, and access controls. Separate host component. |
+| 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model, custom UI rendering, and integration with adjacent Icod projects. Separate layer above PTY transport; graphics protocols remain outside this milestone. |
 
-The deferred high-concurrency/deployment option can be split into independently useful work:
-
-- **I/O scalability:** event-driven Unix readiness, process-wait costs, sustained throughput, cancellation latency, and measured limits at increasing session counts.
-- **Deployment validation:** trimmed consumers, NativeAOT consumers, single-file deployment behavior, and broader Unix runtime/distribution coverage. The managed Unix helper requirement remains in force unless a later design explicitly changes it.
-
-These alternatives remain available; they are not implicit commitments for the next release. Terminal emulation/rendering, graphics protocols, persistent detach/reconnect sessions, and a public cross-platform terminal-mode API are also outside the selected milestone.
+The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
+The previous interactive-hosting choice is completed history rather than an unimplemented option.
 
 ## Completion policy
 
-- Mark a tranche complete only with its verification evidence recorded in the development roadmap.
-- Preserve existing API behavior unless the approved design explicitly documents a change.
+- Mark a tranche complete only with verification evidence recorded in its development roadmap.
+- Preserve existing API behavior unless the reviewed design explicitly documents an opt-in change.
 - Test shipped library and package behavior on all three frameworks and six platforms.
+- Report primary exit, scope request, descendant observation, and output EOF separately.
 - Record Windows laptop acceptance separately from hosted CI results.
-- Merge and publication remain separate user decisions.
+- Merge, version selection, and publication remain separate user decisions.
