@@ -65,6 +65,18 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify Windows PowerShell 5.1 tooling
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $files = Get-ChildItem packaging -Recurse -File | Where-Object { $_.Extension -in @('.ps1', '.psm1') }
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -ne 0) { throw "PowerShell 5.1 parse errors in $($file.FullName): $($errors -join '; ')" }
+          }
+          ./packaging/Get-RepositoryMetadata.ps1 -Configuration Staging
       - name: Restore
         run: dotnet restore '${{ needs.metadata.outputs.solution_path }}'
       - name: Build
