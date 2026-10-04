@@ -20,7 +20,8 @@ internal sealed class UnixBackend : IPtyBackend {
 		Input = new UnixPtyStream(master, false); Output = new UnixPtyStream(master, true);
 		Exit = ObserveExit(process);
 	}
-	internal static IPtyBackend Start(LaunchConfiguration launch) {
+	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) {
+		cancellationToken.ThrowIfCancellationRequested();
 		UnixNative.WindowSize size = new() { Columns = (ushort)launch.Columns, Rows = (ushort)launch.Rows };
 		byte[] name = new byte[1024];
 		UnixNative.Check(UnixNative.openpty(out int masterFd, out int slaveFd, name, 0, ref size), "openpty");
@@ -35,26 +36,41 @@ internal sealed class UnixBackend : IPtyBackend {
 			string helper = FindHelper();
 			ProcessStartInfo start = new(FindDotNet(launch.DotNetHostPath)) { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
 			start.ArgumentList.Add("exec"); start.ArgumentList.Add(helper);
+			cancellationToken.ThrowIfCancellationRequested();
 			process = Process.Start(start) ?? throw new IOException("Unable to start the Unix PTY helper.");
-			using CancellationTokenSource timeout = new(launch.StartTimeout);
-			try { Handshake(process, launch, timeout.Token).GetAwaiter().GetResult(); }
+			using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			timeout.CancelAfter(launch.StartTimeout);
+			try { await Handshake(process, launch, timeout.Token).ConfigureAwait(false); }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException(cancellationToken); }
 			catch (OperationCanceledException) when (timeout.IsCancellationRequested) { throw new TimeoutException("The Unix PTY helper did not complete startup within StartTimeout."); }
 			return new UnixBackend(master, process);
 		} catch {
 			master.Dispose();
-			if (process != null) { try { if (!process.HasExited) process.Kill(); process.WaitForExit(); } finally { process.Dispose(); } }
+			if (process != null) {
+				try {
+					try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) when (process.HasExited) { }
+					await process.WaitForExitAsync().ConfigureAwait(false);
+				} finally { process.Dispose(); }
+			}
 			throw;
 		} finally { UnixNative.close(slaveFd); }
 	}
 	private static async Task Handshake(Process process, LaunchConfiguration launch, CancellationToken token) {
-		Task<string> diagnostic = process.StandardError.ReadToEndAsync(token);
-		Task<string> status = process.StandardOutput.ReadToEndAsync(token);
-		await process.StandardInput.WriteAsync(JsonSerializer.Serialize(launch).AsMemory(), token).ConfigureAwait(false);
-		process.StandardInput.Close();
-		string result = await status.ConfigureAwait(false);
-		string stderr = await diagnostic.ConfigureAwait(false);
-		// A ready byte followed by close-on-exec EOF distinguishes startup from early host failure.
-		if (result != "1" || stderr.Length != 0) throw new IOException("Unix PTY launch failed: " + result + stderr);
+		using CancellationTokenSource io = CancellationTokenSource.CreateLinkedTokenSource(token);
+		Task<string> diagnostic = process.StandardError.ReadToEndAsync(io.Token);
+		Task<string> status = process.StandardOutput.ReadToEndAsync(io.Token);
+		try {
+			await process.StandardInput.WriteAsync(JsonSerializer.Serialize(launch).AsMemory(), io.Token).ConfigureAwait(false);
+			process.StandardInput.Close();
+			string result = await status.ConfigureAwait(false);
+			string stderr = await diagnostic.ConfigureAwait(false);
+			// A ready byte followed by close-on-exec EOF distinguishes startup from early host failure.
+			if (result != "1" || stderr.Length != 0) throw new IOException("Unix PTY launch failed: " + result + stderr);
+		} catch {
+			io.Cancel();
+			try { await Task.WhenAll(status, diagnostic).ConfigureAwait(false); } catch (Exception) { /* Observe both pipe tasks; preserve the original failure. */ }
+			throw;
+		}
 	}
 	private static string FindHelper() {
 		foreach (string directory in new[] { AppContext.BaseDirectory, Path.GetDirectoryName(typeof(PtyProcess).Assembly.Location) ?? "" }) {

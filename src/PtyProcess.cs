@@ -29,7 +29,7 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	}
 	private static Task<IPtyBackend> CreateBackendAsync(LaunchConfiguration launch, CancellationToken token) {
 		if (OperatingSystem.IsWindows()) return Windows.WindowsBackend.StartAsync(launch, token);
-		if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) return Task.Run(() => { token.ThrowIfCancellationRequested(); return Unix.UnixBackend.Start(launch); });
+		if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) return Unix.UnixBackend.StartAsync(launch, token);
 		throw new PlatformNotSupportedException("Icod.Pty supports Windows, Linux and macOS.");
 	}
 	/// <summary>Gets the writable stream carrying bytes to the terminal.</summary>
