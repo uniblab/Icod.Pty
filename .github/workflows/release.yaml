@@ -13,7 +13,10 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: 10.0.x
+  DOTNET_VERSION: |
+    8.0.x
+    9.0.x
+    10.0.x
   CONFIGURATION: Release
   RELEASE_DIRECTORY: artifacts/release
   SELECTED_PACKAGE_DIRECTORY: artifacts/release-packages
@@ -26,7 +29,6 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       solution_path: ${{ steps.repository.outputs.solution_path }}
-      has_executables: ${{ steps.repository.outputs.has_executables }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,7 +73,7 @@ jobs:
           "prerelease=$($version.Contains('-').ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   package:
-    needs: metadata
+    needs: [metadata, validate]
     runs-on: ubuntu-latest
     outputs:
       has_packages: ${{ steps.select.outputs.has_packages }}
@@ -106,6 +108,10 @@ jobs:
           -DestinationDirectory '${{ env.SELECTED_PACKAGE_DIRECTORY }}'
           -ExpectedVersion '${{ needs.metadata.outputs.version }}'
           -GitHubOutputPath $env:GITHUB_OUTPUT
+      - name: Require exactly one library package
+        shell: pwsh
+        run: |
+          if ('1' -ne '${{ steps.select.outputs.package_count }}') { throw 'A release requires exactly one Icod.Pty package matching the tag.' }
       - name: Verify exact release package artifacts
         if: steps.select.outputs.has_packages == 'true'
         shell: pwsh
@@ -123,47 +129,22 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  archives:
+  validate:
     needs: metadata
-    if: needs.metadata.outputs.has_executables == 'true'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: windows-latest
-            rid: win-x64
-          - os: windows-11-arm
-            rid: win-arm64
-          - os: ubuntu-24.04
-            rid: linux-x64
-          - os: ubuntu-24.04-arm
-            rid: linux-arm64
-          - os: macos-15-intel
-            rid: osx-x64
-          - os: macos-15
-            rid: osx-arm64
-    name: ${{ matrix.rid }}
+        os: [windows-latest, windows-11-arm, ubuntu-24.04, ubuntu-24.04-arm, macos-15-intel, macos-15]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Build release archive
+      - name: Verify Release distribution
         shell: pwsh
-        run: >-
-          ./packaging/BuildReleaseArchive.ps1
-          -Configuration '${{ env.CONFIGURATION }}'
-          -RuntimeIdentifier '${{ matrix.rid }}'
-          -Version '${{ needs.metadata.outputs.version }}'
-          -ArchiveBaseName '${{ github.event.repository.name }}'
-      - name: Upload release archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-archive-${{ matrix.rid }}
-          path: ${{ env.RELEASE_DIRECTORY }}/${{ github.event.repository.name }}-${{ needs.metadata.outputs.version }}-${{ matrix.rid }}.zip
-          if-no-files-found: error
-          retention-days: 7
+        run: ./packaging/VerifyDistribution.ps1 -Configuration Release
 
   publish-nuget:
     needs: [metadata, package]
@@ -236,12 +217,12 @@ jobs:
           }
 
   github-release:
-    needs: [metadata, package, archives, publish-nuget, publish-github-packages]
+    needs: [metadata, validate, package, publish-nuget, publish-github-packages]
     if: >-
       always() &&
       needs.metadata.result == 'success' &&
       needs.package.result == 'success' &&
-      (needs.archives.result == 'success' || needs.archives.result == 'skipped') &&
+      needs.validate.result == 'success' &&
       (needs.publish-nuget.result == 'success' || needs.publish-nuget.result == 'skipped') &&
       (needs.publish-github-packages.result == 'success' || needs.publish-github-packages.result == 'skipped')
     runs-on: ubuntu-latest
@@ -254,13 +235,6 @@ jobs:
         with:
           name: ${{ env.PACKAGE_ARTIFACT }}
           path: artifacts/release-assets
-      - name: Download executable archives
-        if: needs.metadata.outputs.has_executables == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: release-archive-*
-          path: artifacts/release-assets
-          merge-multiple: true
       - name: Create checksums
         shell: pwsh
         run: |

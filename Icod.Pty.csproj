@@ -3,6 +3,7 @@
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<LangVersion>13.0</LangVersion>
 		<OutputType>Library</OutputType>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -32,8 +33,11 @@
 		<WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
 	</PropertyGroup>
 	<ItemGroup>
-		<Compile Include="src/**/*.cs" />
+		<Compile Include="src/**/*.cs" Exclude="src/Host/**" />
 		<None Include="README.md" Pack="true" PackagePath="" />
 		<None Include="LICENSE" Pack="true" PackagePath="" />
+		<None Include="packaging/buildTransitive/Icod.Pty.targets" Pack="true" PackagePath="buildTransitive/Icod.Pty.targets" />
+		<ProjectReference Include="tools/Icod.Pty.Host/Icod.Pty.Host.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+		<None Include="tools/Icod.Pty.Host/bin/$(Configuration)/net8.0/Icod.Pty.Host.dll;tools/Icod.Pty.Host/bin/$(Configuration)/net8.0/Icod.Pty.Host.deps.json;tools/Icod.Pty.Host/bin/$(Configuration)/net8.0/Icod.Pty.Host.runtimeconfig.json" Link="Icod.Pty.Host/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Pack="true" PackagePath="tools/net8.0/" />
 	</ItemGroup>
 </Project>

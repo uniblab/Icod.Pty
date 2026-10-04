@@ -49,8 +49,9 @@ try {
 
         & (Join-Path $PSScriptRoot 'VerifyPackageArtifact.ps1') `
             -ArtifactDirectory $packageDirectory `
-            -Configuration $Configuration `
-            -AllowNoPackages
+            -Configuration $Configuration
+
+        & (Join-Path $PSScriptRoot 'VerifyPackageConsumer.ps1') -ArtifactDirectory $packageDirectory
     }
 
     Write-Host ''

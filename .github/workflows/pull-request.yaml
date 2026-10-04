@@ -11,7 +11,10 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: 10.0.x
+  DOTNET_VERSION: |
+    8.0.x
+    9.0.x
+    10.0.x
   CONFIGURATION: Staging
 
 jobs:
@@ -58,6 +61,7 @@ jobs:
           - os: macos-15
             name: macOS ARM64
             verify_packages: false
+    timeout-minutes: 15
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -93,7 +97,6 @@ jobs:
           --no-restore
           --logger trx
       - name: Pack Staging artifacts
-        if: matrix.verify_packages
         run: >-
           dotnet pack '${{ needs.metadata.outputs.solution_path }}'
           -c ${{ env.CONFIGURATION }}
@@ -102,10 +105,11 @@ jobs:
           -o artifacts
           -p:ContinuousIntegrationBuild=true
       - name: Verify exact Staging package artifacts
-        if: matrix.verify_packages
         shell: pwsh
         run: >-
           ./packaging/VerifyPackageArtifact.ps1
           -ArtifactDirectory artifacts
           -Configuration '${{ env.CONFIGURATION }}'
-          -AllowNoPackages
+      - name: Verify package consumer and publish output
+        shell: pwsh
+        run: ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts

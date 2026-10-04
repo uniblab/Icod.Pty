@@ -21,7 +21,10 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: 10.0.x
+  DOTNET_VERSION: |
+    8.0.x
+    9.0.x
+    10.0.x
 
 jobs:
   metadata:
