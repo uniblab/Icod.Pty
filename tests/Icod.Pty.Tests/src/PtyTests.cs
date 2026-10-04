@@ -38,7 +38,9 @@ public sealed class PtyTests {
 		Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("Removed").ValueKind);
 		Assert.Equal(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory), Path.TrimEndingDirectorySeparator(json.RootElement.GetProperty("Directory").GetString()!));
 		await Send(process, "quit\n");
+		Task<string> tail = ReadToEnd(process.Output);
 		Assert.Equal(23, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20)));
+		Assert.Contains("BYE-MARKER", await tail.WaitAsync(TimeSpan.FromSeconds(20)));
 	}
 	[Fact]
 	public async Task Resize_and_bidirectional_io_work() {

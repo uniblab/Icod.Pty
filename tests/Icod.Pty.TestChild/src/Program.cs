@@ -21,13 +21,15 @@ Console.WriteLine("READY:" + (args.Length == 0 ? "ok" : JsonSerializer.Serialize
 	Terminal = terminal,
 	ControllingTerminal = controlling
 })));
-while (Console.ReadLine() is string line) {
+// Read the terminal's canonical byte stream without Console.ReadLine's terminal-emulator queries.
+using StreamReader input = new(Console.OpenStandardInput(), Encoding.UTF8);
+while (input.ReadLine() is string line) {
 	if (line == "quit") { Console.WriteLine("BYE-MARKER"); return 23; }
 	if (line == "size") {
 		int columns, rows;
 		if (OperatingSystem.IsWindows()) { columns = Console.WindowWidth; rows = Console.WindowHeight; }
 		else {
-			if (Native.ioctl(0, OperatingSystem.IsMacOS() ? 0x40087468u : 0x5413u, out Native.WindowSize size) != 0) throw new IOException("TIOCGWINSZ failed.");
+			if (Native.GetSize(out Native.WindowSize size) != 0) throw new IOException("TIOCGWINSZ failed.");
 			columns = size.Columns; rows = size.Rows;
 		}
 		Console.WriteLine($"SIZE:{columns},{rows}");
@@ -38,8 +40,12 @@ return 0;
 internal static class Native {
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct WindowSize { internal ushort Rows, Columns, XPixel, YPixel; }
+	internal static int GetSize(out WindowSize size) => OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+		IoctlApple(0, 0x40087468, 0, 0, 0, 0, 0, 0, out size) : Ioctl(0, OperatingSystem.IsMacOS() ? 0x40087468u : 0x5413u, out size);
+	[DllImport("libc", EntryPoint = "ioctl")] private static extern int Ioctl(int fd, nuint request, out WindowSize size);
+	// Apple ARM64 variadic arguments begin on the stack, after the eight register slots.
+	[DllImport("libc", EntryPoint = "ioctl")] private static extern int IoctlApple(int fd, nuint request, nint x2, nint x3, nint x4, nint x5, nint x6, nint x7, out WindowSize size);
 	[DllImport("libc")] internal static extern int isatty(int fd);
 	[DllImport("libc")] internal static extern int open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, int flags);
 	[DllImport("libc")] internal static extern int close(int fd);
-	[DllImport("libc")] internal static extern int ioctl(int fd, nuint request, out WindowSize size);
 }

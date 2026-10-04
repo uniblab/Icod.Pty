@@ -45,7 +45,8 @@ internal sealed class WindowsBackend : IPtyBackend {
 			if (!WindowsNative.InitializeProcThreadAttributeList(attributes, 1, 0, ref bytes)) throw Error("InitializeProcThreadAttributeList");
 			attributesInitialized = true;
 			if (!WindowsNative.UpdateProcThreadAttribute(attributes, 0, 0x00020016, console.DangerousGetHandle(), (nuint)nint.Size, 0, 0)) throw Error("UpdateProcThreadAttribute");
-			WindowsNative.StartupInfoEx startup = new() { Startup = new() { Size = (uint)Marshal.SizeOf<WindowsNative.StartupInfoEx>() }, Attributes = attributes };
+			// Explicit null standard handles prevent redirected parent handles from overriding ConPTY.
+			WindowsNative.StartupInfoEx startup = new() { Startup = new() { Size = (uint)Marshal.SizeOf<WindowsNative.StartupInfoEx>(), Flags = 0x00000100 }, Attributes = attributes };
 			string environmentBlock = string.Join('\0', launch.Environment.OrderBy(p => p.Key, StringComparer.OrdinalIgnoreCase).Select(p => p.Key + "=" + p.Value)) + "\0\0";
 			environment = Marshal.StringToHGlobalUni(environmentBlock);
 			StringBuilder command = new(Quote(launch.FileName));
