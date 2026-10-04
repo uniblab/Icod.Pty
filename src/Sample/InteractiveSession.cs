@@ -6,7 +6,7 @@ internal static class InteractiveSession {
 		await using PtyProcess process = await PtyProcess.StartAsync(startInfo, cancellationToken);
 		using CancellationTokenSource inputStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 		using CancellationTokenSource outputStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-		Task input = PumpInput(process, console, inputStop.Token);
+		Task input = ForwardInputAsync(process.Input, console, inputStop.Token);
 		Task output = process.Output.CopyToAsync(console.Output, outputStop.Token);
 		Task resize = MonitorSize(process, console, inputStop.Token);
 		Task<int> exit = process.WaitForExitAsync();
@@ -31,12 +31,12 @@ internal static class InteractiveSession {
 			await Observe(input); await Observe(resize); await Observe(output);
 		}
 	}
-	private static async Task PumpInput(PtyProcess process, HostConsole console, CancellationToken token) {
+	internal static async Task ForwardInputAsync(Stream input, HostConsole console, CancellationToken token) {
 		byte[] buffer = new byte[4096];
 		while (true) {
 			int count = await console.ReadAsync(buffer, token);
 			if (count == 0) return;
-			await process.Input.WriteAsync(buffer.AsMemory(0, count), token);
+			await input.WriteAsync(buffer.AsMemory(0, count), token);
 		}
 	}
 	private static async Task MonitorSize(PtyProcess process, HostConsole console, CancellationToken token) {

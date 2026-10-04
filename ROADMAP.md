@@ -34,6 +34,8 @@ Historical documents: [foundation design](docs/PTY-Design.md) and [foundation im
 
 The [selected design](docs/Interactive-Hosting-Design.md) specifies the approved contracts. [PR #2](https://github.com/uniblab/Icod.Pty/pull/2) implements them; the [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md) records tranches IH01-IH08 and verification evidence. The APIs and interactive host are implemented, with integrated validation in progress. Windows laptop acceptance of the interactive host remains pending. Package version remains 0.1.0-alpha.1; release preparation will select the next package version separately.
 
+Verification also exposed a [native ConPTY fragmented-query limitation](docs/ConPTY-Input-Limitations.md), reproduced without the sample. The host's byte forwarding is verified independently; arbitrary fragmented query-reply delivery on Windows remains a native limitation, with an opt-in reproducer. A VT parser or replacement native console is outside this milestone.
+
 ## Options considered and deferred
 
 | Option | Decision | Value | Reason for deferral / return condition |

@@ -58,4 +58,6 @@ On host-input EOF the sample waits five seconds for the primary child, then requ
 
 Descendant lifetime follows the native backend: Linux may keep the terminal open, while macOS terminal revocation and Windows ConPTY teardown can yield EOF at primary exit. The library does not own detached descendants.
 
+Windows ConPTY may discard the prefix of a terminal-query reply fragmented across native input writes. The sample preserves the bytes it receives, but cannot repair native input loss. See the [evidence and opt-in reproducer](../docs/ConPTY-Input-Limitations.md).
+
 `--line` uses line input and is not an interactive terminal host. The default executable is `%COMSPEC%` (falling back to `cmd.exe`) on Windows and `/bin/sh` on Unix. `--interactive` is optional; `--` ends sample options before the executable. Arguments are passed as individual arguments, without shell expansion.

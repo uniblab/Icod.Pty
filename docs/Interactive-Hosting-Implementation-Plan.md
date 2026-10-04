@@ -251,5 +251,27 @@ Implementation adjustments supported by regression evidence:
 - The sample's duplicated Unix input descriptor is close-on-exec; the retained-descendant fixture exposed the prior inheritance leak.
 - Native descendant lifetime differs: Linux can retain an open terminal, whereas macOS revoke/Windows ConPTY teardown can produce native EOF. The real descendant fixture checks that behavior, and a controlled stalled output tests the drain deadline and restoration on every platform. Descendants are explicitly cleaned up.
 - Restoration compares configurable termios fields, excluding ABI padding and Darwin's kernel `PENDIN` retype state.
+- Windows host reads use an independently opened `CONIN$` handle. Cancelling a read on the borrowed standard-input handle restored modes but affected the next reader; the same-terminal follow-up probe exposed that state leak.
+- Native host-output writes must be cancellable. The final review reproduced a sample that never restored its terminal after output backpressure exceeded the drain deadline. `Native_host_output_backpressure_does_not_prevent_cleanup` failed before the fix and passed afterward. Unix output reopens the terminal with independent nonblocking flags; Windows uses an owned output handle and dedicated cancellable writer. Error reporting to a blocked terminal also has a short deadline.
+- The split UTF-8/VT fixture acknowledges the entire exact byte sequence once and records received bytes in a separate file. That trace proved an independent [native ConPTY fragmented-query limitation](ConPTY-Input-Limitations.md); changing acknowledgements or native read-buffer size did not fix it. Real native tests and the sample's controlled byte-forwarding test now have separate assertions.
+
+Platform-specific coverage is intentional: Unix helper/handshake tests return early on Windows, where that helper does not exist. The real native-output-backpressure regression runs on Linux because ConPTY rendering and macOS read-ahead change that reproduction's buffering assumptions. Every platform also runs the controlled stalled-output deadline/restoration probe, real byte forwarding, and native terminal-lifetime checks. xUnit's reported counts include these platform branches. The native fragmented-query theory is explicitly skipped on Windows, with an opt-in reproducer; complete-query native delivery and arbitrary-chunk sample forwarding remain mandatory there. This is an observed native limitation, not a claim of passing Windows fragmented-query delivery.
+
+The fresh whole-branch review found no Critical issue and one Important blocked-output cleanup issue, fixed with the failing regression above and a complete green suite. Its Minor stale-evidence note had already been corrected by the planned evidence update; no minor findings remain deferred.
+
+Execution and review decisions:
+
+| Decision | Reason | Cost or limitation |
+| --- | --- | --- |
+| Keep IH-numbered plan headings and extract task briefs with SH. | Preserve the approved roadmap's identifiers. | Generic skill scripts need that adaptation; product behavior is unaffected. |
+| Add bounded macOS output read-ahead. | Retaining the slave alone still blocked exit when Darwin waited for a reader. | A pending worker and bounded buffer per session; scalability remains deferred. |
+| Test retained-descendant lifetime by native platform, plus a controlled stalled drain everywhere. | Linux can retain the terminal; macOS/Windows can produce native EOF at primary exit. | Lifetime assertions depend on backend semantics. |
+| Keep primary-child ownership. | Descendant/group ownership was explicitly deferred. | Callers must separately manage descendants. |
+| Respect native EOF with retained descendants on macOS/Windows. | Native teardown is authoritative. | Detached terminal lifetime remains platform-specific. |
+| Retain the macOS prefetch worker after final review. | Regression evidence establishes the final-output requirement. | Worker and memory costs await later scalability work. |
+| Keep explicit line mode as a blocking-input demonstration. | Full host lifecycle guarantees belong to interactive mode. | Line mode is unsuitable for reusable in-process hosting. |
+| Resolve restoration CI failures before handoff. | They are validation failures, not dismissed review findings. | Additional hosted verification runs. |
+| Leave laptop acceptance to the user. | Hosted fixtures cannot establish physical-terminal behavior. | Manual acceptance remains a completion gate. |
+| Keep transparent forwarding and expose the native ConPTY fragmented-query limitation. | Direct/nested tests and two native read-buffer sizes reproduce the same loss below the sample. Adding a parser, synthetic input, or a native replacement contradicts the selected transport design. | Windows cannot promise arbitrary fragmented query-reply delivery; its native split-query reproducer is an explicit opt-in test. |
 
 The [sample acceptance guide](../samples/README.md) records the remaining manual commands. The earlier laptop smoke/CMD/PowerShell reports are foundation evidence; they are not claimed as acceptance of the new immediate-input host.

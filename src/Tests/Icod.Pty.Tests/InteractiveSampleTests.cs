@@ -84,20 +84,34 @@ public sealed class InteractiveSampleTests {
 		Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 	}
 	[Theory]
-	[InlineData(false, 1)]
-	[InlineData(false, 4096)]
-	[InlineData(true, 4096)]
-	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks(bool nested, int readSize) {
+	[InlineData(false)]
+	[InlineData(true)]
+	public Task Native_terminal_preserves_split_keys_and_complete_query_reply(bool nested) => VerifyNativeInput(nested, false);
+	[UnixSplitInputTheory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public Task Native_terminal_preserves_split_query_reply(bool nested) => VerifyNativeInput(nested, true);
+	[Fact]
+	public async Task Sample_input_pump_preserves_arbitrary_chunks() {
+		await using PtyProcess process = await PtyProcess.StartAsync(PtyTestSupport.Child("forward-chunks"));
+		Task<string> output = PtyTestSupport.Drain(process.Output);
+		Assert.Equal(0, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20)));
+		Assert.Contains("FORWARDED:E99BAA1B5B411B5B31323B333452", await output);
+	}
+	private static async Task VerifyNativeInput(bool nested, bool splitQuery) {
 		byte[] bytes = Encoding.UTF8.GetBytes("雪\u001b[A\u001b[12;34R");
 		string trace = Path.Combine(Path.GetTempPath(), "icod-pty-raw-" + Guid.NewGuid().ToString("N"));
 		try {
 			for (int attempt = 0; attempt < 5; attempt++) {
-				string[] arguments = ["raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), trace, readSize.ToString(System.Globalization.CultureInfo.InvariantCulture)];
+				string[] arguments = ["raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), trace, "4096"];
 				await using PtyProcess outer = await PtyProcess.StartAsync(nested ? Sample(arguments) : PtyTestSupport.Child(arguments));
 				try {
 					await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
-					// Split inside a multibyte character and inside both escape sequences.
-					foreach (byte value in bytes) await outer.Input.WriteAsync(new[] { value });
+					// Always split UTF-8 and arrow-key input. Native ConPTY can discard
+					// fragmented query prefixes, independently of the forwarding sample.
+					int splitLength = splitQuery ? bytes.Length : 6;
+					foreach (byte value in bytes.AsSpan(0, splitLength).ToArray()) await outer.Input.WriteAsync(new[] { value });
+					if (!splitQuery) await outer.Input.WriteAsync(bytes.AsMemory(splitLength));
 					await PtyTestSupport.ReadUntil(outer.Output, "SEQUENCE:" + Convert.ToHexString(bytes));
 					Assert.Equal(bytes, ReadTrace(trace));
 					await outer.Input.WriteAsync(new byte[] { 4 });
@@ -105,7 +119,7 @@ public sealed class InteractiveSampleTests {
 					Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 				} catch (Exception error) {
 					string received = File.Exists(trace) ? Convert.ToHexString(ReadTrace(trace)) : "<no trace>";
-					throw new IOException($"Raw input attempt {attempt}, nested={nested}, readSize={readSize}, exited={outer.HasExited}, received={received}.", error);
+					throw new IOException($"Raw input attempt {attempt}, nested={nested}, splitQuery={splitQuery}, exited={outer.HasExited}, received={received}.", error);
 				}
 			}
 		} finally { File.Delete(trace); }
@@ -163,5 +177,12 @@ public sealed class InteractiveSampleTests {
 		await using PtyProcess outer = await PtyProcess.StartAsync(info);
 		string text = await PtyTestSupport.ReadUntil(outer.Output, "\n");
 		Assert.Contains("argument with spaces", text); Assert.Contains("snow-\\u96EA", text); Assert.Contains("ends\\\\", text);
+	}
+}
+
+internal sealed class UnixSplitInputTheoryAttribute : TheoryAttribute {
+	public UnixSplitInputTheoryAttribute() {
+		if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("ICOD_PTY_VERIFY_SPLIT_QUERIES") != "1")
+			Skip = "Native ConPTY can discard fragmented CSI query-reply prefixes; see docs/ConPTY-Input-Limitations.md. The sample pump is tested separately on Windows.";
 	}
 }

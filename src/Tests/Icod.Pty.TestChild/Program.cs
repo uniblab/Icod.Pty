@@ -4,6 +4,7 @@ using System.Text.Json;
 
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
+if (args is ["forward-chunks"]) return await HostConsoleProbe.ForwardChunksAsync();
 if (args is ["host-console-probe", string scenario, string sample, string pidFile]) return await HostConsoleProbe.RunAsync(scenario, sample, pidFile);
 if (args is ["hold-terminal-open", string record]) return await HostConsoleProbe.HoldTerminalAsync(record);
 if (args is ["retained-holder", string recordPath]) {

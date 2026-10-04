@@ -5,6 +5,26 @@ using Icod.Pty.Sample;
 
 internal static class HostConsoleProbe {
 	private static string DotNet => Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet";
+	internal static async Task<int> ForwardChunksAsync() {
+		byte[] expected = Encoding.UTF8.GetBytes("雪\u001b[A\u001b[12;34R");
+		using MemoryStream destination = new();
+		using HostConsole console = new FragmentedInputConsole(expected);
+		await InteractiveSession.ForwardInputAsync(destination, console, CancellationToken.None);
+		byte[] actual = destination.ToArray();
+		Console.WriteLine("FORWARDED:" + Convert.ToHexString(actual));
+		return expected.SequenceEqual(actual) ? 0 : 2;
+	}
+	private sealed class FragmentedInputConsole(byte[] bytes) : HostConsole {
+		private int offset;
+		internal override Stream Output => Stream.Null;
+		internal override PtySize? GetSize() => null;
+		internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token) {
+			token.ThrowIfCancellationRequested();
+			if (offset == bytes.Length) return ValueTask.FromResult(0);
+			buffer.Span[0] = bytes[offset++]; return ValueTask.FromResult(1);
+		}
+		public override void Dispose() { }
+	}
 	internal static async Task<int> RunAsync(string scenario, string sample, string pidFile) {
 		byte[] before = TerminalModes.Snapshot();
 		int code;
