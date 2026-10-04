@@ -4,6 +4,8 @@ Icod.Pty hosts child processes in a pseudoterminal. It provides raw byte input/o
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
+Development direction and selected work are recorded in the [main roadmap](ROADMAP.md). The next selected milestone is [interactive hosting and controlled shutdown](docs/Interactive-Hosting-Design.md), with a [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md). These documents describe planned work; the usage below describes the current implementation.
+
 ## Platforms
 
 | Operating system | Architectures | Backend |
