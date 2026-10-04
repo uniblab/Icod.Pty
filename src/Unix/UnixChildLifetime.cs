@@ -6,13 +6,14 @@ namespace Icod.Pty.Unix;
 // The embedding host must not reap this child or change SIGCHLD to auto-reap it.
 internal sealed class UnixChildLifetime : IDisposable {
 	private readonly object gate = new();
+	private readonly Func<int, int, int> send;
 	private readonly TaskCompletionSource<int> exit = new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private bool released, lost, disposing;
 	internal int ProcessId { get; }
 	internal Task<int> Exit => exit.Task;
-	internal UnixChildLifetime(int pid) {
+	internal UnixChildLifetime(int pid, Func<int, int, int>? send = null) {
 		if (pid <= 1) throw new IOException("Native child identity is not safe to target.");
-		ProcessId = pid; _ = ObserveAsync();
+		ProcessId = pid; this.send = send ?? kill; _ = ObserveAsync();
 	}
 	internal static void ValidateHost() {
 		if (Environment.ProcessId == 1) throw new InvalidOperationException("PlatformScope requires exclusive child-wait ownership and cannot run in PID 1.");
@@ -53,7 +54,7 @@ internal sealed class UnixChildLifetime : IDisposable {
 		ObserveLocked(); // Also check an already reported exit: an external reaper may have stolen it.
 		if (target == PtyProcessTarget.PrimaryProcess && Exit.IsCompletedSuccessfully) return new(target, PtyControlStatus.TargetUnavailable);
 		int nativeTarget = target == PtyProcessTarget.OwnedScope ? -ProcessId : ProcessId;
-		if (kill(nativeTarget, value) == 0) return new(target, PtyControlStatus.Requested);
+		if (send(nativeTarget, value) == 0) return new(target, PtyControlStatus.Requested);
 		int error = Marshal.GetLastPInvokeError();
 		if (error == 3) return new(target, PtyControlStatus.TargetUnavailable);
 		// XNU excludes zombies from group delivery and returns EPERM for a group
@@ -70,7 +71,11 @@ internal sealed class UnixChildLifetime : IDisposable {
 				// Stop the helper first even when cancellation precedes setsid/handshake.
 				// Once it exits it cannot create a group after our final group request.
 				SendLocked(PtySignal.Kill, PtyProcessTarget.PrimaryProcess);
-			} catch { disposing = false; throw; }
+			} catch {
+				if (lost) released = true;
+				else _ = ReapAfterFailedTerminationAsync();
+				throw;
+			}
 		}
 		try {
 			Exit.GetAwaiter().GetResult();
@@ -84,6 +89,19 @@ internal sealed class UnixChildLifetime : IDisposable {
 				}
 			}
 		} finally { lock (gate) released = true; }
+	}
+	private async Task ReapAfterFailedTerminationAsync() {
+		// A credential-changing child may reject termination. Do not hang disposal;
+		// retain its identity until natural exit, then collect that exact child.
+		try {
+			await Exit.ConfigureAwait(false);
+			lock (gate) {
+				ObserveLocked();
+				int result; do { result = waitpid(ProcessId, out _, 0); } while (result < 0 && Marshal.GetLastPInvokeError() == 4);
+				if (result < 0) throw UnixNative.Error("waitpid deferred PTY reap");
+			}
+		} catch (Exception error) { System.Diagnostics.Trace.TraceError("Deferred PTY cleanup: {0}", error); }
+		finally { lock (gate) released = true; }
 	}
 	[DllImport("libc", SetLastError = true)] private static extern int sigaction(int signal, nint action, [Out] byte[] previous);
 	[DllImport("libc", SetLastError = true)] private static extern int waitid(int type, int pid, [Out] byte[] info, int flags);

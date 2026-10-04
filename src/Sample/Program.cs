@@ -3,6 +3,9 @@ using Icod.Pty;
 using Icod.Pty.Sample;
 
 try {
+	if (args is ["--scope-smoke"]) return await ProcessScopeSmokeChecks.RunAsync();
+	if (args is ["--scope-parent", string scopeDirectory]) return await ProcessScopeSmokeChecks.ParentAsync(scopeDirectory);
+	if (args is ["--scope-descendant", string childDirectory]) return await ProcessScopeSmokeChecks.DescendantAsync(childDirectory);
 	if (args is ["--lifecycle-smoke"]) return await PackageSmokeChecks.RunLifecycleAsync();
 	if (args is ["--cancel-start-smoke"]) return await PackageSmokeChecks.RunCancelledStartAsync();
 	if (args is ["--interrupt-smoke"]) return await PackageSmokeChecks.RunInterruptAsync();

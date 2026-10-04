@@ -37,8 +37,8 @@ internal static class UnixSpawn {
 			catch (OperationCanceledException) when (token.IsCancellationRequested) { throw new OperationCanceledException(token); }
 			catch (OperationCanceledException) when (timeout.IsCancellationRequested) { throw new TimeoutException("The Unix PTY helper did not complete startup within StartTimeout."); }
 			return child;
-		} catch {
-			child?.Dispose(); throw;
+		} catch (Exception failure) {
+			CleanupActions.AfterFailure(failure, () => child?.Dispose()); throw;
 		} finally {
 			if (actionsReady) posix_spawn_file_actions_destroy(actions);
 			if (attributesReady) posix_spawnattr_destroy(attributes);

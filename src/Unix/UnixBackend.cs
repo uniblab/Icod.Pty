@@ -122,10 +122,11 @@ internal sealed class UnixBackend : IPtyBackend {
 	}
 	public void Terminate() { lock (gate) { if (child != null) { child.RequestTermination(PtyProcessTarget.PrimaryProcess); return; } if (!process!.HasExited) { try { process.Kill(); } catch (InvalidOperationException) when (process.HasExited) { } } } }
 	public void Dispose() {
-		lock (gate) {
-			if (disposed) return; disposed = true;
-			try { if (child != null) child.Dispose(); else Terminate(); }
-			finally { Input.Dispose(); master.Dispose(); Output.Dispose(); try { Exit.GetAwaiter().GetResult(); } finally { process?.Dispose(); } }
-		}
+		lock (gate) { if (disposed) return; disposed = true; }
+		bool terminated = false;
+		CleanupActions.Run(
+			() => { if (child != null) child.Dispose(); else Terminate(); terminated = true; },
+			Input.Dispose, master.Dispose, Output.Dispose,
+			() => { if (terminated) Exit.GetAwaiter().GetResult(); }, () => process?.Dispose());
 	}
 }

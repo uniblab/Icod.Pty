@@ -49,8 +49,8 @@ Its opt-in reproducer and independent byte-forwarding tests remain in place.
 planning PR, the full current option menu, and a development roadmap.
 
 **Status:** design and development roadmap approved for implementation on 2026-10-04 in
-[PR #3](https://github.com/uniblab/Icod.Pty/pull/3); PG01 feasibility work is in progress.
-No implementation tranche is complete. Package version remains 0.1.0-alpha.1; version selection is separate.
+[PR #3](https://github.com/uniblab/Icod.Pty/pull/3); the native feasibility gate and initial ownership/control matrix passed on all six platforms.
+Lifecycle fault tests and packaged scope checks are implemented; final acceptance/review is in progress. Package version remains 0.1.0-alpha.1; version selection is separate.
 
 The selection combines option 1, the scoped Unix signal operations from option 2, and the ownership-specific
 diagnostics from option 4. It adds opt-in ownership with explicit platform boundaries, preserves existing
@@ -68,9 +68,9 @@ primary-process defaults, and distinguishes native requests from confirmed prima
 **Acceptance goal:** a consumer can deliberately own and clean the documented scope, identify unsupported
 operations and native failures, and avoid interpreting primary exit as proof that every descendant stopped.
 
-Read the [proposed design](docs/Process-Group-Cleanup-Design.md) and
+Read the [approved design](docs/Process-Group-Cleanup-Design.md) and
 [development roadmap](docs/Process-Group-Cleanup-Implementation-Plan.md).
-PG01 is an explicit feasibility gate for Unix identity and Windows launch ownership, not a completed finding.
+PG01 passed before production ownership work. Current evidence and any acceptance gaps are recorded in the development roadmap.
 
 ## Full current menu
 

@@ -5,6 +5,32 @@ using Xunit;
 namespace Icod.Pty.Tests;
 
 public sealed class UnixOwnershipTests {
+	[Theory]
+	[InlineData("ignore")] [InlineData("no-cldwait")]
+	public async Task Unsafe_SIGCHLD_host_is_rejected_before_spawn(string guard) {
+		if (OperatingSystem.IsWindows()) return;
+		using System.Diagnostics.Process probe = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(PtyTestSupport.DotNet) {
+			UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
+			ArgumentList = { Path.Combine(AppContext.BaseDirectory, "child", "Icod.Pty.TestChild.dll"), "scope-host-guard", guard }
+		})!;
+		Task<string> output = probe.StandardOutput.ReadToEndAsync(), error = probe.StandardError.ReadToEndAsync();
+		try {
+			await probe.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+			Assert.True(probe.ExitCode == 0, await error); Assert.Contains("HOST-GUARD-PASSED", await output);
+		} finally { if (!probe.HasExited) { probe.Kill(); await probe.WaitForExitAsync(); } }
+	}
+	[Fact]
+	public async Task Exec_failure_preserves_native_diagnostic_and_releases_descriptors() {
+		if (OperatingSystem.IsWindows()) return;
+		string file = Path.GetTempFileName();
+		try {
+			File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+			for (int i = 0; i < 3; i++) {
+				IOException error = await Assert.ThrowsAsync<IOException>(() => PtyProcess.StartAsync(new(file) { Ownership = PtyProcessOwnership.PlatformScope }));
+				Assert.Contains("execve", error.Message);
+			}
+		} finally { File.Delete(file); }
+	}
 	[Fact]
 	public async Task Owned_group_survives_primary_exit() {
 		if (OperatingSystem.IsWindows()) return;

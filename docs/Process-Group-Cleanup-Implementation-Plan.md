@@ -27,7 +27,7 @@ being implemented; subsequent public dispatch and lifecycle acceptance remain in
 - One NuGet library package; retain LGPL-3.0-or-later and the shared repository conventions.
 - Unix uses OS PTYs and the managed helper, with an installed .NET runtime and `dotnet` host.
 
-No version bump or package publication is part of planning. Do not add a permanent broker, native build,
+No version bump or package publication is part of this implementation. Do not add a permanent broker, native build,
 general process-tree sweep, or foreground-job API as an implementation shortcut.
 
 ## Review focus
@@ -49,13 +49,13 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 | --- | --- | --- | --- |
 | PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Native gate passed |
 | PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Implemented; local tests passed |
-| PG03 | Windows job ownership before application execution | PG02 | Implemented; Windows CI fixes under verification |
-| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Implemented; acceptance in progress |
-| PG05 | Scoped control and native Unix signals | PG03-PG04 | Planned |
-| PG06 | Shutdown targeting and deterministic disposal | PG05 | Planned |
-| PG07 | Adversarial lifecycle integration | PG03-PG06 | Planned |
-| PG08 | Samples, XML documentation, and package consumers | PG07 | Planned |
-| PG09 | Six-platform acceptance and completion review | PG01-PG08 | Planned |
+| PG03 | Windows job ownership before application execution | PG02 | Native ownership/control matrix passed; final regression pending |
+| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Native ownership/control matrix passed; final regression pending |
+| PG05 | Scoped control and native Unix signals | PG03-PG04 | Implemented; native matrix passed |
+| PG06 | Shutdown targeting and deterministic disposal | PG05 | Implemented; final fault acceptance in progress |
+| PG07 | Adversarial lifecycle integration | PG03-PG06 | Implemented; local integration passed |
+| PG08 | Samples, XML documentation, and package consumers | PG07 | Implemented; local smoke passed, package matrix pending |
+| PG09 | Six-platform acceptance and completion review | PG01-PG08 | In progress |
 
 Execute sequentially; each tranche ends with focused verification and a commit.
 For new behavior: write the named failing tests, verify the expected behavioral failure, implement, then rerun.
@@ -72,7 +72,7 @@ Record actual test commands, framework/platform, commit SHA, and CI URLs here as
 | `src/PtyProcess.cs`, `src/IPtyBackend.cs` | Public dispatch and internal control boundary |
 | `src/Windows/WindowsJob.cs`, `src/Windows/WindowsNative.cs` | Job handle lifetime and native declarations |
 | `src/Windows/WindowsBackend.cs` | Suspended creation, assignment, resume, rollback |
-| `src/Unix/UnixChildLifetime.cs`, `src/Unix/UnixProcessScope.cs` | Opted-in child launch/wait identity and group targeting |
+| `src/Unix/UnixChildLifetime.cs`, `src/Unix/UnixSpawn.cs`, `src/Unix/DarwinProcessGroup.cs` | Opted-in child launch/wait identity and group targeting |
 | `src/Unix/UnixNative.cs`, `src/Unix/UnixBackend.cs`, `src/Host/Program.cs` | OS-specific interop, backend and managed helper handshake |
 | `src/PtyShutdownOptions.cs`, `src/PtyShutdownResult.cs`, `src/ShutdownCoordinator.cs` | Targeted escalation preserving primary-exit semantics |
 | `src/Tests/Icod.Pty.Tests/*Tests.cs`, `ControlledBackend.cs` | Contract, fault, and integration coverage |
@@ -296,7 +296,7 @@ Existing package commands, from a PowerShell shell (Windows PowerShell 5.1 on th
 
 Expected final result: no new failures, all supported ownership cases pass on six platforms/three frameworks,
 and package consumers reproduce the documented scope behavior.
-This planning change itself requires documentation/link/diff review, not execution of tests for unimplemented APIs.
+Final completion requires both native CI evidence and whole-branch review.
 
 ## Implementation evidence
 
@@ -308,3 +308,13 @@ This planning change itself requires documentation/link/diff review, not executi
 Owned Linux launch requires glibc 2.34 or newer for atomic close-from file actions. macOS uses
 POSIX_SPAWN_CLOEXEC_DEFAULT. Startup rollback stops the anchored primary, observes its exit without reaping,
 then requests group cleanup before releasing the anchor; this prevents group creation racing rollback.
+
+### Lifecycle and consumer checkpoint
+
+- [Run 37201220251](https://github.com/uniblab/Icod.Pty/actions/runs/37201220251), head `06e290bb30d2798c1e6b9d4ab7e00aad8316b684`: all six jobs passed all three frameworks plus package verification. Windows restriction/cancellation and Darwin zombie-only group fixes passed.
+- New integration: known descendant exit after primary exit via explicit force or concurrent disposal; detached session, changed group and real job-control pipeline outside scope; native interrupt in raw mode; ignored graceful termination followed by force; unrelated session remains usable. Linux net10 local integration passed.
+- Added owned-mode large final output/backpressure checks, production SIGCHLD host guards in isolated fixture processes, exec-failure rollback, permission injection, lost wait ownership, and exactly-once cleanup checks.
+- Local Release build: all frameworks, zero warnings/errors. Full Linux net10 suite: 131/131 before the final startup dual-error/deferred-reap additions.
+- Scope package smoke RED: unsupported switch; GREEN: all five sample smoke modes passed locally. Fresh/published consumers now include `--scope-smoke`; current-head native package acceptance is pending.
+- Local test transport uses the existing xUnit runner because this environment blocks standard test-host sockets. CI continues to use standard `dotnet test`.
+- Final review and Windows laptop acceptance remain pending; only the latter requires user observations.

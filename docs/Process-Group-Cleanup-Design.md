@@ -36,20 +36,19 @@ Keep the root solution/project and existing test, helper, sample, and packaging 
    group. Their membership and guarantees are deliberately different.
 
 The Unix group needs a lifetime anchor, not merely the primary PID copied into a field.
-The preferred approach to validate in PG01 is native launch/wait ownership for opted-in sessions:
+The mechanism validated in PG01 is native launch/wait ownership for opted-in sessions:
 start the existing managed helper through `posix_spawn`, observe primary termination without reaping,
 then release the retained child identity only during final disposal.
 The helper still becomes the target through `execve`; it does not become a persistent broker.
 Default Unix sessions retain their existing `System.Diagnostics.Process` path.
 
-This is a proposed mechanism, not a verified implementation. PG01 must prove it on Linux/macOS x64/ARM64,
-including .NET child-reaping coexistence, native layouts, and retained group identity after leader exit.
-Do not proceed by substituting a cached PGID, a racy ancestry sweep, or silent primary-only fallback.
-If the proposed anchor is not viable, revise this design with evidence before the dependent implementation.
+PG01 proved native spawn/wait, .NET child-reaping coexistence, and post-leader group control on Linux/macOS
+x64/ARM64; the six-platform gate passed in run 37199198321. Production controls and initial lifecycle tests
+also passed in run 37201220251. The anchor still requires the documented exclusive-wait host preconditions.
 
 ## Ownership and targeting
 
-Proposed public names below are the implementation baseline after PG01; revisions must update both documents.
+Public names below are implemented; revisions must update both documents.
 
 ```csharp
 public enum PtyProcessOwnership { PrimaryProcess, PlatformScope }
@@ -206,7 +205,7 @@ portable. Foreground retargeting is deferred rather than hidden behind an assume
 
 ### PG01 initial findings
 
-Linux x64 probes retain an unregistered native child through non-reaping exit observation while ordinary
+Linux/macOS x64/ARM64 probes retain an unregistered native child through non-reaping exit observation while ordinary
 .NET children are collected. They also signal a surviving initial-group child after the leader exits.
 An explicit competing reap is detectable through ECHILD, but detection is not an atomic lock against
 another component reaping between a check and a signal. Exclusive wait ownership remains a host precondition.
@@ -216,7 +215,7 @@ PID-1 host because .NET's native signal dispatcher can reap unregistered childre
 must precede child creation. The host must not subsequently change these settings or run a competing global
 reaper. No runtime-private lock or global signal-handler replacement is an acceptable implementation.
 The native-spawn probe also completes the existing managed helper's configuration/status/exec protocol on
-Linux x64. Cross-platform validation remains pending.
+Linux/macOS x64/ARM64. See the implementation plan for current commit-specific acceptance.
 
 Evidence sources:
 - [.NET 8 child reaping](https://github.com/dotnet/runtime/blob/v8.0.0/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/ProcessWaitState.Unix.cs).
@@ -224,3 +223,17 @@ Evidence sources:
 - [.NET signal dispatch](https://github.com/dotnet/runtime/blob/v10.0.0/src/native/libs/System.Native/pal_signal.c).
 - [Darwin wait flags](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/wait.h).
 - [Darwin siginfo layout](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/signal.h).
+
+### Implementation refinements
+
+- Linux PlatformScope requires glibc 2.34 close-from spawn actions; Darwin uses CLOEXEC_DEFAULT. No unrelated descriptors are intentionally inherited.
+- Failed startup stops the anchored primary, observes exit without reaping, then requests initial-group cleanup before final reap. This closes the race where a helper creates its group after an earlier group request.
+- Darwin returns EPERM for zombie-only groups. After EPERM, a bounded libproc inventory of the anchored group can establish that no live members remain. Unknown, truncated, or permission-denied inventory preserves the control error. Inventory PIDs are never control targets.
+- Native child termination denial is reported without waiting indefinitely. Terminal resources are still released; a retained observer reaps the known child on natural exit. This exceptional path cannot guarantee descendant cleanup.
+- Simultaneous startup and cleanup failures are reported together in AggregateException, retaining the original cancellation/native error. Ordinary successful rollback preserves the original exception type.
+
+Additional primary sources: [Darwin group signal semantics](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c),
+[Darwin process inventory](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/proc_info.c),
+[Darwin fixed-width process layout](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/proc_info.h),
+[Darwin spawn flags](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/spawn.h),
+[glibc spawn definitions](https://github.com/bminor/glibc/blob/master/posix/spawn.h).

@@ -2,7 +2,8 @@ namespace Icod.Pty;
 
 /// <summary>Owns a child process and its pseudoterminal.</summary>
 /// <remarks>Use one reader and one writer concurrently. Output combines standard output and error.
-/// Disposal closes the terminal and terminates a live primary child. Detached descendants are not owned.</remarks>
+/// Disposal closes the terminal and cleans the selected ownership scope. PlatformScope covers a Windows job
+/// or the initial Unix group, with no universal descendant guarantee.</remarks>
 public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	private readonly IPtyBackend backend;
 	private readonly object gate = new();
@@ -26,7 +27,7 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 		try {
 			cancellationToken.ThrowIfCancellationRequested();
 			return new PtyProcess(backend, new PtySize(launch.Columns, launch.Rows));
-		} catch { backend.Dispose(); throw; }
+		} catch (Exception error) { CleanupActions.AfterFailure(error, backend.Dispose); throw; }
 	}
 	private static Task<IPtyBackend> CreateBackendAsync(LaunchConfiguration launch, CancellationToken token) {
 		if (OperatingSystem.IsWindows()) return Windows.WindowsBackend.StartAsync(launch, token);
@@ -119,7 +120,10 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 		if (!Enum.IsDefined(target)) throw new ArgumentOutOfRangeException(nameof(target));
 		if (target == PtyProcessTarget.OwnedScope && Ownership != PtyProcessOwnership.PlatformScope) throw new InvalidOperationException("OwnedScope requires platform-scope ownership at launch.");
 	}
-	/// <summary>Closes the terminal, terminates and reaps the primary child, and releases owned resources.</summary>
+	/// <summary>Cleans the selected ownership scope, collects the primary child, and releases terminal resources.</summary>
+	/// <remarks>Opted-in scope cleanup also runs after primary exit. All resource releases are attempted even
+	/// after control failure; disposal may throw. A Unix child that rejects termination is reaped on natural exit.
+	/// Abrupt cleanup need not preserve unread output. Repeated disposal is harmless.</remarks>
 	public void Dispose() { lock (gate) { if (disposed) return; disposed = true; backend.Dispose(); } }
 	/// <summary>Performs disposal without blocking the calling thread.</summary>
 	public ValueTask DisposeAsync() => new(Task.Run(Dispose));

@@ -4,11 +4,14 @@ using System.Text.Json;
 
 // This isolated probe must set SIGCHLD before Console or Process installs runtime handlers.
 if (args is ["scope-auto-reap-probe", _]) return await ProcessScopeFixture.AutoReapProbeAsync();
+if (args is ["scope-host-guard", string guard]) return await ProcessScopeFixture.HostGuardAsync(guard);
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 if (args is ["scope-native-probe", string scopeScenario]) return await ProcessScopeFixture.ProbeAsync(scopeScenario);
 if (args is ["scope-parent", string scopeDirectory]) return await ProcessScopeFixture.ParentAsync(scopeDirectory);
+if (args is ["scope-parent", string scopeDirectoryMode, string scopeMode]) return await ProcessScopeFixture.ParentAsync(scopeDirectoryMode, scopeMode);
 if (args is ["scope-child", string childDirectory]) return await ProcessScopeFixture.ChildAsync(childDirectory);
+if (args is ["scope-child", string childDirectoryMode, string childMode]) return await ProcessScopeFixture.ChildAsync(childDirectoryMode, childMode);
 if (args is ["scope-windows-probe", string windowsScopeScenario]) return await WindowsScopeProbe.RunAsync(windowsScopeScenario);
 if (args is ["scope-windows-parent", string windowsScopeDirectory]) return await WindowsScopeProbe.ParentAsync(windowsScopeDirectory);
 if (args is ["scope-windows-child", string windowsChildDirectory]) return await WindowsScopeProbe.ChildAsync(windowsChildDirectory);

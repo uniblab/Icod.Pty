@@ -9,6 +9,22 @@ internal static class ProcessScopeFixture {
 	private static int WaitFlags => OperatingSystem.IsMacOS() ? 0x25 : 0x01000005; // EXITED | NOWAIT | NOHANG
 	private static int PidOffset => OperatingSystem.IsMacOS() ? 12 : 16;
 	private static int StatusOffset => OperatingSystem.IsMacOS() ? 20 : 24;
+	internal static async Task<int> HostGuardAsync(string guard) {
+		int sigchld = OperatingSystem.IsMacOS() ? 20 : 17;
+		if (guard == "ignore") { if (signal(sigchld, 1) == -1) throw new IOException("SIGCHLD ignore"); }
+		else {
+			byte[] action = new byte[256]; if (sigaction(sigchld, 0, action) != 0) throw new IOException("read SIGCHLD");
+			int offset = OperatingSystem.IsMacOS() ? 12 : 136;
+			BitConverter.GetBytes(BitConverter.ToInt32(action, offset) | (OperatingSystem.IsMacOS() ? 0x20 : 2)).CopyTo(action, offset);
+			if (SetSigAction(sigchld, action, 0) != 0) throw new IOException("set SIGCHLD NOCLDWAIT");
+		}
+		try {
+			using Icod.Pty.PtyProcess unexpected = await Icod.Pty.PtyProcess.StartAsync(new("/bin/sh") { Ownership = Icod.Pty.PtyProcessOwnership.PlatformScope });
+			return 1;
+		} catch (InvalidOperationException error) when (error.Message.Contains("SIGCHLD", StringComparison.Ordinal)) {
+			Console.WriteLine("HOST-GUARD-PASSED"); return 0;
+		}
+	}
 	internal static async Task<int> AutoReapProbeAsync() {
 		int sigchld = OperatingSystem.IsMacOS() ? 20 : 17;
 		if (signal(sigchld, 1) == -1) throw new IOException("Set initial SIG_IGN failed.");
@@ -89,22 +105,27 @@ internal static class ProcessScopeFixture {
 			if (File.Exists(Path.Combine(directory, "child-stopped"))) Directory.Delete(directory, true);
 		}
 	}
-	internal static async Task<int> ParentAsync(string directory) {
+	internal static async Task<int> ParentAsync(string directory, string mode = "same") {
 		if (getsid(0) != Environment.ProcessId && setsid() != Environment.ProcessId) throw new IOException("setsid failed.");
 		using Process child = Process.Start(new ProcessStartInfo(DotNet) {
 			UseShellExecute = false,
-			ArgumentList = { typeof(ProcessScopeFixture).Assembly.Location, "scope-child", directory }
+			ArgumentList = { typeof(ProcessScopeFixture).Assembly.Location, "scope-child", directory, mode }
 		})!;
 		await WaitFile(directory, "child-ready");
 		File.WriteAllText(Path.Combine(directory, "parent-ready"), "ready");
 		await WaitFile(directory, "exit-primary");
 		return 37;
 	}
-	internal static async Task<int> ChildAsync(string directory) {
+	internal static async Task<int> ChildAsync(string directory, string mode = "same") {
+		if (mode == "detached" && setsid() < 0) throw new IOException("detach fixture");
+		if (mode == "other-group" && setpgid(0, 0) < 0) throw new IOException("fixture group change");
+		using IDisposable? raw = mode == "raw-interrupt" ? TerminalModes.EnterRawInput() : null;
 		TaskCompletionSource stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
-		using PosixSignalRegistration term = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context => { context.Cancel = true; stopped.TrySetResult(); });
+		using PosixSignalRegistration term = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context => { context.Cancel = true; File.WriteAllText(Path.Combine(directory, "signal-term"), "ack"); if (mode != "ignore-term") stopped.TrySetResult(); });
+		using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, context => { context.Cancel = true; File.WriteAllText(Path.Combine(directory, "signal-int"), "ack"); });
 		using PosixSignalRegistration hup = PosixSignalRegistration.Create(PosixSignal.SIGHUP, context => context.Cancel = true);
 		string ready = Path.Combine(directory, "child-ready");
+		File.WriteAllText(Path.Combine(directory, "child-pid"), Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
 		File.WriteAllText(ready + ".tmp", getpgid(0).ToString(System.Globalization.CultureInfo.InvariantCulture));
 		File.Move(ready + ".tmp", ready);
 		using CancellationTokenSource lease = new(TimeSpan.FromSeconds(20));
@@ -146,8 +167,10 @@ internal static class ProcessScopeFixture {
 	[DllImport("libc", SetLastError = true)] private static extern int waitpid(int pid, out int status, int flags);
 	[DllImport("libc", SetLastError = true)] private static extern int kill(int pid, int signal);
 	[DllImport("libc", SetLastError = true)] private static extern int setsid();
+	[DllImport("libc", SetLastError = true)] private static extern int setpgid(int pid, int group);
 	[DllImport("libc", SetLastError = true)] private static extern int getpgid(int pid);
 	[DllImport("libc", SetLastError = true)] private static extern int getsid(int pid);
 	[DllImport("libc", SetLastError = true)] private static extern nint signal(int signal, nint handler);
 	[DllImport("libc", SetLastError = true)] private static extern int sigaction(int signal, nint action, [Out] byte[] previous);
+	[DllImport("libc", EntryPoint = "sigaction", SetLastError = true)] private static extern int SetSigAction(int signal, byte[] action, nint previous);
 }

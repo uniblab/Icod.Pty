@@ -80,10 +80,10 @@ internal sealed class WindowsBackend : IPtyBackend {
 				if (resumeThread(thread) == uint.MaxValue) throw Error("ResumeThread");
 			}
 			return new WindowsBackend(process, console, input, output, checked((int)native.ProcessId), job);
-		} catch {
-			job?.Dispose();
-			if (process != null) { WindowsNative.TerminateProcess(process, 1); WindowsNative.WaitForSingleObject(process, uint.MaxValue); process.Dispose(); }
-			input?.Dispose(); output?.Dispose(); console?.Dispose();
+		} catch (Exception failure) {
+			CleanupActions.AfterFailure(failure, () => job?.Dispose(),
+				() => { if (process != null) { try { WindowsNative.TerminateProcess(process, 1); WindowsNative.WaitForSingleObject(process, uint.MaxValue); } finally { process.Dispose(); } } },
+				() => input?.Dispose(), () => output?.Dispose(), () => console?.Dispose());
 			throw;
 		} finally {
 			if (thread != 0) WindowsNative.CloseHandle(thread);
@@ -129,12 +129,13 @@ internal sealed class WindowsBackend : IPtyBackend {
 		}
 	}
 	public void Dispose() {
-		lock (gate) {
-			if (disposed) return; disposed = true;
-			try { if (job != null) job.RequestTermination(); else Terminate(); }
-			finally { job?.Dispose(); Input.Dispose(); Output.Dispose(); console.Dispose(); }
-		}
-		try { Exit.GetAwaiter().GetResult(); } finally { process.Dispose(); }
+		lock (gate) { if (disposed) return; disposed = true; }
+		bool terminationRequested = false;
+		CleanupActions.Run(
+			() => { if (job != null) job.RequestTermination(); else Terminate(); terminationRequested = true; },
+			() => { if (job != null) { job.Dispose(); terminationRequested = true; } },
+			Input.Dispose, Output.Dispose, console.Dispose,
+			() => { if (terminationRequested) Exit.GetAwaiter().GetResult(); }, process.Dispose);
 	}
 	private static IOException Error(string operation) { int code = Marshal.GetLastPInvokeError(); return new IOException($"{operation} failed (Win32 error {code}).", new Win32Exception(code)); }
 	private static void CheckHResult(int result, string operation) { if (result < 0) throw new IOException($"{operation} failed (HRESULT 0x{result:X8}).", Marshal.GetExceptionForHR(result)); }
