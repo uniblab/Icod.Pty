@@ -4,9 +4,12 @@
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<IsPackable>false</IsPackable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DefineConstants>$(DefineConstants);ICOD_PTY_TEST_FAULTS</DefineConstants>
 		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Include="../../src/Tests/Icod.Pty.TestChild/**/*.cs" />
+		<Compile Include="../../src/Sample/*HostConsole.cs;../../src/Sample/*ConsoleOutput.cs;../../src/Sample/InteractiveSession.cs" />
+		<ProjectReference Include="../../Icod.Pty.csproj" />
 	</ItemGroup>
 </Project>

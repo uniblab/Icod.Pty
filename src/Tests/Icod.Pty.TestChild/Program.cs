@@ -4,8 +4,69 @@ using System.Text.Json;
 
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
+if (args is ["forward-chunks"]) return await HostConsoleProbe.ForwardChunksAsync();
+if (args is ["host-console-probe", string scenario, string sample, string pidFile]) return await HostConsoleProbe.RunAsync(scenario, sample, pidFile);
+if (args is ["hold-terminal-open", string record]) return await HostConsoleProbe.HoldTerminalAsync(record);
+if (args is ["retained-holder", string recordPath]) {
+	using System.Runtime.InteropServices.PosixSignalRegistration? hangup = OperatingSystem.IsWindows() ? null :
+		System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGHUP, e => e.Cancel = true);
+	File.WriteAllText(recordPath, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+	await Task.Delay(TimeSpan.FromSeconds(60)); return 0;
+}
 if (args is ["exit"]) { Console.WriteLine("FINAL-MARKER"); return 37; }
+if (args is ["backpressure-exit", string finished]) {
+	using Stream stdout = Console.OpenStandardOutput();
+	stdout.Write(new byte[20000]); File.WriteAllText(finished, "finished"); return 0;
+}
 if (args is ["flood"]) { while (true) Console.Write(new string('x', 4096)); }
+if (args is ["final-output"]) {
+	Console.WriteLine("FINAL-READY");
+	using StreamReader commands = new(Console.OpenStandardInput(), Encoding.UTF8);
+	if (commands.ReadLine() != "quit") return 1;
+	for (int i = 0; i < 1024; i++) Console.WriteLine($"FINAL:{i:D4}:" + new string('x', 128));
+	Console.WriteLine("FINAL-END");
+	return 23;
+}
+if (args is ["raw-sequence", string length, string trace, string readSize]) {
+	using IDisposable mode = TerminalModes.EnterRawInput();
+	using FileStream received = new(trace, FileMode.Create, FileAccess.Write, FileShare.Read | FileShare.Delete, 1);
+	Console.WriteLine("RAW-READY");
+	byte[] bytes = new byte[int.Parse(length, System.Globalization.CultureInfo.InvariantCulture)];
+	byte[] block = new byte[int.Parse(readSize, System.Globalization.CultureInfo.InvariantCulture)];
+	for (int i = 0; i < bytes.Length;) {
+		int count = TerminalModes.Read(block); if (count == 0 || count > bytes.Length - i) return 2;
+		block.AsSpan(0, count).CopyTo(bytes.AsSpan(i)); i += count;
+		received.Write(block, 0, count); received.Flush();
+	}
+	Console.WriteLine("SEQUENCE:" + Convert.ToHexString(bytes));
+	return TerminalModes.ReadByte() == 4 ? 23 : 2;
+}
+if (args is ["raw-input"]) {
+	using IDisposable mode = TerminalModes.EnterRawInput();
+	Console.WriteLine("RAW-READY");
+	int value;
+	while ((value = TerminalModes.ReadByte()) >= 0) {
+		Console.WriteLine($"BYTE:{value:X2}");
+		if (value == 4) return 23;
+	}
+	return 0;
+}
+if (args is ["interrupt-handler"]) {
+	using IDisposable mode = TerminalModes.EnterProcessedInput();
+	ConsoleCancelEventHandler handler = (_, e) => { e.Cancel = true; Console.WriteLine("INTERRUPT-ACK"); };
+	Console.CancelKeyPress += handler;
+	try {
+		Console.WriteLine("INTERRUPT-READY");
+		using StreamReader commands = new(Console.OpenStandardInput(), Encoding.UTF8);
+		while (true) {
+			string? command = commands.ReadLine();
+			// Windows ReadFile can report a successful zero-byte console read on Ctrl+C.
+			// That is not EOF for this fixture: only the explicit quit command ends it.
+			if (command == null) { if (OperatingSystem.IsWindows()) continue; return 0; }
+			if (command == "quit") { Console.WriteLine("BYE-MARKER"); return 23; }
+		}
+	} finally { Console.CancelKeyPress -= handler; }
+}
 bool terminal = OperatingSystem.IsWindows() ? !Console.IsInputRedirected : Native.isatty(0) == 1 && Native.isatty(1) == 1 && Native.isatty(2) == 1;
 bool controlling = true;
 if (!OperatingSystem.IsWindows()) {

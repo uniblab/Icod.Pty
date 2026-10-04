@@ -1,7 +1,7 @@
 namespace Icod.Pty;
 
-/// <summary>Settings copied by <see cref="PtyProcess.Start"/> before child creation.</summary>
-/// <remarks>Do not mutate these settings concurrently with Start.</remarks>
+/// <summary>Settings copied by Start or StartAsync before child creation.</summary>
+/// <remarks>Do not mutate these settings concurrently with either startup call.</remarks>
 public sealed class PtyStartInfo {
 	/// <summary>Creates settings for an executable path or a name found through PATH.</summary>
 	public PtyStartInfo(string fileName) { ArgumentNullException.ThrowIfNull(fileName); FileName = fileName; }
@@ -16,6 +16,7 @@ public sealed class PtyStartInfo {
 	/// <summary>Gets or sets the initial size, defaulting to 80 columns and 24 rows.</summary>
 	public PtySize Size { get; set; } = new(80, 24);
 	/// <summary>Gets or sets the Unix helper startup timeout, defaulting to 15 seconds.</summary>
+	/// <remarks>Bounds the helper handshake only, not native process creation or cleanup. It is not used on Windows.</remarks>
 	public TimeSpan StartTimeout { get; set; } = TimeSpan.FromSeconds(15);
 	/// <summary>Gets or sets an explicit dotnet executable for the Unix managed helper.</summary>
 	public string? DotNetHostPath { get; set; }

@@ -1,0 +1,63 @@
+# Interactive sample acceptance
+
+The default sample forwards terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, and `--smoke` for a noninteractive package check.
+
+Build once from the repository root:
+
+```sh
+dotnet build Icod.Pty.sln -c Release
+```
+
+## Windows CMD
+
+Use Windows build **10.0.26200.9457 or later**. From CMD:
+
+```bat
+ver
+dotnet --list-runtimes
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- cmd.exe
+```
+
+Inside the child shell, type `echo hello`, use Up/Down to recall it, edit with Left/Right/Home/End, try Tab completion, and use Escape to clear a partially entered command. Each key should work immediately and typed text should appear once. Run `ping -t 127.0.0.1`, resize the terminal while it produces output, then press Ctrl+C. The child shell should remain usable. Run `ver`, then `exit`. In the original CMD shell, verify normal echo, editing, and history still work.
+
+## Windows PowerShell 5.1
+
+From Windows PowerShell (not PowerShell 7):
+
+```powershell
+$PSVersionTable.PSVersion
+[System.Environment]::OSVersion.Version
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- powershell.exe -NoLogo -NoProfile
+```
+
+Inside the child, check editing, history, Tab completion, and Escape. Run `while ($true) { Get-Date; Start-Sleep -Seconds 1 }`, resize during output, and press Ctrl+C. Run `$PSVersionTable.PSVersion` to confirm the shell is still usable, then `exit`. Check editing and echo again in the original shell. These commands are compatible with PowerShell 5.1.
+
+## Linux and macOS
+
+From an SH-compatible shell:
+
+```sh
+uname -sm
+dotnet --list-runtimes
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- /bin/sh
+```
+
+Run `printf 'hello\n'`, then `while :; do date; sleep 1; done`. Resize the terminal, interrupt with Ctrl+C, and check that another command works. Run `exit` and verify normal echo and editing in the original shell. Plain `/bin/sh` may not provide history or Tab completion; to check those, explicitly launch an installed interactive shell that supports them.
+
+Optionally run an already installed full-screen editor, resize it, enter and leave its editing modes, and quit back through the child shell. Record the editor and version separately; CI does not require an external editor.
+
+## Results to record
+
+Record OS build/architecture, host terminal, child shell/version, .NET runtime, and observations for immediate keys, no extra echo, Ctrl+C, resize, exit, and restored host state. Repeat with `-f net8.0` or `-f net9.0` when checking those runtimes.
+
+The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Acceptance of this interactive milestone on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
+
+## Lifetimes and limits
+
+On host-input EOF the sample waits five seconds for the primary child, then requests forced termination and waits up to five more seconds. It sends no guessed shell command. After primary exit it stops its input/resize tasks and gives output five seconds to drain. A descendant retaining the terminal or a blocked host output can trigger a drain timeout; incomplete output is reported as failure. Native output writes are cancellable and finish before host restoration. If the host cannot accept the error message within 250 ms, the sample still returns failure. Host modes and Windows code pages are restored during normal disposal, including handled failures. Force-killing the sample itself cannot run restoration code.
+
+Descendant lifetime follows the native backend: Linux may keep the terminal open, while macOS terminal revocation and Windows ConPTY teardown can yield EOF at primary exit. The library does not own detached descendants.
+
+Windows ConPTY may discard the prefix of a terminal-query reply fragmented across native input writes. The sample preserves the bytes it receives, but cannot repair native input loss. See the [evidence and opt-in reproducer](../docs/ConPTY-Input-Limitations.md).
+
+`--line` uses line input and is not an interactive terminal host. The default executable is `%COMSPEC%` (falling back to `cmd.exe`) on Windows and `/bin/sh` on Unix. `--interactive` is optional; `--` ends sample options before the executable. Arguments are passed as individual arguments, without shell expansion.
