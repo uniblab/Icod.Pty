@@ -8,6 +8,7 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	private readonly object gate = new();
 	private PtySize size;
 	private bool disposed;
+	private int shutdownActive;
 	private PtyProcess(IPtyBackend backend, PtySize size) { this.backend = backend; this.size = size; }
 	/// <summary>Starts the executable on a new terminal. Unix requires an installed dotnet host.</summary>
 	public static PtyProcess Start(PtyStartInfo startInfo) => StartAsync(startInfo).GetAwaiter().GetResult();
@@ -61,6 +62,23 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 			cancellationToken.ThrowIfCancellationRequested();
 			return backend.Input.WriteAsync(new byte[] { 0x03 }, cancellationToken);
 		}
+	}
+	/// <summary>Writes an optional exit request, waits for exit, and optionally requests forced termination after a deadline.</summary>
+	/// <remarks>Keep draining Output concurrently and coordinate other input writers. This operation does not read output,
+	/// close streams, or dispose the session. A second concurrent shutdown is rejected. Cancellation stops this operation;
+	/// it cannot retract bytes or undo a termination request already issued.</remarks>
+	public Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, CancellationToken cancellationToken = default) {
+		ArgumentNullException.ThrowIfNull(options);
+		var snapshot = options.Capture();
+		lock (gate) {
+			ThrowIfDisposed(); cancellationToken.ThrowIfCancellationRequested();
+			if (Interlocked.CompareExchange(ref shutdownActive, 1, 0) != 0) throw new InvalidOperationException("A shutdown operation is already in progress.");
+		}
+		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, cancellationToken);
+	}
+	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, CancellationToken cancellationToken) {
+		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken).ConfigureAwait(false); }
+		finally { Interlocked.Exchange(ref shutdownActive, 0); }
 	}
 	/// <summary>Forcibly terminates a live primary child; repeated calls after exit have no effect.</summary>
 	public void Terminate() { lock (gate) { ThrowIfDisposed(); backend.Terminate(); } }

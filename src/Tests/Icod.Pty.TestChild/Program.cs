@@ -6,6 +6,14 @@ Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 if (args is ["exit"]) { Console.WriteLine("FINAL-MARKER"); return 37; }
 if (args is ["flood"]) { while (true) Console.Write(new string('x', 4096)); }
+if (args is ["final-output"]) {
+	Console.WriteLine("FINAL-READY");
+	using StreamReader commands = new(Console.OpenStandardInput(), Encoding.UTF8);
+	if (commands.ReadLine() != "quit") return 1;
+	for (int i = 0; i < 1024; i++) Console.WriteLine($"FINAL:{i:D4}:" + new string('x', 128));
+	Console.WriteLine("FINAL-END");
+	return 23;
+}
 if (args is ["raw-input"]) {
 	using IDisposable mode = TerminalModes.EnterRawInput();
 	Console.WriteLine("RAW-READY");
