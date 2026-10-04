@@ -56,8 +56,7 @@ function Invoke-Validate {
     Write-Host "=== Validate ($Configuration) ==="
     & (Join-Path $PSScriptRoot 'VerifyPackageArtifact.ps1') `
         -ArtifactDirectory $artifactDirectory `
-        -Configuration $Configuration `
-        -AllowNoPackages
+        -Configuration $Configuration
 }
 
 Push-Location $repositoryRoot

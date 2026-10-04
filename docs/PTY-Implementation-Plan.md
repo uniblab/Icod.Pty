@@ -8,6 +8,11 @@ Execution is authorized by the user's implementation approval.
 - [x] Add terminal, argument, resize, cancellation, exit, concurrency and disposal integration tests.
 - [x] Package the helper and add consumer/publish smoke checks and a sample.
 - [ ] Verify all three target frameworks and all six CI platforms.
-- [ ] Review native resource lifetime and package contents; resolve findings.
+- [x] Review native resource lifetime and package contents; resolve findings.
 
-The execution workspace reset during implementation. Sources were restored from the session; all restored code must be rebuilt and retested. The original pre-reset Linux net10 tests passed 13 cases.
+## Verification record
+
+- Linux local: 18 integration tests pass on each of net8.0, net9.0 and net10.0; Release build has zero warnings/errors.
+- Six-platform CI exercises all frameworks, package contents, consumer launch, and published helper assets.
+- Review findings resolved: redirected Windows standard handles, Darwin ARM64 variadic ABI, older glibc openpty lookup, and nonexecutable PATH shadows.
+- Exact minimum-build Windows laptop acceptance remains a user check; README contains commands.

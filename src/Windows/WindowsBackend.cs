@@ -79,6 +79,9 @@ internal sealed class WindowsBackend : IPtyBackend {
 	}
 	// Microsoft C runtime argument quoting; the executable is passed separately too.
 	private static string Quote(string argument) {
+		// Leave simple arguments unquoted, as ProcessStartInfo.ArgumentList does.
+		// In particular, cmd.exe parses switches such as /c before CRT-style quoting.
+		if (argument.Length > 0 && !argument.Any(value => char.IsWhiteSpace(value) || value == '"')) return argument;
 		StringBuilder result = new("\""); int slashes = 0;
 		foreach (char value in argument) {
 			if (value == '\\') { slashes++; continue; }
