@@ -1,0 +1,117 @@
+name: pull-request
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: |
+    8.0.x
+    9.0.x
+    10.0.x
+  CONFIGURATION: Staging
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      has_solution: ${{ steps.repository.outputs.has_solution }}
+      solution_path: ${{ steps.repository.outputs.solution_path }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - id: repository
+        name: Discover .NET repository
+        shell: pwsh
+        run: >-
+          ./packaging/Get-RepositoryMetadata.ps1
+          -Configuration '${{ env.CONFIGURATION }}'
+          -GitHubOutputPath $env:GITHUB_OUTPUT
+
+  validate:
+    needs: metadata
+    if: needs.metadata.outputs.has_solution == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows x64
+          - os: windows-11-arm
+            name: Windows ARM64
+          - os: ubuntu-latest
+            name: Linux x64
+          - os: ubuntu-24.04-arm
+            name: Linux ARM64
+          - os: macos-26-intel
+            name: macOS x64
+          - os: macos-latest
+            name: macOS ARM64
+    timeout-minutes: 15
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify Windows PowerShell 5.1 tooling
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $files = Get-ChildItem packaging -Recurse -File | Where-Object { $_.Extension -in @('.ps1', '.psm1') }
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -ne 0) { throw "PowerShell 5.1 parse errors in $($file.FullName): $($errors -join '; ')" }
+          }
+          ./packaging/Get-RepositoryMetadata.ps1 -Configuration Staging
+      - name: Restore
+        run: dotnet restore '${{ needs.metadata.outputs.solution_path }}'
+      - name: Build
+        run: >-
+          dotnet build '${{ needs.metadata.outputs.solution_path }}'
+          -c ${{ env.CONFIGURATION }}
+          --no-restore
+          -p:ContinuousIntegrationBuild=true
+      - name: Test
+        run: >-
+          dotnet test '${{ needs.metadata.outputs.solution_path }}'
+          -c ${{ env.CONFIGURATION }}
+          --no-build
+          --no-restore
+          --logger trx
+      - name: Pack Staging artifacts
+        run: >-
+          dotnet pack '${{ needs.metadata.outputs.solution_path }}'
+          -c ${{ env.CONFIGURATION }}
+          --no-build
+          --no-restore
+          -o artifacts
+          -p:ContinuousIntegrationBuild=true
+      - name: Verify exact Staging package artifacts
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: >-
+          ./packaging/VerifyPackageArtifact.ps1
+          -ArtifactDirectory artifacts
+          -Configuration '${{ env.CONFIGURATION }}'
+      - name: Verify package consumer and publish output
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
+      - name: Verify package and consumer with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          ./packaging/VerifyPackageArtifact.ps1 -ArtifactDirectory artifacts -Configuration Staging
+          ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts

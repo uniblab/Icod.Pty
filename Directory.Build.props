@@ -1,0 +1,10 @@
+<Project>
+	<PropertyGroup>
+		<LangVersion>13.0</LangVersion>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Configurations>Debug;Staging;Release</Configurations>
+		<Deterministic>true</Deterministic>
+	</PropertyGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<RollForward>LatestMajor</RollForward>
+		<UseAppHost>false</UseAppHost>
+		<IsPackable>false</IsPackable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+		<DefineConstants>$(DefineConstants);PTY_HELPER</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Include="../../src/Host/**/*.cs;../../src/Unix/UnixNative.cs;../../src/LaunchConfiguration.cs" />
+	</ItemGroup>
+</Project>

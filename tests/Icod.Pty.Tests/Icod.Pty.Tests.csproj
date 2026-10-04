@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<IsTestProject>true</IsTestProject>
+		<IsPackable>false</IsPackable>
+		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Include="../../src/Tests/Icod.Pty.Tests/**/*.cs" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+		<ProjectReference Include="../../Icod.Pty.csproj" />
+		<ProjectReference Include="../Icod.Pty.TestChild/Icod.Pty.TestChild.csproj" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+	<Target Name="CopyTestChild" AfterTargets="Build">
+		<ItemGroup>
+			<TestChildFiles Include="../Icod.Pty.TestChild/bin/$(Configuration)/$(TargetFramework)/Icod.Pty.TestChild.*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(TestChildFiles)" DestinationFolder="$(OutDir)child" />
+	</Target>
+</Project>

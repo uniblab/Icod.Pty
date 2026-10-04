@@ -1,0 +1,10 @@
+<Project>
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)../tools/net8.0/Icod.Pty.Host.dll;$(MSBuildThisFileDirectory)../tools/net8.0/Icod.Pty.Host.deps.json;$(MSBuildThisFileDirectory)../tools/net8.0/Icod.Pty.Host.runtimeconfig.json"
+			Link="Icod.Pty.Host/%(Filename)%(Extension)"
+			CopyToOutputDirectory="PreserveNewest"
+			CopyToPublishDirectory="PreserveNewest"
+			ExcludeFromSingleFile="true"
+			Visible="false" />
+	</ItemGroup>
+</Project>
