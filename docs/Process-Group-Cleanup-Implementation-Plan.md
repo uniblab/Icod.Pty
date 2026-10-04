@@ -344,6 +344,20 @@ final group control/reap. The existing owned-backpressure regression remains ena
 
 ### Recorded implementation decisions
 
+The resumed acceptance run `37203648206` passed five platforms; macOS x64 found a post-descendant-exit
+EPERM race on net8.0. Diagnostic run `37216647348` reproduced it on both macOS architectures: libproc
+reported status 2 with flags 16532 (`PROC_FLAG_INEXIT` set). XNU marks the process unavailable to group
+delivery before changing its status to SZOMB. The classifier now recognizes that irreversible exiting
+state after EPERM, while retaining errors for live members, missing anchors, and failed/truncated inventories.
+`TargetUnavailable` remains a dispatch outcome, not proof of completed descendant exit. A twelve-iteration
+native regression covers repeated force/disposal, and its output wait is bounded. Windows ARM64 in the
+diagnostic run failed during SDK installation with an internal CLR error before repository execution.
+The corrected source must pass a fresh six-platform run before PG09 is complete.
+
+Primary references: [XNU exit ordering](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_exit.c),
+[group iteration](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_proc.c),
+[libproc flags](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/proc_info.h).
+
 | Decision | Reason and practical cost |
 | --- | --- |
 | Local xUnit runner/single-node builds; normal dotnet test in CI | Local test-host sockets are restricted. Local transport differs, test bodies do not. |
@@ -353,7 +367,7 @@ final group control/reap. The existing owned-backpressure regression remains ena
 | Stop/observe primary before final rollback group request/reap | Prevent a helper creating its group after an early failed lookup; correctness depends on retained exclusive identity. |
 | Linux glibc2.34+ close-from; Darwin CLOEXEC_DEFAULT | Prevent unrelated descriptor inheritance; older libc cannot use PlatformScope. |
 | Separate UnixSpawn from UnixChildLifetime | Launch/pipes and wait/control lifetime have separate responsibilities; differs from the provisional filename map. |
-| Inspect anchored Darwin group only after EPERM | Distinguish zombie-only groups conservatively; inventory failures still report native errors. Enumerated PIDs never become control targets. |
+| Inspect anchored Darwin group only after EPERM | Distinguish exiting/zombie-only groups conservatively; unavailable delivery does not prove completed exit. Live members and inventory failures still report native errors. Enumerated PIDs never become control targets. |
 | Deferred Unix reap after denied primary termination | Avoid indefinite disposal blocking; the retained observer may live until natural exit, with no cleanup guarantee for inaccessible descendants. |
 | Preserve startup plus cleanup errors in AggregateException | Prevent rollback failure hiding cancellation/native error; aggregate is exceptional rollback-failure behavior. |
 | DispatchUnconfirmed for default Unix primary requests | Process.Kill cannot prove native acceptance; consumers of the new result must handle a third status. |

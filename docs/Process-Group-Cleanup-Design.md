@@ -228,7 +228,7 @@ Evidence sources:
 
 - Linux PlatformScope requires glibc 2.34 close-from spawn actions; Darwin uses CLOEXEC_DEFAULT. No unrelated descriptors are intentionally inherited.
 - Failed startup stops the anchored primary, observes exit without reaping, then requests initial-group cleanup before final reap. This closes the race where a helper creates its group after an earlier group request.
-- Darwin returns EPERM for zombie-only groups. After EPERM, a bounded libproc inventory of the anchored group can establish that no live members remain. Unknown, truncated, or permission-denied inventory preserves the control error. Inventory PIDs are never control targets.
+- Darwin returns EPERM for groups containing only exiting/zombie members. After EPERM, a bounded libproc inventory of the anchored group can identify unavailable delivery, including the interval with PROC_FLAG_INEXIT before SZOMB. This does not establish completed descendant exit. Live members and unknown, truncated, or permission-denied inventory preserve the control error. Inventory PIDs are never control targets.
 - Native child termination denial is reported without waiting indefinitely. Terminal resources are still released; a retained observer reaps the known child on natural exit. This exceptional path cannot guarantee descendant cleanup.
 - Simultaneous startup and cleanup failures are reported together in AggregateException, retaining the original cancellation/native error. Ordinary successful rollback preserves the original exception type.
 

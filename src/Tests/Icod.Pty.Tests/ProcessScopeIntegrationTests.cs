@@ -20,7 +20,7 @@ public sealed class ProcessScopeIntegrationTests {
 		else { process.RequestTermination(PtyProcessTarget.OwnedScope); process.RequestTermination(PtyProcessTarget.OwnedScope); }
 		await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
 		Assert.Equal(37, process.ExitCode);
-		try { await drain; } catch (Exception error) when (dispose && error is IOException or ObjectDisposedException) { }
+		try { await drain.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception error) when (dispose && error is IOException or ObjectDisposedException) { }
 	}
 	[Theory]
 	[InlineData("detached")] [InlineData("other-group")] [InlineData("pipeline")]

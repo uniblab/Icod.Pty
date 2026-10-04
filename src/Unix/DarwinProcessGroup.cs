@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 namespace Icod.Pty.Unix;
 
 internal static class DarwinProcessGroup {
-	// This inventory only disambiguates XNU's EPERM for zombie-only groups. It
+	// This inventory only disambiguates XNU's EPERM for exiting/zombie groups. It
 	// never supplies control targets; only the anchored group is ever signaled.
-	internal static bool IsWithoutLiveMembers(int group, out string diagnostic) {
+	internal static bool IsWithoutSignalableMembers(int group, out string diagnostic) {
 		diagnostic = "inventory remained truncated";
 		int capacity = 64;
 		for (int attempt = 0; attempt < 8; attempt++, capacity *= 2) {
@@ -20,9 +20,15 @@ internal static class DarwinProcessGroup {
 				int size = proc_pidinfo(pid, 13, 1, info, info.Length); // arg=1 includes zombies.
 				if (size == 0 && Marshal.GetLastPInvokeError() == 3) continue; // Member has gone.
 				if (size != info.Length) { diagnostic = $"proc_pidinfo({pid}) returned {size}, errno {Marshal.GetLastPInvokeError()}"; return false; }
-				if (BitConverter.ToInt32(info, 8) == group && BitConverter.ToInt32(info, 12) != 5) { diagnostic = $"member {pid} has status {BitConverter.ToInt32(info, 12)}, flags {BitConverter.ToUInt32(info, 32)}"; return false; }
+				// XNU marks P_REF_DEAD before p_stat becomes SZOMB. During that
+				// interval group delivery skips the member, but libproc can still
+				// report SRUN with PROC_FLAG_INEXIT. Exit is irreversible; this
+				// classifies unavailable delivery, not completed descendant exit.
+				int status = BitConverter.ToInt32(info, 12);
+				uint flags = BitConverter.ToUInt32(info, 32);
+				if (BitConverter.ToInt32(info, 8) == group && status != 5 && (flags & 4) == 0) { diagnostic = $"member {pid} has status {status}, flags {flags}"; return false; }
 			}
-			diagnostic = anchor ? "only zombie members remain" : $"anchor absent from {bytes / sizeof(int)} members";
+			diagnostic = anchor ? "only exiting or zombie members remain" : $"anchor absent from {bytes / sizeof(int)} members";
 			return anchor;
 		}
 		return false;

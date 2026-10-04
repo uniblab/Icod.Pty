@@ -150,8 +150,9 @@ Default Unix primary requests use the existing managed Process backend: a succes
 `DispatchUnconfirmed`, because .NET may silently skip native dispatch during an exit race. Windows and opted-in
 Unix requests report native acceptance directly. None of these statuses confirms all descendants exited.
 Capability flags describe support, not liveness, and remain readable after disposal.
-Native permission failures remain IOExceptions. On macOS a zombie-only group also produces EPERM; the library
-checks that group's members before classifying it unavailable, without using enumerated PIDs as control targets.
+Native permission failures remain IOExceptions. On macOS a group containing only exiting or zombie members
+can also produce EPERM; the library checks that group's members before classifying delivery as unavailable,
+without using enumerated PIDs as control targets or claiming every exit has completed.
 
 Shutdown still completes on primary exit. `TerminationResult` is null without escalation; otherwise it records
 its target and outcome. The original three-field result constructor/deconstruction remains valid. Cancellation
