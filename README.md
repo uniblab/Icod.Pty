@@ -12,7 +12,14 @@ The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, an
 | Linux | x64, ARM64 | OS PTY APIs and managed helper |
 | macOS | x64, ARM64 | OS PTY APIs and managed helper |
 
-CI exercises all six OS/architecture combinations and all three target frameworks, including real PTY integration tests and NuGet consumer checks. Linux CI uses Ubuntu 24.04. AnyCPU lets the same assemblies run on either supported architecture; native API calling conventions are selected at runtime. 32-bit processes are outside the support contract.
+CI exercises all six OS/architecture combinations and all three target frameworks, including real PTY integration tests and NuGet consumer checks. AnyCPU lets the same assemblies run on either supported architecture; native API calling conventions are selected at runtime. 32-bit processes are outside the support contract.
+
+| CI architecture | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| x64 | `windows-latest` | `ubuntu-latest` | `macos-26-intel` |
+| ARM64 | `windows-11-arm` | `ubuntu-24.04-arm` | `macos-latest` |
+
+GitHub uses explicit labels for Windows/Linux ARM64 and macOS Intel; the selected labels match the current latest images (Ubuntu 24.04 and macOS 26).
 
 **Unix requires an installed .NET 8, 9, or 10 runtime and its `dotnet` host**, including when your application is self-contained. The helper targets .NET 8 and rolls forward to the newest installed major runtime. You can set `PtyStartInfo.DotNetHostPath` explicitly. NuGet copies the `Icod.Pty.Host` directory into application build and publish output; distribute that directory with your application. Do not exclude the package's `buildTransitive` assets. NativeAOT and trimming are not currently validated.
 
