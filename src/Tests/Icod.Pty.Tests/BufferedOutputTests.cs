@@ -11,7 +11,7 @@ public sealed class BufferedOutputTests {
 		await Task.Delay(100);
 		Assert.InRange(source.Reads, 16, 17);
 		using CancellationTokenSource cancel = new(); cancel.Cancel();
-		await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await output.ReadAsync(new byte[32], cancel.Token));
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { _ = await output.ReadAsync(new byte[32], cancel.Token); });
 		byte[] bytes = new byte[4096]; Assert.Equal(bytes.Length, await output.ReadAsync(bytes));
 		Assert.All(bytes, value => Assert.Equal(42, value));
 	}

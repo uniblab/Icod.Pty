@@ -11,7 +11,10 @@ internal static class TerminalModes {
 		nint state = Marshal.AllocHGlobal(size);
 		try {
 			byte[] bytes = new byte[size]; Marshal.Copy(bytes, 0, state, size);
-			Check(tcgetattr(0, state) == 0); Marshal.Copy(state, bytes, 0, size); return bytes;
+			Check(tcgetattr(0, state) == 0); Marshal.Copy(state, bytes, 0, size);
+			// Compare native fields, not ABI padding that tcgetattr may leave unspecified.
+			if (OperatingSystem.IsMacOS()) Array.Clear(bytes, 52, 4); else Array.Clear(bytes, 49, 3);
+			return bytes;
 		} finally { Marshal.FreeHGlobal(state); }
 	}
 	internal static IDisposable EnterRawInput() => Enter(true);

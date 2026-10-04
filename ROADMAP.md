@@ -22,7 +22,7 @@ Historical documents: [foundation design](docs/PTY-Design.md) and [foundation im
 
 ## Selected milestone: interactive hosting and controlled shutdown
 
-**Decision:** approved for planning on 2026-10-04. The selection consists of these five features:
+**Decision:** approved for planning and implementation on 2026-10-04. The selection consists of these five features:
 
 1. A fully interactive sample with immediate input, resize forwarding, and host-terminal restoration.
 2. A terminal interrupt operation with explicit, mode-dependent Ctrl+C semantics.
@@ -32,7 +32,7 @@ Historical documents: [foundation design](docs/PTY-Design.md) and [foundation im
 
 **Acceptance goal:** launch a shell, interact without waiting for Enter, resize it, interrupt a running command, and close the session cleanly while preserving final output under the documented draining contract.
 
-The [selected design](docs/Interactive-Hosting-Design.md) specifies the proposed contracts. The [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md) defines tranches IH01-IH08, dependencies, tests, and completion gates. The planning PR records the decision and proposed APIs; it does not claim that these features are implemented. Package version remains 0.1.0-alpha.1 in this planning change; release preparation will select the next package version separately.
+The [selected design](docs/Interactive-Hosting-Design.md) specifies the approved contracts. [PR #2](https://github.com/uniblab/Icod.Pty/pull/2) implements them; the [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md) records tranches IH01-IH08 and verification evidence. The APIs and interactive host are implemented, with integrated validation in progress. Windows laptop acceptance of the interactive host remains pending. Package version remains 0.1.0-alpha.1; release preparation will select the next package version separately.
 
 ## Options considered and deferred
 

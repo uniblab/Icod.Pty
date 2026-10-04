@@ -1,7 +1,7 @@
 namespace Icod.Pty;
 
-/// <summary>Settings copied by <see cref="PtyProcess.Start"/> before child creation.</summary>
-/// <remarks>Do not mutate these settings concurrently with Start.</remarks>
+/// <summary>Settings copied by Start or StartAsync before child creation.</summary>
+/// <remarks>Do not mutate these settings concurrently with either startup call.</remarks>
 public sealed class PtyStartInfo {
 	/// <summary>Creates settings for an executable path or a name found through PATH.</summary>
 	public PtyStartInfo(string fileName) { ArgumentNullException.ThrowIfNull(fileName); FileName = fileName; }

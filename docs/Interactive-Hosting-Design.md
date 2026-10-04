@@ -1,6 +1,6 @@
 # Interactive hosting and controlled shutdown design
 
-Status: selected scope approved for planning on 2026-10-04; API and implementation design proposed for review. This document and the [development roadmap](Interactive-Hosting-Implementation-Plan.md) accompany the next development PR.
+Status: design and implementation approved on 2026-10-04 and implemented in PR #2. Integrated verification is recorded in the [development roadmap](Interactive-Hosting-Implementation-Plan.md); manual Windows laptop acceptance remains separate.
 
 ## Intent and success criteria
 
@@ -37,7 +37,7 @@ Shutdown is a separate shared coordinator. It writes an optional request and wai
 | `src/Tests/Icod.Pty.Tests/`, `src/Tests/Icod.Pty.TestChild/` | Deterministic operation tests, real PTY fixtures, and nested sample acceptance. |
 | `packaging/VerifyPackageConsumer.ps1` | Fresh package consumers that compile the complete sample and exercise new public operations. |
 
-## Proposed public contracts
+## Public contracts
 
 ```csharp
 public static Task<PtyProcess> StartAsync(

@@ -3,6 +3,10 @@ using Icod.Pty;
 using Icod.Pty.Sample;
 
 try {
+	if (args is ["--lifecycle-smoke"]) return await PackageSmokeChecks.RunLifecycleAsync();
+	if (args is ["--cancel-start-smoke"]) return await PackageSmokeChecks.RunCancelledStartAsync();
+	if (args is ["--interrupt-smoke"]) return await PackageSmokeChecks.RunInterruptAsync();
+	if (args is ["--interrupt-child"]) return await PackageSmokeChecks.RunInterruptChildAsync();
 	bool smoke = args is ["--smoke"];
 	bool line = args.Length > 0 && args[0] == "--line";
 	int first = args.Length > 0 && args[0] is "--line" or "--interactive" ? 1 : 0;

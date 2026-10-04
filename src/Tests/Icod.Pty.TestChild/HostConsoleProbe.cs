@@ -8,7 +8,7 @@ internal static class HostConsoleProbe {
 	internal static async Task<int> RunAsync(string scenario, string sample, string pidFile) {
 		byte[] before = TerminalModes.Snapshot();
 		int code;
-		if (scenario is "partial-setup" or "cancel-before-read" or "output-failure") code = await RunFaultAsync(scenario);
+		if (scenario is "partial-setup" or "cancel-before-read" or "output-failure" or "drain-timeout") code = await RunFaultAsync(scenario);
 		else {
 			ProcessStartInfo start = new(DotNet) { UseShellExecute = false };
 			start.ArgumentList.Add(sample);
@@ -23,10 +23,14 @@ internal static class HostConsoleProbe {
 			finally { if (!process.HasExited) { process.Kill(true); await process.WaitForExitAsync(); } }
 		}
 		Console.WriteLine("SAMPLE-EXIT:" + code);
-		Console.WriteLine("RESTORED:" + before.SequenceEqual(TerminalModes.Snapshot()));
+		byte[] after = TerminalModes.Snapshot();
+		Console.WriteLine("RESTORED:" + before.SequenceEqual(after));
+		if (!before.SequenceEqual(after)) { Console.WriteLine("STATE-BEFORE:" + Convert.ToHexString(before)); Console.WriteLine("STATE-AFTER:" + Convert.ToHexString(after)); }
 		Console.WriteLine("PROBE-READY");
 		using StreamReader reader = new(Console.OpenStandardInput(), Encoding.UTF8);
-		if (reader.ReadLine() != "followup") return 2;
+		string? followup = reader.ReadLine();
+		Console.WriteLine("FOLLOWUP-READ:" + System.Text.Json.JsonSerializer.Serialize(followup));
+		if (followup != "followup") return 2;
 		Console.WriteLine("FOLLOWUP-ACK"); return 0;
 	}
 	private static async Task<int> RunFaultAsync(string scenario) {
@@ -41,11 +45,11 @@ internal static class HostConsoleProbe {
 				throw new InvalidOperationException("Input cancellation was not observed.");
 			}
 			PtyStartInfo start = new(DotNet);
-			start.ArgumentList.Add(typeof(HostConsoleProbe).Assembly.Location); start.ArgumentList.Add("flood");
+			start.ArgumentList.Add(typeof(HostConsoleProbe).Assembly.Location); start.ArgumentList.Add(scenario == "drain-timeout" ? "exit" : "flood");
 			using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
-			await InteractiveSession.RunAsync(start, new FailingOutputConsole(console), timeout.Token);
+			await InteractiveSession.RunAsync(start, new FailingOutputConsole(console, scenario == "drain-timeout"), timeout.Token);
 			throw new InvalidOperationException("Output failure was not observed.");
-		} catch (IOException error) { Console.Error.WriteLine(error.Message); return 1; }
+		} catch (Exception error) when (error is IOException or TimeoutException) { Console.Error.WriteLine(error.Message); return 1; }
 		finally { HostConsoleFaults.AfterModeChange = null; HostConsoleFaults.BeforeRead = null; }
 	}
 	internal static async Task<int> HoldTerminalAsync(string pidFile) {
@@ -57,13 +61,16 @@ internal static class HostConsoleProbe {
 		while (!File.Exists(pidFile)) { if (child.HasExited) throw new IOException("Holder exited before readiness."); await Task.Delay(10, timeout.Token); }
 		Console.WriteLine("HOLDER-READY"); return 0;
 	}
-	private sealed class FailingOutputConsole(HostConsole inner) : HostConsole {
-		internal override Stream Output { get; } = new FailingStream();
+	private sealed class FailingOutputConsole(HostConsole inner, bool block) : HostConsole {
+		internal override Stream Output { get; } = block ? new BlockingStream() : new FailingStream();
 		internal override PtySize? GetSize() => inner.GetSize();
 		internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token) => inner.ReadAsync(buffer, token);
 		public override void Dispose() { }
 	}
 	private sealed class FailingStream : MemoryStream {
 		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => ValueTask.FromException(new IOException("Injected output failure."));
+	}
+	private sealed class BlockingStream : MemoryStream {
+		public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => await Task.Delay(Timeout.Infinite, cancellationToken);
 	}
 }

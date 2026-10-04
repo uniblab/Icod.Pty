@@ -19,7 +19,9 @@ public sealed class InteractiveSampleTests {
 	[Fact]
 	public async Task Sample_restores_host_after_child_exit() => await Probe("child-exit", 37);
 	[Fact]
-	public async Task Sample_reports_drain_timeout_for_retained_terminal() => await Probe("retained-terminal", 1);
+	public async Task Sample_handles_native_terminal_lifetime_after_primary_exit() => await Probe("retained-terminal", OperatingSystem.IsLinux() ? 1 : 0);
+	[Fact]
+	public async Task Sample_reports_drain_timeout_and_restores_host() => await Probe("drain-timeout", 1);
 	[Theory]
 	[InlineData("partial-setup")]
 	[InlineData("cancel-before-read")]
@@ -32,8 +34,9 @@ public sealed class InteractiveSampleTests {
 				Path.Combine(AppContext.BaseDirectory, "sample", "Icod.Pty.Sample.dll"), pidFile);
 			await using PtyProcess outer = await PtyProcess.StartAsync(info);
 			string report = await PtyTestSupport.ReadUntil(outer.Output, "PROBE-READY");
-			Assert.Contains("SAMPLE-EXIT:" + expectedCode, report); Assert.Contains("RESTORED:True", report);
-			if (scenario == "retained-terminal") Assert.Contains("Output draining timed out", report);
+			Assert.True(report.Contains("SAMPLE-EXIT:" + expectedCode, StringComparison.Ordinal), report);
+			Assert.True(report.Contains("RESTORED:True", StringComparison.Ordinal), report);
+			if (scenario == "drain-timeout" || (scenario == "retained-terminal" && OperatingSystem.IsLinux())) Assert.Contains("Output draining timed out", report);
 			await outer.Input.WriteAsync(PtyTestSupport.Line("followup"));
 			await PtyTestSupport.ReadUntil(outer.Output, "FOLLOWUP-ACK");
 			Task<string> drain = PtyTestSupport.Drain(outer.Output);

@@ -1,7 +1,8 @@
 namespace Icod.Pty;
 
 /// <summary>Controls an application-specific exit request and optional forced termination.</summary>
-/// <remarks>Do not mutate these settings while ShutdownAsync captures them. Request bytes are copied.</remarks>
+/// <remarks>Do not mutate these settings while ShutdownAsync captures them. Request bytes are copied.
+/// Both durations must be positive and no greater than Int32.MaxValue milliseconds.</remarks>
 public sealed class PtyShutdownOptions {
 	/// <summary>Gets or sets already-encoded input requesting exit. Empty means wait without sending input.</summary>
 	public ReadOnlyMemory<byte> Request { get; set; } = ReadOnlyMemory<byte>.Empty;

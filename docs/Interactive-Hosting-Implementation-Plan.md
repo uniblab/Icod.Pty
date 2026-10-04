@@ -20,7 +20,7 @@
 - One NuGet library package; retain LGPL-3.0-or-later and the shared repository conventions.
 - Unix uses OS PTYs and the managed helper, with an installed .NET runtime and `dotnet` host.
 
-This is a planning change. The selected scope is approved; the proposed design and development sequence are presented for review before product implementation. No package version bump is part of this planning PR.
+The design and development sequence were approved for implementation on 2026-10-04. PR #2 implements the selected scope; verification is recorded below. Package version selection, merge, and publication remain separate decisions.
 
 ## Review focus
 
