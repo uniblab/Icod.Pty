@@ -61,3 +61,23 @@ Descendant lifetime follows the native backend: Linux may keep the terminal open
 Windows ConPTY may discard the prefix of a terminal-query reply fragmented across native input writes. The sample preserves the bytes it receives, but cannot repair native input loss. See the [evidence and opt-in reproducer](../docs/ConPTY-Input-Limitations.md).
 
 `--line` uses line input and is not an interactive terminal host. The default executable is `%COMSPEC%` (falling back to `cmd.exe`) on Windows and `/bin/sh` on Unix. `--interactive` is optional; `--` ends sample options before the executable. Arguments are passed as individual arguments, without shell expansion.
+
+## Process-scope acceptance
+
+From CMD or Windows PowerShell 5.1, on Windows 10.0.26200.9457 or newer:
+
+```text
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --scope-smoke
+```
+
+The same command works in SH on Linux/macOS. Repeat with net8.0 and net9.0. Expected output is
+`PTY process-scope smoke check passed.` The check launches a managed descendant, observes primary exit 37
+while that descendant remains alive, requests owned-scope termination, independently observes descendant exit,
+and disposes the session. It does not rely on request success alone.
+
+Afterward, run `ver` in CMD or `$PSVersionTable.PSVersion` in PowerShell, type and edit a command, and confirm
+normal echo and history. Also run `--lifecycle-smoke` to check cooperative primary exit. Record OS/architecture,
+framework, command output, and host restoration observations. **Reported 2026-10-04:** the user checked out `feature/process-group-cleanup-roadmap` and ran the Release net10.0 command without `--no-build` on the previously identified Windows x64 laptop; output was `PTY process-scope smoke check passed.` Other-framework, lifecycle, and explicit console-restoration observations remain unreported.
+
+The regular interactive sample still uses primary-only ownership; `--scope-smoke` explicitly opts in.
+The library README describes Windows job coverage and Unix initial-group/host-reaper limits.

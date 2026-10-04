@@ -4,6 +4,14 @@ namespace Icod.Pty.Tests;
 
 public sealed class PtyStartupTests {
 	[Fact]
+	public async Task Cancellation_cleanup_failure_preserves_both_errors() {
+		using CancellationTokenSource cancel = new(); ControlledBackend backend = new() { Input = new FailingDisposeStream() };
+		AggregateException failure = await Assert.ThrowsAsync<AggregateException>(() => PtyProcess.StartCoreAsync(ControlledBackend.Launch(), cancel.Token, (_, _) => { cancel.Cancel(); return Task.FromResult<IPtyBackend>(backend); }));
+		Assert.Equal(cancel.Token, Assert.IsAssignableFrom<OperationCanceledException>(failure.InnerExceptions[0]).CancellationToken);
+		Assert.IsType<IOException>(failure.InnerExceptions[1]); Assert.Equal(1, backend.DisposeCount);
+	}
+	private sealed class FailingDisposeStream : MemoryStream { protected override void Dispose(bool disposing) { base.Dispose(disposing); throw new IOException("cleanup failed"); } }
+	[Fact]
 	public async Task Precancelled_start_does_not_invoke_factory() {
 		using CancellationTokenSource cancel = new(); cancel.Cancel(); int calls = 0;
 		OperationCanceledException error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PtyProcess.StartCoreAsync(ControlledBackend.Launch(), cancel.Token, (_, _) => { calls++; return Task.FromResult<IPtyBackend>(new ControlledBackend()); }));

@@ -114,9 +114,11 @@ public sealed class PtyShutdownTests {
 		PtyShutdownResult result = await process.ShutdownAsync(new() { Request = new byte[] { 1 }, ForceTermination = true });
 		Assert.Equal(12, result.ExitCode); Assert.False(result.ForcedTerminationRequested);
 	}
-	[Fact]
-	public async Task Graceful_shutdown_preserves_large_final_output() {
-		await using PtyProcess process = await PtyProcess.StartAsync(PtyTestSupport.Child("final-output"));
+	[Theory]
+	[InlineData(false)] [InlineData(true)]
+	public async Task Graceful_shutdown_preserves_large_final_output(bool owned) {
+		PtyStartInfo start = PtyTestSupport.Child("final-output"); if (owned) start.Ownership = PtyProcessOwnership.PlatformScope;
+		await using PtyProcess process = await PtyProcess.StartAsync(start);
 		await PtyTestSupport.ReadUntil(process.Output, "FINAL-READY"); Task<string> drain = PtyTestSupport.Drain(process.Output);
 		PtyShutdownResult result = await process.ShutdownAsync(new() { Request = PtyTestSupport.Line("quit"), GracePeriod = TimeSpan.FromSeconds(15) });
 		Assert.Equal(23, result.ExitCode); string output = await drain;

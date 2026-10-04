@@ -1,0 +1,38 @@
+using System.Runtime.InteropServices;
+
+namespace Icod.Pty.Unix;
+
+internal static class DarwinProcessGroup {
+	// This inventory only disambiguates XNU's EPERM for exiting/zombie groups. It
+	// never supplies control targets; only the anchored group is ever signaled.
+	internal static bool IsWithoutSignalableMembers(int group, out string diagnostic) {
+		diagnostic = "inventory remained truncated";
+		int capacity = 64;
+		for (int attempt = 0; attempt < 8; attempt++, capacity *= 2) {
+			int[] pids = new int[capacity];
+			int bytes = proc_listpids(2, (uint)group, pids, checked(capacity * sizeof(int)));
+			if (bytes <= 0 || bytes % sizeof(int) != 0) { diagnostic = $"proc_listpids returned {bytes}, errno {Marshal.GetLastPInvokeError()}"; return false; }
+			if (bytes == capacity * sizeof(int)) continue; // A truncated inventory proves nothing.
+			bool anchor = false;
+			foreach (int pid in pids.AsSpan(0, bytes / sizeof(int))) {
+				if (pid == group) anchor = true;
+				byte[] info = new byte[64]; // proc_bsdshortinfo: fixed uint32 fields plus 16-byte name.
+				int size = proc_pidinfo(pid, 13, 1, info, info.Length); // arg=1 includes zombies.
+				if (size == 0 && Marshal.GetLastPInvokeError() == 3) continue; // Member has gone.
+				if (size != info.Length) { diagnostic = $"proc_pidinfo({pid}) returned {size}, errno {Marshal.GetLastPInvokeError()}"; return false; }
+				// XNU marks P_REF_DEAD before p_stat becomes SZOMB. During that
+				// interval group delivery skips the member, but libproc can still
+				// report SRUN with PROC_FLAG_INEXIT. Exit is irreversible; this
+				// classifies unavailable delivery, not completed descendant exit.
+				int status = BitConverter.ToInt32(info, 12);
+				uint flags = BitConverter.ToUInt32(info, 32);
+				if (BitConverter.ToInt32(info, 8) == group && status != 5 && (flags & 4) == 0) { diagnostic = $"member {pid} has status {status}, flags {flags}"; return false; }
+			}
+			diagnostic = anchor ? "only exiting or zombie members remain" : $"anchor absent from {bytes / sizeof(int)} members";
+			return anchor;
+		}
+		return false;
+	}
+	[DllImport("libproc", SetLastError = true)] private static extern int proc_listpids(uint type, uint info, [Out] int[] buffer, int size);
+	[DllImport("libproc", SetLastError = true)] private static extern int proc_pidinfo(int pid, int flavor, ulong arg, [Out] byte[] buffer, int size);
+}

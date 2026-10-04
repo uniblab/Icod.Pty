@@ -19,6 +19,32 @@ internal static class WindowsNative {
 	internal struct StartupInfoEx { internal StartupInfo Startup; internal nint Attributes; }
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct ProcessInformation { internal nint Process, Thread; internal uint ProcessId, ThreadId; }
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct BasicLimitInformation {
+		internal long ProcessTime, JobTime;
+		internal uint LimitFlags;
+		internal nuint MinWorkingSet, MaxWorkingSet;
+		internal uint ActiveProcesses;
+		internal nuint Affinity;
+		internal uint Priority, Scheduling;
+	}
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct ExtendedLimitInformation {
+		internal BasicLimitInformation Basic;
+		internal ulong ReadOperations, WriteOperations, OtherOperations, ReadBytes, WriteBytes, OtherBytes;
+		internal nuint ProcessMemory, JobMemory, PeakProcessMemory, PeakJobMemory;
+	}
+	[DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] internal static extern SafeJobHandle CreateJobObjectW(nint security, string? name);
+	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+	internal static extern bool SetInformationJobObject(SafeJobHandle job, int kind, ref ExtendedLimitInformation limits, uint length);
+	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+	internal static extern bool AssignProcessToJobObject(SafeJobHandle job, SafeProcessHandle process);
+	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+	internal static extern bool IsProcessInJob(SafeProcessHandle process, SafeJobHandle job, [MarshalAs(UnmanagedType.Bool)] out bool result);
+	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+	internal static extern bool TerminateJobObject(SafeJobHandle job, uint code);
+	[DllImport("kernel32.dll", SetLastError = true)] internal static extern uint ResumeThread(nint thread);
+	[DllImport("kernel32.dll", SetLastError = true)] internal static extern uint GetProcessId(SafeProcessHandle process);
 	[DllImport("kernel32.dll")] internal static extern int CreatePseudoConsole(Coord size, SafePipeHandle input, SafePipeHandle output, uint flags, out SafePseudoConsoleHandle console);
 	[DllImport("kernel32.dll")] internal static extern int ResizePseudoConsole(SafePseudoConsoleHandle console, Coord size);
 	[DllImport("kernel32.dll")] internal static extern void ClosePseudoConsole(nint console);

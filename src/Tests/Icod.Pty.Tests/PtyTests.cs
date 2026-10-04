@@ -93,9 +93,11 @@ public sealed class PtyTests {
 		Assert.True(process.HasExited);
 		process.Dispose();
 	}
-	[Fact]
-	public async Task Dispose_with_backpressured_output_completes() {
-		PtyProcess process = PtyProcess.Start(Child("flood"));
+	[Theory]
+	[InlineData(false)] [InlineData(true)]
+	public async Task Dispose_with_backpressured_output_completes(bool owned) {
+		PtyStartInfo start = Child("flood"); if (owned) start.Ownership = PtyProcessOwnership.PlatformScope;
+		PtyProcess process = PtyProcess.Start(start);
 		await Task.Delay(200);
 		await process.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(20));
 		Assert.True(process.HasExited);

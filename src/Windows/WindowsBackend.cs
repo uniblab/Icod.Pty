@@ -9,14 +9,28 @@ namespace Icod.Pty.Windows;
 internal sealed class WindowsBackend : IPtyBackend {
 	private readonly SafeProcessHandle process;
 	private readonly SafePseudoConsoleHandle console;
+	private readonly WindowsJob? job;
 	private readonly object gate = new();
 	private bool disposed;
 	public Stream Input { get; }
 	public Stream Output { get; }
 	public int ProcessId { get; }
+	public PtyProcessOwnership Ownership => job == null ? PtyProcessOwnership.PrimaryProcess : PtyProcessOwnership.PlatformScope;
+	public PtyProcessCapabilities Capabilities => job == null ? PtyProcessCapabilities.None : PtyProcessCapabilities.TerminateOwnedScope;
+	public PtyControlResult RequestTermination(PtyProcessTarget target) {
+		lock (gate) {
+			ObjectDisposedException.ThrowIf(disposed, this);
+			if (target == PtyProcessTarget.OwnedScope) return (job ?? throw new InvalidOperationException("OwnedScope requires platform-scope ownership at launch.")).RequestTermination();
+			if (target != PtyProcessTarget.PrimaryProcess) throw new ArgumentOutOfRangeException(nameof(target));
+			return PrimaryProcessControl.RequestNative(
+				() => { uint state = WindowsNative.WaitForSingleObject(process, 0); if (state == uint.MaxValue) throw Error("WaitForSingleObject PrimaryProcess"); return state == 0; },
+				() => WindowsNative.TerminateProcess(process, 1), Marshal.GetLastPInvokeError);
+		}
+	}
+	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) => throw new PlatformNotSupportedException("Native Unix signals are not available on Windows.");
 	public Task<int> Exit { get; }
-	private WindowsBackend(SafeProcessHandle process, SafePseudoConsoleHandle console, Stream input, Stream output, int id) {
-		this.process = process; this.console = console; Input = input; Output = output; ProcessId = id;
+	private WindowsBackend(SafeProcessHandle process, SafePseudoConsoleHandle console, Stream input, Stream output, int id, WindowsJob? job) {
+		this.process = process; this.console = console; this.job = job; Input = input; Output = output; ProcessId = id;
 		Exit = Task.Factory.StartNew(() => {
 			if (WindowsNative.WaitForSingleObject(process, uint.MaxValue) != 0) throw Error("WaitForSingleObject");
 			if (!WindowsNative.GetExitCodeProcess(process, out uint code)) throw Error("GetExitCodeProcess");
@@ -27,13 +41,17 @@ internal sealed class WindowsBackend : IPtyBackend {
 		}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 	}
 	internal static Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) =>
-		Task.Run(() => { cancellationToken.ThrowIfCancellationRequested(); return Start(launch); });
-	private static IPtyBackend Start(LaunchConfiguration launch) {
+		StartAsync(launch, cancellationToken, WindowsJob.CreateAssigned, WindowsNative.ResumeThread);
+	internal static Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken,
+		Func<SafeProcessHandle, WindowsJob> assignScope, Func<nint, uint> resumeThread) =>
+		Task.Run(() => { cancellationToken.ThrowIfCancellationRequested(); return Start(launch, assignScope, resumeThread); });
+	private static IPtyBackend Start(LaunchConfiguration launch, Func<SafeProcessHandle, WindowsJob> assignScope, Func<nint, uint> resumeThread) {
 		NamedPipeServerStream? input = null, output = null;
 		NamedPipeClientStream? inputClient = null, outputClient = null;
 		SafePseudoConsoleHandle? console = null;
 		SafeProcessHandle? process = null;
-		nint attributes = 0, environment = 0;
+		WindowsJob? job = null;
+		nint attributes = 0, environment = 0, thread = 0;
 		bool attributesInitialized = false;
 		try {
 			(input, inputClient) = CreatePipe(false);
@@ -53,15 +71,23 @@ internal sealed class WindowsBackend : IPtyBackend {
 			environment = Marshal.StringToHGlobalUni(environmentBlock);
 			StringBuilder command = new(Quote(launch.FileName));
 			foreach (string argument in launch.Arguments) command.Append(' ').Append(Quote(argument));
-			if (!WindowsNative.CreateProcessW(launch.FileName, command, 0, 0, false, 0x00080000 | 0x00000400, environment, launch.WorkingDirectory, ref startup, out WindowsNative.ProcessInformation native)) throw Error("CreateProcessW");
+			uint flags = 0x00080000 | 0x00000400;
+			if (launch.Ownership == PtyProcessOwnership.PlatformScope) flags |= 4; // CREATE_SUSPENDED
+			if (!WindowsNative.CreateProcessW(launch.FileName, command, 0, 0, false, flags, environment, launch.WorkingDirectory, ref startup, out WindowsNative.ProcessInformation native)) throw Error("CreateProcessW");
 			process = new SafeProcessHandle(native.Process, true);
-			WindowsNative.CloseHandle(native.Thread);
-			return new WindowsBackend(process, console, input, output, checked((int)native.ProcessId));
-		} catch {
-			if (process != null) { WindowsNative.TerminateProcess(process, 1); WindowsNative.WaitForSingleObject(process, uint.MaxValue); process.Dispose(); }
-			input?.Dispose(); output?.Dispose(); console?.Dispose();
+			thread = native.Thread;
+			if (launch.Ownership == PtyProcessOwnership.PlatformScope) {
+				job = assignScope(process);
+				if (resumeThread(thread) == uint.MaxValue) throw Error("ResumeThread");
+			}
+			return new WindowsBackend(process, console, input, output, checked((int)native.ProcessId), job);
+		} catch (Exception failure) {
+			CleanupActions.AfterFailure(failure, () => job?.Dispose(),
+				() => { if (process != null) { try { WindowsNative.TerminateProcess(process, 1); WindowsNative.WaitForSingleObject(process, uint.MaxValue); } finally { process.Dispose(); } } },
+				() => input?.Dispose(), () => output?.Dispose(), () => console?.Dispose());
 			throw;
 		} finally {
+			if (thread != 0) WindowsNative.CloseHandle(thread);
 			inputClient?.Dispose(); outputClient?.Dispose();
 			if (attributesInitialized) WindowsNative.DeleteProcThreadAttributeList(attributes);
 			if (attributes != 0) Marshal.FreeHGlobal(attributes);
@@ -97,16 +123,20 @@ internal sealed class WindowsBackend : IPtyBackend {
 	public void Terminate() {
 		lock (gate) {
 			if (WindowsNative.WaitForSingleObject(process, 0) == 0) return;
-			if (!WindowsNative.TerminateProcess(process, 1) && WindowsNative.WaitForSingleObject(process, 0) != 0) throw Error("TerminateProcess");
+			if (!WindowsNative.TerminateProcess(process, 1)) {
+				IOException failure = Error("TerminateProcess");
+				if (WindowsNative.WaitForSingleObject(process, 0) != 0) throw failure;
+			}
 		}
 	}
 	public void Dispose() {
-		lock (gate) {
-			if (disposed) return; disposed = true;
-			try { Terminate(); }
-			finally { Input.Dispose(); Output.Dispose(); console.Dispose(); }
-		}
-		try { Exit.GetAwaiter().GetResult(); } finally { process.Dispose(); }
+		lock (gate) { if (disposed) return; disposed = true; }
+		bool terminationRequested = false;
+		CleanupActions.Run(
+			() => { if (job != null) job.RequestTermination(); else Terminate(); terminationRequested = true; },
+			() => { if (job != null) { job.Dispose(); terminationRequested = true; } },
+			Input.Dispose, Output.Dispose, console.Dispose,
+			() => { if (terminationRequested) Exit.GetAwaiter().GetResult(); }, process.Dispose);
 	}
 	private static IOException Error(string operation) { int code = Marshal.GetLastPInvokeError(); return new IOException($"{operation} failed (Win32 error {code}).", new Win32Exception(code)); }
 	private static void CheckHResult(int result, string operation) { if (result < 0) throw new IOException($"{operation} failed (HRESULT 0x{result:X8}).", Marshal.GetExceptionForHR(result)); }

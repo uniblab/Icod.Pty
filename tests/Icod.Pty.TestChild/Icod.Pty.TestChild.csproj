@@ -9,6 +9,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Include="../../src/Tests/Icod.Pty.TestChild/**/*.cs" />
+		<Compile Include="../../src/Unix/UnixNative.cs" />
 		<Compile Include="../../src/Sample/*HostConsole.cs;../../src/Sample/*ConsoleOutput.cs;../../src/Sample/InteractiveSession.cs" />
 		<ProjectReference Include="../../Icod.Pty.csproj" />
 	</ItemGroup>
