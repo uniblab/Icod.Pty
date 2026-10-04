@@ -26,7 +26,9 @@ internal sealed class WindowsBackend : IPtyBackend {
 			return unchecked((int)code);
 		}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 	}
-	internal static IPtyBackend Start(LaunchConfiguration launch) {
+	internal static Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) =>
+		Task.Run(() => { cancellationToken.ThrowIfCancellationRequested(); return Start(launch); });
+	private static IPtyBackend Start(LaunchConfiguration launch) {
 		NamedPipeServerStream? input = null, output = null;
 		NamedPipeClientStream? inputClient = null, outputClient = null;
 		SafePseudoConsoleHandle? console = null;

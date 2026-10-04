@@ -10,12 +10,27 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	private bool disposed;
 	private PtyProcess(IPtyBackend backend, PtySize size) { this.backend = backend; this.size = size; }
 	/// <summary>Starts the executable on a new terminal. Unix requires an installed dotnet host.</summary>
-	public static PtyProcess Start(PtyStartInfo startInfo) {
+	public static PtyProcess Start(PtyStartInfo startInfo) => StartAsync(startInfo).GetAwaiter().GetResult();
+	/// <summary>Starts an executable asynchronously and transfers ownership after startup succeeds.</summary>
+	/// <remarks>Cancellation cleans up a partially created child before completing. Native creation and cleanup
+	/// are not interruptible hard deadlines. Cancellation after a successful return does not stop the child.</remarks>
+	public static Task<PtyProcess> StartAsync(PtyStartInfo startInfo, CancellationToken cancellationToken = default) {
 		LaunchConfiguration launch = LaunchConfiguration.Capture(startInfo);
-		IPtyBackend backend = OperatingSystem.IsWindows() ? Windows.WindowsBackend.Start(launch) :
-			OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() ? Unix.UnixBackend.Start(launch) :
-			throw new PlatformNotSupportedException("Icod.Pty supports Windows, Linux and macOS.");
-		return new PtyProcess(backend, new PtySize(launch.Columns, launch.Rows));
+		return StartCoreAsync(launch, cancellationToken, CreateBackendAsync);
+	}
+	internal static async Task<PtyProcess> StartCoreAsync(LaunchConfiguration launch, CancellationToken cancellationToken,
+		Func<LaunchConfiguration, CancellationToken, Task<IPtyBackend>> backendFactory) {
+		cancellationToken.ThrowIfCancellationRequested();
+		IPtyBackend backend = await backendFactory(launch, cancellationToken).ConfigureAwait(false);
+		try {
+			cancellationToken.ThrowIfCancellationRequested();
+			return new PtyProcess(backend, new PtySize(launch.Columns, launch.Rows));
+		} catch { backend.Dispose(); throw; }
+	}
+	private static Task<IPtyBackend> CreateBackendAsync(LaunchConfiguration launch, CancellationToken token) {
+		if (OperatingSystem.IsWindows()) return Windows.WindowsBackend.StartAsync(launch, token);
+		if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) return Task.Run(() => { token.ThrowIfCancellationRequested(); return Unix.UnixBackend.Start(launch); });
+		throw new PlatformNotSupportedException("Icod.Pty supports Windows, Linux and macOS.");
 	}
 	/// <summary>Gets the writable stream carrying bytes to the terminal.</summary>
 	public Stream Input { get { lock (gate) { ThrowIfDisposed(); return backend.Input; } } }
