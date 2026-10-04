@@ -2,6 +2,8 @@
 
 Icod.Pty is a C# pseudoterminal library for .NET 8, 9, and 10. The planned public API starts a child process attached to a PTY, exchanges bytes with it, resizes its terminal, waits for exit, and disposes the session.
 
+Windows support starts at OS version `10.0.26200.9457`; earlier Windows builds are outside the support contract. Linux and macOS support both x64 and ARM64.
+
 This branch establishes the package and six-platform build foundation. The native PTY implementations and public API are under development; this version is not ready for publication.
 
 ## Build
