@@ -18,7 +18,8 @@ internal sealed class UnixBackend : IPtyBackend {
 	private UnixBackend(SafeFileHandle master, Process process, SafeFileHandle? retainedSlave) {
 		this.master = master; this.process = process; ProcessId = process.Id;
 		Input = new UnixPtyStream(master, false);
-		Output = new UnixPtyStream(master, true, retainedSlave, () => process.HasExited);
+		Stream output = new UnixPtyStream(master, true, retainedSlave, () => process.HasExited);
+		Output = retainedSlave == null ? output : new BufferedPtyOutputStream(output);
 		Exit = ObserveExit(process);
 	}
 	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) {
@@ -100,7 +101,7 @@ internal sealed class UnixBackend : IPtyBackend {
 		lock (gate) {
 			if (disposed) return; disposed = true;
 			try { Terminate(); }
-			finally { Input.Dispose(); Output.Dispose(); master.Dispose(); try { Exit.GetAwaiter().GetResult(); } finally { process.Dispose(); } }
+			finally { Input.Dispose(); master.Dispose(); Output.Dispose(); try { Exit.GetAwaiter().GetResult(); } finally { process.Dispose(); } }
 		}
 	}
 }

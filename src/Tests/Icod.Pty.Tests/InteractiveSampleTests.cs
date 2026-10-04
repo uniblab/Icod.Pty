@@ -15,6 +15,40 @@ public sealed class InteractiveSampleTests {
 		return info;
 	}
 	[Fact]
+	public async Task Sample_restores_host_after_start_failure() => await Probe("start-failure", 1);
+	[Fact]
+	public async Task Sample_restores_host_after_child_exit() => await Probe("child-exit", 37);
+	[Fact]
+	public async Task Sample_reports_drain_timeout_for_retained_terminal() => await Probe("retained-terminal", 1);
+	[Theory]
+	[InlineData("partial-setup")]
+	[InlineData("cancel-before-read")]
+	[InlineData("output-failure")]
+	public async Task Sample_failure_paths_restore_host(string scenario) => await Probe(scenario, 1);
+	private static async Task Probe(string scenario, int expectedCode) {
+		string pidFile = Path.Combine(Path.GetTempPath(), "icod-pty-descendant-" + Guid.NewGuid().ToString("N"));
+		try {
+			PtyStartInfo info = PtyTestSupport.Child("host-console-probe", scenario,
+				Path.Combine(AppContext.BaseDirectory, "sample", "Icod.Pty.Sample.dll"), pidFile);
+			await using PtyProcess outer = await PtyProcess.StartAsync(info);
+			string report = await PtyTestSupport.ReadUntil(outer.Output, "PROBE-READY");
+			Assert.Contains("SAMPLE-EXIT:" + expectedCode, report); Assert.Contains("RESTORED:True", report);
+			if (scenario == "retained-terminal") Assert.Contains("Output draining timed out", report);
+			await outer.Input.WriteAsync(PtyTestSupport.Line("followup"));
+			await PtyTestSupport.ReadUntil(outer.Output, "FOLLOWUP-ACK");
+			Task<string> drain = PtyTestSupport.Drain(outer.Output);
+			Assert.Equal(0, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
+		} finally {
+			if (File.Exists(pidFile)) {
+				if (int.TryParse(File.ReadAllText(pidFile), out int id)) {
+					try { using Process child = Process.GetProcessById(id); if (!child.HasExited) { child.Kill(); await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10)); } }
+					catch (ArgumentException) { }
+				}
+				File.Delete(pidFile);
+			}
+		}
+	}
+	[Fact]
 	public async Task Interactive_sample_forwards_single_key_without_enter() {
 		await using PtyProcess outer = await PtyProcess.StartAsync(Sample("raw-input"));
 		await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");

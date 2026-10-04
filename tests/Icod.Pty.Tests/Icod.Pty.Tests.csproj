@@ -14,13 +14,13 @@
 		<ProjectReference Include="../Icod.Pty.TestChild/Icod.Pty.TestChild.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="../../samples/Icod.Pty.Sample/Icod.Pty.Sample.csproj" ReferenceOutputAssembly="false" />
 	</ItemGroup>
-	<Target Name="CopyTestChild" AfterTargets="Build">
+	<Target Name="CopyTestChild" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
 		<ItemGroup>
-			<TestChildFiles Include="../Icod.Pty.TestChild/bin/$(Configuration)/$(TargetFramework)/Icod.Pty.TestChild.*" />
+			<TestChildFiles Include="../Icod.Pty.TestChild/bin/$(Configuration)/$(TargetFramework)/**/*" />
 		</ItemGroup>
-		<Copy SourceFiles="@(TestChildFiles)" DestinationFolder="$(OutDir)child" />
+		<Copy SourceFiles="@(TestChildFiles)" DestinationFiles="@(TestChildFiles->'$(OutDir)child/%(RecursiveDir)%(Filename)%(Extension)')" />
 	</Target>
-	<Target Name="CopySample" AfterTargets="Build">
+	<Target Name="CopySample" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
 		<ItemGroup>
 			<SampleFiles Include="../../samples/Icod.Pty.Sample/bin/$(Configuration)/$(TargetFramework)/**/*" />
 		</ItemGroup>

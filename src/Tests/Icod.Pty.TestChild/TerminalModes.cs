@@ -2,6 +2,18 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 internal static class TerminalModes {
+	internal static byte[] Snapshot() {
+		if (OperatingSystem.IsWindows()) {
+			Check(GetConsoleMode(GetStdHandle(-10), out uint input)); Check(GetConsoleMode(GetStdHandle(-11), out uint output));
+			return new[] { input, output, GetConsoleCP(), GetConsoleOutputCP() }.SelectMany(BitConverter.GetBytes).ToArray();
+		}
+		int size = OperatingSystem.IsMacOS() ? Marshal.SizeOf<DarwinTermios>() : Marshal.SizeOf<LinuxTermios>();
+		nint state = Marshal.AllocHGlobal(size);
+		try {
+			byte[] bytes = new byte[size]; Marshal.Copy(bytes, 0, state, size);
+			Check(tcgetattr(0, state) == 0); Marshal.Copy(state, bytes, 0, size); return bytes;
+		} finally { Marshal.FreeHGlobal(state); }
+	}
 	internal static IDisposable EnterRawInput() => Enter(true);
 	internal static IDisposable EnterProcessedInput() => Enter(false);
 	// Console.OpenStandardInput uses the managed line reader on Unix terminals.
@@ -48,6 +60,8 @@ internal static class TerminalModes {
 	[StructLayout(LayoutKind.Sequential)] private unsafe struct LinuxTermios { public uint InputFlags, OutputFlags, ControlFlags, LocalFlags; public byte Line; public fixed byte ControlCharacters[32]; public uint InputSpeed, OutputSpeed; }
 	[StructLayout(LayoutKind.Sequential)] private unsafe struct DarwinTermios { public ulong InputFlags, OutputFlags, ControlFlags, LocalFlags; public fixed byte ControlCharacters[20]; public ulong InputSpeed, OutputSpeed; }
 	[DllImport("kernel32.dll")] private static extern nint GetStdHandle(int which);
+	[DllImport("kernel32.dll")] private static extern uint GetConsoleCP();
+	[DllImport("kernel32.dll")] private static extern uint GetConsoleOutputCP();
 	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ReadFile(nint handle, out byte value, uint length, out uint read, nint overlapped);
 	[DllImport("libc", EntryPoint = "read", SetLastError = true)] private static extern nint NativeRead(int fd, out byte value, nuint count);
 	[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetConsoleMode(nint handle, out uint mode);

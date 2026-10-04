@@ -20,6 +20,9 @@ internal sealed class WindowsHostConsole : HostConsole {
 		inputCodePage = Native.GetConsoleCP(); outputCodePage = Native.GetConsoleOutputCP();
 		try {
 			Check(Native.SetConsoleCP(65001), "set input encoding"); Check(Native.SetConsoleOutputCP(65001), "set output encoding");
+#if ICOD_PTY_TEST_FAULTS
+			HostConsoleFaults.AfterModeChange?.Invoke();
+#endif
 			Check(Native.SetConsoleMode(input, (inputMode & ~0x47u) | 0x280u), "set input mode");
 			Check(Native.SetConsoleMode(outputHandle, outputMode | 0xdu), "set output mode");
 			output = Console.OpenStandardOutput();
@@ -63,6 +66,9 @@ internal sealed class WindowsHostConsole : HostConsole {
 	}
 	private unsafe int ReadNative(Memory<byte> buffer, CancellationToken token) {
 		using var pin = buffer.Pin();
+#if ICOD_PTY_TEST_FAULTS
+		HostConsoleFaults.BeforeRead?.Invoke();
+#endif
 		if (Native.ReadFile(input, (nint)pin.Pointer, (uint)buffer.Length, out uint count, 0)) return checked((int)count);
 		if (Marshal.GetLastPInvokeError() == 995 && token.IsCancellationRequested) throw new OperationCanceledException(token);
 		throw Error("read console");

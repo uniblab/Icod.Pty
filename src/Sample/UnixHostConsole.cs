@@ -10,6 +10,7 @@ internal sealed class UnixHostConsole : HostConsole {
 	private int disposed;
 	internal UnixHostConsole() {
 		input = Native.dup(0); Check(input >= 0, "dup stdin");
+		if (Native.CloseOnExec(input) != 0) { Native.close(input); Check(false, "FD_CLOEXEC stdin copy"); }
 		int size = OperatingSystem.IsMacOS() ? Marshal.SizeOf<Native.DarwinTermios>() : Marshal.SizeOf<Native.LinuxTermios>();
 		original = Marshal.AllocHGlobal(size);
 		nint changed = Marshal.AllocHGlobal(size);
@@ -18,6 +19,9 @@ internal sealed class UnixHostConsole : HostConsole {
 			Check(Native.tcgetattr(input, original) == 0, "tcgetattr"); captured = true;
 			byte[] copy = new byte[size]; Marshal.Copy(original, copy, 0, size); Marshal.Copy(copy, 0, changed, size);
 			Native.cfmakeraw(changed); Check(Native.tcsetattr(input, 0, changed) == 0, "tcsetattr raw");
+#if ICOD_PTY_TEST_FAULTS
+			HostConsoleFaults.AfterModeChange?.Invoke();
+#endif
 			output = Console.OpenStandardOutput();
 		} catch {
 			if (captured) Native.tcsetattr(input, 0, original);
@@ -32,6 +36,9 @@ internal sealed class UnixHostConsole : HostConsole {
 	internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => new(Task.Run(() => Read(buffer, cancellationToken), CancellationToken.None));
 	private unsafe int Read(Memory<byte> buffer, CancellationToken token) {
 		using var pin = buffer.Pin();
+#if ICOD_PTY_TEST_FAULTS
+		HostConsoleFaults.BeforeRead?.Invoke();
+#endif
 		while (true) {
 			token.ThrowIfCancellationRequested(); ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
 			Native.PollDescriptor descriptor = new() { Descriptor = input, Events = 1 };
@@ -59,6 +66,10 @@ internal sealed class UnixHostConsole : HostConsole {
 		[DllImport("libc", EntryPoint = "ioctl", SetLastError = true)] private static extern int Ioctl(int fd, nuint request, out WindowSize size);
 		[DllImport("libc", EntryPoint = "ioctl", SetLastError = true)] private static extern int IoctlApple(int fd, nuint request, nint x2, nint x3, nint x4, nint x5, nint x6, nint x7, out WindowSize size);
 		[DllImport("libc", SetLastError = true)] internal static extern int dup(int fd);
+		internal static int CloseOnExec(int fd) => OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+			FcntlApple(fd, 2, 0, 0, 0, 0, 0, 0, 1) : Fcntl(fd, 2, 1);
+		[DllImport("libc", EntryPoint = "fcntl", SetLastError = true)] private static extern int Fcntl(int fd, int command, int value);
+		[DllImport("libc", EntryPoint = "fcntl", SetLastError = true)] private static extern int FcntlApple(int fd, int command, nint x2, nint x3, nint x4, nint x5, nint x6, nint x7, nint value);
 		[DllImport("libc")] internal static extern int close(int fd);
 		[DllImport("libc", SetLastError = true)] internal static extern int tcgetattr(int fd, nint state);
 		[DllImport("libc", SetLastError = true)] internal static extern int tcsetattr(int fd, int action, nint state);

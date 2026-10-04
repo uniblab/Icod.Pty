@@ -4,6 +4,14 @@ using System.Text.Json;
 
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
+if (args is ["host-console-probe", string scenario, string sample, string pidFile]) return await HostConsoleProbe.RunAsync(scenario, sample, pidFile);
+if (args is ["hold-terminal-open", string record]) return await HostConsoleProbe.HoldTerminalAsync(record);
+if (args is ["retained-holder", string recordPath]) {
+	using System.Runtime.InteropServices.PosixSignalRegistration? hangup = OperatingSystem.IsWindows() ? null :
+		System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGHUP, e => e.Cancel = true);
+	File.WriteAllText(recordPath, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+	await Task.Delay(TimeSpan.FromSeconds(60)); return 0;
+}
 if (args is ["exit"]) { Console.WriteLine("FINAL-MARKER"); return 37; }
 if (args is ["flood"]) { while (true) Console.Write(new string('x', 4096)); }
 if (args is ["final-output"]) {
