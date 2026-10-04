@@ -28,7 +28,7 @@ if (args is ["final-output"]) {
 }
 if (args is ["raw-sequence", string length, string trace]) {
 	using IDisposable mode = TerminalModes.EnterRawInput();
-	using FileStream received = new(trace, FileMode.Create, FileAccess.Write, FileShare.Read, 1);
+	using FileStream received = new(trace, FileMode.Create, FileAccess.Write, FileShare.Read | FileShare.Delete, 1);
 	Console.WriteLine("RAW-READY");
 	byte[] bytes = new byte[int.Parse(length, System.Globalization.CultureInfo.InvariantCulture)];
 	for (int i = 0; i < bytes.Length; i++) {

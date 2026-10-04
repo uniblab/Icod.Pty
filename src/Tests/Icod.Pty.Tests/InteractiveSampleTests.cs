@@ -98,16 +98,20 @@ public sealed class InteractiveSampleTests {
 					// Split inside a multibyte character and inside both escape sequences.
 					foreach (byte value in bytes) await outer.Input.WriteAsync(new[] { value });
 					await PtyTestSupport.ReadUntil(outer.Output, "SEQUENCE:" + Convert.ToHexString(bytes));
-					Assert.Equal(bytes, File.ReadAllBytes(trace));
+					Assert.Equal(bytes, ReadTrace(trace));
 					await outer.Input.WriteAsync(new byte[] { 4 });
 					Task<string> drain = PtyTestSupport.Drain(outer.Output);
 					Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 				} catch (Exception error) {
-					string received = File.Exists(trace) ? Convert.ToHexString(File.ReadAllBytes(trace)) : "<no trace>";
+					string received = File.Exists(trace) ? Convert.ToHexString(ReadTrace(trace)) : "<no trace>";
 					throw new IOException($"Raw input attempt {attempt}, nested={nested}, exited={outer.HasExited}, received={received}.", error);
 				}
 			}
 		} finally { File.Delete(trace); }
+	}
+	private static byte[] ReadTrace(string path) {
+		using FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+		using MemoryStream bytes = new(); file.CopyTo(bytes); return bytes.ToArray();
 	}
 	[Fact]
 	public async Task Sample_interrupt_reaches_child_not_host() {
