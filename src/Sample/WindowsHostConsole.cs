@@ -9,6 +9,7 @@ internal sealed class WindowsHostConsole : HostConsole {
 	private readonly nint input = Native.GetStdHandle(-10), outputHandle = Native.GetStdHandle(-11);
 	private readonly uint inputMode, outputMode, inputCodePage, outputCodePage;
 	private readonly Stream output;
+	private readonly SafeFileHandle readInput;
 	private readonly BlockingCollection<ReadRequest> requests = new();
 	private readonly CancellationTokenSource lifetime = new();
 	private readonly Thread reader;
@@ -18,7 +19,11 @@ internal sealed class WindowsHostConsole : HostConsole {
 		Check(Native.GetConsoleMode(input, out inputMode), "get input mode");
 		Check(Native.GetConsoleMode(outputHandle, out outputMode), "get output mode");
 		inputCodePage = Native.GetConsoleCP(); outputCodePage = Native.GetConsoleOutputCP();
+		// Use an independent console input handle. A cancelled ReadFile can leave
+		// per-handle read state; never pass that state back through borrowed stdin.
+		readInput = Native.CreateFileW("CONIN$", 0x80000000, 3, 0, 3, 0, 0);
 		try {
+			Check(!readInput.IsInvalid, "open console input");
 			Check(Native.SetConsoleCP(65001), "set input encoding"); Check(Native.SetConsoleOutputCP(65001), "set output encoding");
 #if ICOD_PTY_TEST_FAULTS
 			HostConsoleFaults.AfterModeChange?.Invoke();
@@ -29,7 +34,11 @@ internal sealed class WindowsHostConsole : HostConsole {
 			TaskCompletionSource<SafeWaitHandle> started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 			reader = new Thread(() => ReadLoop(started)) { IsBackground = true, Name = "Icod.Pty.Sample input" };
 			reader.Start(); readerHandle = started.Task.GetAwaiter().GetResult();
-		} catch { Restore(); requests.Dispose(); lifetime.Dispose(); throw; }
+		} catch {
+			try { Restore(); }
+			finally { readInput.Dispose(); output?.Dispose(); requests.Dispose(); lifetime.Dispose(); }
+			throw;
+		}
 	}
 	internal override Stream Output => output;
 	internal override PtySize? GetSize() {
@@ -69,7 +78,7 @@ internal sealed class WindowsHostConsole : HostConsole {
 #if ICOD_PTY_TEST_FAULTS
 		HostConsoleFaults.BeforeRead?.Invoke();
 #endif
-		if (Native.ReadFile(input, (nint)pin.Pointer, (uint)buffer.Length, out uint count, 0)) return checked((int)count);
+		if (Native.ReadFile(readInput, (nint)pin.Pointer, (uint)buffer.Length, out uint count, 0)) return checked((int)count);
 		if (Marshal.GetLastPInvokeError() == 995 && token.IsCancellationRequested) throw new OperationCanceledException(token);
 		throw Error("read console");
 	}
@@ -93,7 +102,7 @@ internal sealed class WindowsHostConsole : HostConsole {
 			while (!reader.Join(50)) CancelRead();
 		} finally {
 			try { Restore(); }
-			finally { readerHandle.Dispose(); requests.Dispose(); lifetime.Dispose(); output.Dispose(); }
+			finally { readerHandle.Dispose(); readInput.Dispose(); requests.Dispose(); lifetime.Dispose(); output.Dispose(); }
 		}
 	}
 	private sealed class ReadRequest(Memory<byte> buffer, CancellationToken token) {
@@ -111,7 +120,8 @@ internal sealed class WindowsHostConsole : HostConsole {
 		[DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
 		[DllImport("kernel32.dll", SetLastError = true)] internal static extern nint OpenThread(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint threadId);
 		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool CancelSynchronousIo(SafeWaitHandle thread);
-		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool ReadFile(nint handle, nint buffer, uint length, out uint read, nint overlapped);
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] internal static extern SafeFileHandle CreateFileW(string path, uint access, uint share, nint security, uint creation, uint flags, nint template);
+		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool ReadFile(SafeFileHandle handle, nint buffer, uint length, out uint read, nint overlapped);
 		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetConsoleMode(nint handle, out uint mode);
 		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool SetConsoleMode(nint handle, uint mode);
 		[DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetConsoleScreenBufferInfo(nint handle, out BufferInfo info);

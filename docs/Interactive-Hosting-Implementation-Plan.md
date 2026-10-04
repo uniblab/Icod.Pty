@@ -34,14 +34,14 @@ The design and development sequence were approved for implementation on 2026-10-
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| IH01 | Shared asynchronous startup ownership and Windows creation | Approved design/plan | Planned |
-| IH02 | Asynchronous Unix handshake and cancellation cleanup | IH01 | Planned |
-| IH03 | Terminal interrupt input contract | IH01-IH02 | Planned |
-| IH04 | Controlled shutdown contracts and coordinator | IH01-IH03 | Planned |
-| IH05 | Immediate-input sample and host-console restoration | IH01-IH04 | Planned |
-| IH06 | Interactive integration and failure-path acceptance | IH03-IH05 | Planned |
-| IH07 | Package consumer coverage and documentation | IH01-IH06 | Planned |
-| IH08 | Six-platform verification and completion review | IH01-IH07 | Planned |
+| IH01 | Shared asynchronous startup ownership and Windows creation | Approved design/plan | Implemented; integrated checks pending |
+| IH02 | Asynchronous Unix handshake and cancellation cleanup | IH01 | Implemented; integrated checks pending |
+| IH03 | Terminal interrupt input contract | IH01-IH02 | Implemented; integrated checks pending |
+| IH04 | Controlled shutdown contracts and coordinator | IH01-IH03 | Implemented; integrated checks pending |
+| IH05 | Immediate-input sample and host-console restoration | IH01-IH04 | Implemented; integrated checks pending |
+| IH06 | Interactive integration and failure-path acceptance | IH03-IH05 | Implemented; integrated checks pending |
+| IH07 | Package consumer coverage and documentation | IH01-IH06 | Implemented; integrated checks pending |
+| IH08 | Six-platform verification and completion review | IH01-IH07 | Implemented; integrated checks pending |
 
 Implement these sequentially. Each tranche ends with focused verification and a commit. New behavior uses a failing test before implementation; document-only corrections do not require artificial tests. Run the broader matrix after the integrated changes, and repeat it only when changes or failures warrant it.
 
@@ -57,7 +57,7 @@ Use the existing project layout. New tests live under `src/Tests/Icod.Pty.Tests/
 - Produces internal Windows `Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken)`.
 - `ControlledBackend` implements existing `IPtyBackend` with configurable streams and an exit `TaskCompletionSource<int>`, plus `DisposeCount` and `TerminateCount` observations. Grant only `Icod.Pty.Tests` internal access.
 
-- [ ] Add failing tests `Precancelled_start_does_not_invoke_factory`, `Cancellation_after_creation_disposes_before_completion`, `Successful_start_transfers_ownership`, and `Factory_failure_preserves_original_exception`. Gate the per-call factory with `TaskCompletionSource` using asynchronous continuations; count calls/disposals explicitly.
+- [x] Add failing tests `Precancelled_start_does_not_invoke_factory`, `Cancellation_after_creation_disposes_before_completion`, `Successful_start_transfers_ownership`, and `Factory_failure_preserves_original_exception`. Gate the per-call factory with `TaskCompletionSource` using asynchronous continuations; count calls/disposals explicitly.
 
 ```csharp
 Assert.Equal(0, factoryCalls); // precancelled path
@@ -65,12 +65,12 @@ Assert.Equal(1, backend.DisposeCount); // cancelled after factory returns
 Assert.Equal(0, backend.DisposeCount); // successful ownership transfer
 ```
 
-- [ ] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyStartupTests`. Expect missing API/failed assertions before implementation; restore/build failures unrelated to the tests are not the expected red result.
-- [ ] Implement snapshot-before-work, the internal ownership seam, and Windows worker-based creation. Check cancellation before native creation and before ownership transfer; dispose a backend returned after cancellation. Do not cancel only the wait on a still-running creation task.
-- [ ] Route synchronous `Start` through the shared ownership path without changing its validation or timeout contract. Initially the Unix factory may wrap existing synchronous creation; IH02 replaces that wrapper. Use `ConfigureAwait(false)` on the shared await path.
-- [ ] Add real-process tests for captured argument/environment mutation after `StartAsync` returns its task, synchronous/async startup equivalence, and invocation under a non-pumping synchronization context. Use an internal gated factory for deterministic snapshot timing.
-- [ ] Rerun `PtyStartupTests` on net8.0, net9.0, and net10.0, plus the existing argument/environment and missing-executable tests. Expect all pass; successful instances remain usable until disposed.
-- [ ] Commit as `feat: add cancellable asynchronous PTY startup ownership` and record the tested platforms/frameworks.
+- [x] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyStartupTests`. Expect missing API/failed assertions before implementation; restore/build failures unrelated to the tests are not the expected red result.
+- [x] Implement snapshot-before-work, the internal ownership seam, and Windows worker-based creation. Check cancellation before native creation and before ownership transfer; dispose a backend returned after cancellation. Do not cancel only the wait on a still-running creation task.
+- [x] Route synchronous `Start` through the shared ownership path without changing its validation or timeout contract. Initially the Unix factory may wrap existing synchronous creation; IH02 replaces that wrapper. Use `ConfigureAwait(false)` on the shared await path.
+- [x] Add real-process tests for captured argument/environment mutation after `StartAsync` returns its task, synchronous/async startup equivalence, and invocation under a non-pumping synchronization context. Use an internal gated factory for deterministic snapshot timing.
+- [x] Rerun `PtyStartupTests` on net8.0, net9.0, and net10.0, plus the existing argument/environment and missing-executable tests. Expect all pass; successful instances remain usable until disposed.
+- [x] Commit as `feat: add cancellable asynchronous PTY startup ownership` and record the tested platforms/frameworks.
 
 ### IH02: asynchronous Unix helper handshake
 
@@ -81,7 +81,7 @@ Assert.Equal(0, backend.DisposeCount); // successful ownership transfer
 - Produces internal Unix `Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken)`.
 - Keeps `StartTimeout` as a Unix handshake-only timeout, default `TimeSpan.FromSeconds(15)`.
 
-- [ ] Add failing tests `Unix_cancelled_handshake_reaps_helper`, `Unix_handshake_timeout_is_not_caller_cancellation`, and `Unix_caller_cancellation_wins_over_handshake_timeout`. Use a temporary SH helper that records its PID and keeps the inherited status pipe open; coordinate readiness through a bounded PID-file observation and clean the fixture in `finally`. Do not add C or Python fixtures.
+- [x] Add failing tests `Unix_cancelled_handshake_reaps_helper`, `Unix_handshake_timeout_is_not_caller_cancellation`, and `Unix_caller_cancellation_wins_over_handshake_timeout`. Use a temporary SH helper that records its PID and keeps the inherited status pipe open; coordinate readiness through a bounded PID-file observation and clean the fixture in `finally`. Do not add C or Python fixtures.
 
 ```csharp
 Assert.Equal(callerToken, cancelledException.CancellationToken);
@@ -89,11 +89,11 @@ Assert.IsType<TimeoutException>(timeoutException);
 Assert.False(helperStillRunning);
 ```
 
-- [ ] Run the Unix-specific startup tests on local Linux net10.0; expect failure against the old synchronous handshake path.
-- [ ] Await status/stdout, diagnostics/stderr, and configuration writing with linked handshake/caller cancellation. Dispose linked token sources. Await or observe every started pipe task on both success and failure. Close the PTY, terminate/reap the helper, and dispose process resources before reporting failure.
-- [ ] Replace the Unix wrapper from IH01 with true handshake awaits, preserving helper lookup, dotnet host lookup, exec diagnostics, and the close-on-exec ready-byte protocol. Document that native creation and cleanup are not hard deadline guarantees.
-- [ ] Verify cancellation before creation, while the handshake is blocked, and after backend creation. Retain exec failure, missing helper handshake, explicit host path, and timeout tests. Run on all three local frameworks; require macOS x64/ARM64 validation in IH08.
-- [ ] Commit as `feat: make Unix PTY startup cancellation-aware`.
+- [x] Run the Unix-specific startup tests on local Linux net10.0; expect failure against the old synchronous handshake path.
+- [x] Await status/stdout, diagnostics/stderr, and configuration writing with linked handshake/caller cancellation. Dispose linked token sources. Await or observe every started pipe task on both success and failure. Close the PTY, terminate/reap the helper, and dispose process resources before reporting failure.
+- [x] Replace the Unix wrapper from IH01 with true handshake awaits, preserving helper lookup, dotnet host lookup, exec diagnostics, and the close-on-exec ready-byte protocol. Document that native creation and cleanup are not hard deadline guarantees.
+- [x] Verify cancellation before creation, while the handshake is blocked, and after backend creation. Retain exec failure, missing helper handshake, explicit host path, and timeout tests. Run on all three local frameworks; require macOS x64/ARM64 validation in IH08.
+- [x] Commit as `feat: make Unix PTY startup cancellation-aware`.
 
 ### IH03: terminal interrupt input
 
@@ -104,17 +104,17 @@ Assert.False(helperStillRunning);
 - Fixture `TerminalModes` supplies `IDisposable EnterRawInput()` and `IDisposable EnterProcessedInput()`; the returned scope restores captured modes. These are fixture-local facilities, not public library API.
 - Add fixture modes `raw-input` and `interrupt-handler`: emit a ready marker after mode/handler setup; raw input reports byte values; the handler reports interruption and continues until an explicit quit command.
 
-- [ ] Add failing tests `Interrupt_writes_exactly_one_etx_byte`, `Raw_child_receives_interrupt_as_input`, `Processed_child_handles_interrupt_and_remains_usable`, `Interrupt_after_exit_is_rejected`, and `Cancelled_interrupt_does_not_terminate_child`. Ready markers must precede input.
+- [x] Add failing tests `Interrupt_writes_exactly_one_etx_byte`, `Raw_child_receives_interrupt_as_input`, `Processed_child_handles_interrupt_and_remains_usable`, `Interrupt_after_exit_is_rejected`, and `Cancelled_interrupt_does_not_terminate_child`. Ready markers must precede input.
 
 ```csharp
 Assert.Equal(new byte[] { 0x03 }, capturedInput);
 Assert.False(process.HasExited); // handler acknowledged and continued
 ```
 
-- [ ] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyInterruptTests`; expect missing API/failed behavior before implementation.
-- [ ] Implement the method using existing stream writes, a disposal check, and an already-collected-exit check. Add XML documentation defining terminal input, mode dependence, single-writer coordination, and partial-write cancellation. Do not use `GenerateConsoleCtrlEvent` on the hosting console or signal an assumed Unix PID/group.
-- [ ] Implement the C# fixtures with OS-correct terminal settings. With the handler enabled, Ctrl+C must affect the child fixture while the test host survives. With raw mode enabled, assert the literal `0x03` byte. Restore settings on fixture exit.
-- [ ] Run the new tests for all local frameworks and retain all-six-platform execution in IH08. Commit as `feat: expose terminal interrupt input`.
+- [x] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyInterruptTests`; expect missing API/failed behavior before implementation.
+- [x] Implement the method using existing stream writes, a disposal check, and an already-collected-exit check. Add XML documentation defining terminal input, mode dependence, single-writer coordination, and partial-write cancellation. Do not use `GenerateConsoleCtrlEvent` on the hosting console or signal an assumed Unix PID/group.
+- [x] Implement the C# fixtures with OS-correct terminal settings. With the handler enabled, Ctrl+C must affect the child fixture while the test host survives. With raw mode enabled, assert the literal `0x03` byte. Restore settings on fixture exit.
+- [x] Run the new tests for all local frameworks and retain all-six-platform execution in IH08. Commit as `feat: expose terminal interrupt input`.
 
 ### IH04: controlled shutdown and results
 
@@ -126,7 +126,7 @@ Assert.False(process.HasExited); // handler acknowledged and continued
 - Internal coordinator: `Task<PtyShutdownResult> RunAsync(IPtyBackend backend, byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, CancellationToken cancellationToken)`.
 - Options are snapshotted in the public entry point; a per-process operation guard rejects concurrent shutdowns and is always released.
 
-- [ ] Add failing tests for all four result-table rows: `Graceful_request_collects_exit`, `Timeout_without_force_keeps_session_usable`, `Timeout_with_force_collects_exit`, and `Termination_collection_timeout_reports_requested_force`. Use the controlled backend for collection timeout and the real child for normal/forced termination.
+- [x] Add failing tests for all four result-table rows: `Graceful_request_collects_exit`, `Timeout_without_force_keeps_session_usable`, `Timeout_with_force_collects_exit`, and `Termination_collection_timeout_reports_requested_force`. Use the controlled backend for collection timeout and the real child for normal/forced termination.
 
 ```csharp
 Assert.Equal(PtyShutdownStatus.Exited, graceful.Status);
@@ -137,11 +137,11 @@ Assert.Null(timedOut.ExitCode);
 Assert.True(forced.ForcedTerminationRequested);
 ```
 
-- [ ] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyShutdownTests`; expect missing contracts or failing result assertions.
-- [ ] Implement validation, request-byte snapshot, guard, and the design's state machine. Defaults are empty request, 5-second grace, `ForceTermination = false`, and 5-second termination collection. Durations accept only finite positive values up to `int.MaxValue` milliseconds. Use one grace timer across write and wait. Recheck exit/caller cancellation before escalation; do not read or dispose output.
-- [ ] Add `Blocked_request_obeys_grace_budget`, `Caller_cancellation_never_initiates_force`, `Concurrent_shutdown_is_rejected`, `Retry_after_timeout_is_allowed`, `Request_snapshot_is_independent`, `Write_failure_does_not_escalate`, and `Already_exited_skips_request`. Assert exact request bytes, `TerminateCount`, guard release, and nullable exit-code rules. Gate races with the controlled backend rather than relying on scheduler timing.
-- [ ] Add a real fixture that emits a large final marker sequence before exit and drain it concurrently; assert every expected byte/marker survives graceful shutdown. Add concurrent disposal and natural-exit-versus-escalation cases, permitting only the documented exceptions/results and never double cleanup.
-- [ ] Run new tests on each local framework and existing final-output, cancellation, and disposal tests. Commit as `feat: add explicit PTY shutdown policy and results`.
+- [x] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~PtyShutdownTests`; expect missing contracts or failing result assertions.
+- [x] Implement validation, request-byte snapshot, guard, and the design's state machine. Defaults are empty request, 5-second grace, `ForceTermination = false`, and 5-second termination collection. Durations accept only finite positive values up to `int.MaxValue` milliseconds. Use one grace timer across write and wait. Recheck exit/caller cancellation before escalation; do not read or dispose output.
+- [x] Add `Blocked_request_obeys_grace_budget`, `Caller_cancellation_never_initiates_force`, `Concurrent_shutdown_is_rejected`, `Retry_after_timeout_is_allowed`, `Request_snapshot_is_independent`, `Write_failure_does_not_escalate`, and `Already_exited_skips_request`. Assert exact request bytes, `TerminateCount`, guard release, and nullable exit-code rules. Gate races with the controlled backend rather than relying on scheduler timing.
+- [x] Add a real fixture that emits a large final marker sequence before exit and drain it concurrently; assert every expected byte/marker survives graceful shutdown. Add concurrent disposal and natural-exit-versus-escalation cases, permitting only the documented exceptions/results and never double cleanup.
+- [x] Run new tests on each local framework and existing final-output, cancellation, and disposal tests. Commit as `feat: add explicit PTY shutdown policy and results`.
 
 ### IH05: interactive sample and host-console lifecycle
 
@@ -153,14 +153,14 @@ Assert.True(forced.ForcedTerminationRequested);
 - Internal `InteractiveSession.RunAsync(PtyStartInfo startInfo, HostConsole console, CancellationToken cancellationToken)` returns `Task<int>`.
 - The test project references the sample for build ordering with `ReferenceOutputAssembly=false` and copies its complete output to a `sample/` fixture directory. Its C# sources remain only under root `src/`.
 
-- [ ] Add a failing nested-PTY test `Interactive_sample_forwards_single_key_without_enter`: launch the sample inside an outer PTY, wait for the inner raw-input fixture's ready marker, write `x` with no newline, and assert the fixture reports byte `0x78` within the standard bounded test deadline.
-- [ ] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~InteractiveSampleTests`; confirm the current line-oriented sample cannot satisfy the single-key assertion.
-- [ ] Implement host mode scopes. Windows captures modes/code pages, enables VT transport, disables local echo/line/processed input, and restores every changed setting. Unix captures termios, applies raw input/output transport using separate Linux/macOS layouts, and restores without discarding unread user input. Preserve borrowed standard handles.
-- [ ] Implement cancellable host reads. Unix uses readiness polling with cancellation checks. Windows uses a dedicated reader thread for synchronous console reads and `CancelSynchronousIo`, with per-session thread ownership and repeated cancellation/completion coordination to cover the gap before a read begins. Never target a shared thread-pool thread. Wait for read completion before restoration or buffer reuse; treat an operation that completed normally during cancellation as completed input, not a cancellation API failure.
-- [ ] Implement `InteractiveSession` using IH01 startup and IH04 shutdown. Start one input pump, one output pump, and resize monitoring at 100 ms intervals; suppress duplicate/zero dimensions. Forward bytes without parsing VT or encoding keys. On EOF use the design's empty-request 5-second grace and optional force, then its 5-second drain deadline. Stop and await input/resize tasks before restoring host modes.
-- [ ] Update CLI dispatch for implicit interactive mode, `--interactive`, `--line`, `--smoke`, optional `--`, and executable arguments. Require explicit line/smoke mode for redirected host input/output. Preserve default-shell resolution and existing smoke output.
-- [ ] Update the fresh-package consumer verifier in the same tranche to copy every C# file under `src/Sample/`, retaining relative paths, and enable the sample's unsafe setting if needed. Splitting the sample must not break the existing consumer build; IH07 adds the new API smoke checks.
-- [ ] Verify immediate bytes, no extra sample echo, initial dimensions, resize forwarding, CLI argument preservation, redirected-input diagnostics, and unchanged smoke behavior. Commit as `feat: add an interactive PTY forwarding sample`.
+- [x] Add a failing nested-PTY test `Interactive_sample_forwards_single_key_without_enter`: launch the sample inside an outer PTY, wait for the inner raw-input fixture's ready marker, write `x` with no newline, and assert the fixture reports byte `0x78` within the standard bounded test deadline.
+- [x] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~InteractiveSampleTests`; confirm the current line-oriented sample cannot satisfy the single-key assertion.
+- [x] Implement host mode scopes. Windows captures modes/code pages, enables VT transport, disables local echo/line/processed input, and restores every changed setting. Unix captures termios, applies raw input/output transport using separate Linux/macOS layouts, and restores without discarding unread user input. Preserve borrowed standard handles.
+- [x] Implement cancellable host reads. Unix uses readiness polling with cancellation checks. Windows uses a dedicated reader thread for synchronous console reads and `CancelSynchronousIo`, with per-session thread ownership and repeated cancellation/completion coordination to cover the gap before a read begins. Never target a shared thread-pool thread. Wait for read completion before restoration or buffer reuse; treat an operation that completed normally during cancellation as completed input, not a cancellation API failure.
+- [x] Implement `InteractiveSession` using IH01 startup and IH04 shutdown. Start one input pump, one output pump, and resize monitoring at 100 ms intervals; suppress duplicate/zero dimensions. Forward bytes without parsing VT or encoding keys. On EOF use the design's empty-request 5-second grace and optional force, then its 5-second drain deadline. Stop and await input/resize tasks before restoring host modes.
+- [x] Update CLI dispatch for implicit interactive mode, `--interactive`, `--line`, `--smoke`, optional `--`, and executable arguments. Require explicit line/smoke mode for redirected host input/output. Preserve default-shell resolution and existing smoke output.
+- [x] Update the fresh-package consumer verifier in the same tranche to copy every C# file under `src/Sample/`, retaining relative paths, and enable the sample's unsafe setting if needed. Splitting the sample must not break the existing consumer build; IH07 adds the new API smoke checks.
+- [x] Verify immediate bytes, no extra sample echo, initial dimensions, resize forwarding, CLI argument preservation, redirected-input diagnostics, and unchanged smoke behavior. Commit as `feat: add an interactive PTY forwarding sample`.
 
 ### IH06: interactive failure paths and acceptance
 
@@ -171,7 +171,7 @@ Assert.True(forced.ForcedTerminationRequested);
 - Fixture mode `hold-terminal-open` starts a descendant that retains the slave terminal after the primary exits. Record its PID and explicitly terminate it in test cleanup; primary-child ownership does not imply ownership of this descendant.
 - Reuse the fixture's `raw-input` and `interrupt-handler` modes from IH03; use unique markers so screen repaint cannot satisfy an assertion with stale output.
 
-- [ ] Add failing tests `Sample_restores_host_after_start_failure`, `Sample_restores_host_after_child_exit`, `Sample_interrupt_reaches_child_not_host`, `Sample_resize_reaches_inner_child`, and `Sample_reports_drain_timeout_for_retained_terminal`. Inspect modes in the supervising fixture on the same terminal; checking a different terminal is insufficient.
+- [x] Add failing tests `Sample_restores_host_after_start_failure`, `Sample_restores_host_after_child_exit`, `Sample_interrupt_reaches_child_not_host`, `Sample_resize_reaches_inner_child`, and `Sample_reports_drain_timeout_for_retained_terminal`. Inspect modes in the supervising fixture on the same terminal; checking a different terminal is insufficient.
 
 ```csharp
 Assert.True(modesRestored);
@@ -179,11 +179,11 @@ Assert.True(supervisorAcceptedFollowupInput);
 Assert.Equal(1, sampleExitCode); // retained terminal drain timeout
 ```
 
-- [ ] Add chunk-boundary cases containing UTF-8, arrow-key VT sequences, and terminal-query replies. Assert the raw fixture receives the original bytes in order without requiring Enter; do not assert that the library renders them.
-- [ ] Exercise natural exit while host input is blocked, failure after partial console setup, cancellation immediately before a read starts, and an output pump fault. Fix only the uncovered sample lifecycle paths. Use a fixture-local fault seam for partial setup if needed; do not add public CLI flags or production environment switches solely for tests.
-- [ ] Run `InteractiveSampleTests` and all interrupt/shutdown tests on the local frameworks. Confirm bounded cleanup with an outer test timeout and explicit cleanup of descendants even when assertions fail.
-- [ ] Write manual acceptance commands and expected observations in `samples/README.md`: CMD and Windows PowerShell 5.1 shell editing/history/Tab/Escape, a long-running command interrupted with Ctrl+C, resize during output, exit, then restored editing/echo in the original shell. Include Unix SH commands and an optional locally installed full-screen editor check. External editor checks are recorded separately from automated fixture coverage.
-- [ ] Commit as `test: verify interactive forwarding and terminal restoration`.
+- [x] Add chunk-boundary cases containing UTF-8, arrow-key VT sequences, and terminal-query replies. Assert the raw fixture receives the original bytes in order without requiring Enter; do not assert that the library renders them.
+- [x] Exercise natural exit while host input is blocked, failure after partial console setup, cancellation immediately before a read starts, and an output pump fault. Fix only the uncovered sample lifecycle paths. Use a fixture-local fault seam for partial setup if needed; do not add public CLI flags or production environment switches solely for tests.
+- [x] Run `InteractiveSampleTests` and all interrupt/shutdown tests on the local frameworks. Confirm bounded cleanup with an outer test timeout and explicit cleanup of descendants even when assertions fail.
+- [x] Write manual acceptance commands and expected observations in `samples/README.md`: CMD and Windows PowerShell 5.1 shell editing/history/Tab/Escape, a long-running command interrupted with Ctrl+C, resize during output, exit, then restored editing/echo in the original shell. Include Unix SH commands and an optional locally installed full-screen editor check. External editor checks are recorded separately from automated fixture coverage.
+- [x] Commit as `test: verify interactive forwarding and terminal restoration`.
 
 ### IH07: package consumers and user documentation
 
@@ -227,6 +227,29 @@ Assert.Equal(1, sampleExitCode); // retained terminal drain timeout
 
 ## Evidence record
 
-Planning baseline: main commit `2613ba527955d341fe04d81317d633ce28df58fb`, following merged PR #1. This PR changes documentation only. Implementation tranches are not yet executed; the unchecked steps above are the pending work, not failed checks.
+Implementation baseline: main commit `2613ba527955d341fe04d81317d633ce28df58fb`, following merged PR #1. The user approved implementation on 2026-10-04. PR #2 implements IH01-IH07; IH08 is in progress.
 
-For each completed tranche, record the implementation commit, commands/run links, platforms/frameworks actually exercised, and any remaining acceptance work. The final acceptance record must distinguish automated fixture coverage from manually verified shells or full-screen applications.
+Local Linux x64 verification uses SDK 10.0.401 and runtimes 8.0.31, 9.0.20, and 10.0.12. The sandbox denies the IPC sockets required by the normal test runner, so compilation uses single-process MSBuild and tests use the official xUnit front controller in-process. Hosted CI uses standard `dotnet test`.
+
+| Tranche | Implementation/evidence |
+| --- | --- |
+| IH01 | `39050e4`: async startup ownership; 26 tests passed per framework. |
+| IH02 | `10a7ac3`: cancellable Unix handshake; 29 tests passed per framework. |
+| IH03 | `4b007bd`: ETX input; 35 tests passed per framework. Windows processed-read fixture corrected in `f1c857e`. |
+| IH04 | `744dede`: shutdown policy; 52 tests passed per framework, including backpressure and final-output coverage. |
+| IH05 | `d45fe4f`: interactive sample; 59 tests passed per framework. |
+| IH06 | `c38c1ea`: same-terminal restoration/failure probes, inherited-descriptor fix, bounded macOS output read-ahead. |
+| IH07 | `d50ee92`: four package smoke modes and user documentation; 72 tests passed per framework before the additional stalled-drain case (73 passed on net10.0). |
+| IH08 | Six-platform CI and fresh whole-branch review in progress. Windows laptop interactive acceptance pending. |
+
+Release builds report zero warnings and errors. Packing produces one `Icod.Pty.0.1.0-alpha.1.nupkg` plus symbols. A fresh local consumer restored this package from the artifact directory (SDK reference/apphost packages came from the existing local SDK cache), compiled with C# 13/AnyCPU, and passed all four smoke modes on every target framework and after net10.0 publication. All three managed helper publish assets were present. Hosted checks run the complete PowerShell verifier, including actual Windows PowerShell 5.1.
+
+Implementation adjustments supported by regression evidence:
+
+- A native Windows console read can complete without command input on Ctrl+C. The interrupt fixture remains alive until its explicit quit command.
+- macOS needs bounded output read-ahead before terminal close; otherwise fast-child final output is discarded or an exit wait blocks until a reader arrives. The queue holds 16 blocks of 4 KiB, plus the active reader/writer blocks, preserving backpressure. The delayed-reader test failed on both architectures before this change and passed afterward.
+- The sample's duplicated Unix input descriptor is close-on-exec; the retained-descendant fixture exposed the prior inheritance leak.
+- Native descendant lifetime differs: Linux can retain an open terminal, whereas macOS revoke/Windows ConPTY teardown can produce native EOF. The real descendant fixture checks that behavior, and a controlled stalled output tests the drain deadline and restoration on every platform. Descendants are explicitly cleaned up.
+- Restoration compares configurable termios fields, excluding ABI padding and Darwin's kernel `PENDIN` retype state.
+
+The [sample acceptance guide](../samples/README.md) records the remaining manual commands. The earlier laptop smoke/CMD/PowerShell reports are foundation evidence; they are not claimed as acceptance of the new immediate-input host.
