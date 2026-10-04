@@ -1,7 +1,7 @@
 # Process-Group Control and Descendant Cleanup Design
 
-**Status:** approved for implementation on 2026-10-04; PG01 native feasibility passed on six platforms; implementation and independent review fixes are complete; the final native CI gate and laptop observations are recorded separately in the implementation plan.
-Public ownership APIs are not implemented yet. Findings below qualify the proposed native mechanism.
+**Status:** approved for implementation on 2026-10-04; PG01 native feasibility passed on six platforms; implementation and independent review fixes are complete; final native tests and package checks passed all six platforms and three frameworks; laptop acceptance remains pending, separately recorded in the implementation plan.
+Public ownership APIs are implemented. Findings below explain the native mechanism and its supported boundaries.
 **Companion:** [development roadmap](Process-Group-Cleanup-Implementation-Plan.md).
 
 ## Purpose and success criteria

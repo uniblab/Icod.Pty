@@ -14,8 +14,8 @@ the managed Unix helper, xUnit, CMD/SH/PowerShell 5.1-compatible tooling.
 
 **Spec:** [Process-group cleanup design](Process-Group-Cleanup-Design.md).
 Also read the [main roadmap](../ROADMAP.md). The user selected the feature set on 2026-10-04;
-the design and implementation sequence were approved on 2026-10-04. Implementation and independent code review are complete. Native ownership/control acceptance passed all
-six platforms before the final backpressure fix; the final six-platform/package gate is being rerun.
+the design and implementation sequence were approved on 2026-10-04. Implementation and independent code review are complete. Final native tests and package acceptance passed all six platforms on all three frameworks.
+Windows laptop observations remain pending and separate from automated completion.
 
 ## Global constraints
 
@@ -47,15 +47,15 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Implemented; evidence below |
-| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Implemented; evidence below |
-| PG03 | Windows job ownership before application execution | PG02 | Implemented; evidence below |
-| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Implemented; evidence below |
-| PG05 | Scoped control and native Unix signals | PG03-PG04 | Implemented; evidence below |
-| PG06 | Shutdown targeting and deterministic disposal | PG05 | Implemented; evidence below |
-| PG07 | Adversarial lifecycle integration | PG03-PG06 | Implemented; evidence below |
-| PG08 | Samples, XML documentation, and package consumers | PG07 | Implemented; evidence below |
-| PG09 | Six-platform acceptance and completion review | PG01-PG08 | In progress |
+| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Complete; evidence below |
+| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Complete; evidence below |
+| PG03 | Windows job ownership before application execution | PG02 | Complete; evidence below |
+| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Complete; evidence below |
+| PG05 | Scoped control and native Unix signals | PG03-PG04 | Complete; evidence below |
+| PG06 | Shutdown targeting and deterministic disposal | PG05 | Complete; evidence below |
+| PG07 | Adversarial lifecycle integration | PG03-PG06 | Complete; evidence below |
+| PG08 | Samples, XML documentation, and package consumers | PG07 | Complete; evidence below |
+| PG09 | Six-platform acceptance and completion review | PG01-PG08 | Automated acceptance complete; laptop pending |
 
 Execute sequentially; each tranche ends with focused verification and a commit.
 For new behavior: write the named failing tests, verify the expected behavioral failure, implement, then rerun.
@@ -94,22 +94,22 @@ Use a unique temporary directory per run, readiness records with PID/group/sessi
 control channel independent of terminal rendering. Fixture signals and native probes remain C#.
 These are internal experiments; no public API is committed by their existence.
 
-- [ ] Build a parent/child fixture that can keep a descendant alive after primary exit; verify the observer
+- [x] Build a parent/child fixture that can keep a descendant alive after primary exit; verify the observer
   distinguishes primary exit, descendant exit, and terminal EOF. Each fixture has bounded external cleanup.
-- [ ] Validate Windows suspended creation followed by job assignment/resume, nested-job hosting, forced
+- [x] Validate Windows suspended creation followed by job assignment/resume, nested-job hosting, forced
   assignment/resume failure, and child creation immediately on resume. Assert no child executes before assignment.
-- [ ] Validate Unix native spawn of the managed helper, non-reaping exit observation, group targeting after
+- [x] Validate Unix native spawn of the managed helper, non-reaping exit observation, group targeting after
   leader exit, and exact reaping on disposal. Verify exit-code equivalence with the current Process backend.
-- [ ] Verify Linux/Darwin constants, native struct size/alignment, and x64/ARM64 layouts against current
+- [x] Verify Linux/Darwin constants, native struct size/alignment, and x64/ARM64 layouts against current
   authoritative SDK/runtime definitions. Keep platform-specific declarations separate where necessary.
-- [ ] Test .NET ordinary Process children concurrently with the native child, and an isolated host with an
+- [x] Test .NET ordinary Process children concurrently with the native child, and an isolated host with an
   intentional competing reaper. Establish whether interference can be detected before unsafe control.
   Document unavoidable host preconditions; do not modify global SIGCHLD behavior.
-- [ ] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~ProcessScopeFeasibilityTests`
+- [x] Run `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -f net10.0 --filter FullyQualifiedName~ProcessScopeFeasibilityTests`
   on all six platforms, then repeat the reaper/wait probes on net8.0 and net9.0.
-- [ ] Record evidence and the identity-lifetime argument. Passing stress tests alone do not prove identifiers
+- [x] Record evidence and the identity-lifetime argument. Passing stress tests alone do not prove identifiers
   cannot be reused. If the approach cannot preserve identity, stop dependent work and present a revised design.
-- [ ] Commit the proven fixtures and design findings as `test: establish process scope ownership feasibility`.
+- [x] Commit the proven fixtures and design findings as `test: establish process scope ownership feasibility`.
 
 ### PG02: contracts and capture
 
@@ -122,13 +122,13 @@ boundary, and `ControlledBackend.cs`.
 Extend IPtyBackend with `Ownership`, `Capabilities`, `RequestTermination(PtyProcessTarget)`, and
 `SendSignal(PtySignal, PtyProcessTarget)` of matching types. Retain its existing Terminate and Exit members.
 
-- [ ] Add `Ownership_defaults_to_primary`, `Ownership_is_snapshotted_before_yield`,
+- [x] Add `Ownership_defaults_to_primary`, `Ownership_is_snapshotted_before_yield`,
   `Invalid_ownership_does_not_create_child`, `Capabilities_do_not_claim_liveness`, and
   `Legacy_terminate_remains_primary_only`. Assert exact enum/default values and backend call counts.
-- [ ] Run the PtyOwnershipTests filter; expect missing API/behavior failures, then implement capture and
+- [x] Run the PtyOwnershipTests filter; expect missing API/behavior failures, then implement capture and
   a controlled-backend seam. PlatformScope creation must fail explicitly until its backend is implemented.
-- [ ] Verify all existing Start/StartAsync snapshots and startup-cancellation tests still pass.
-- [ ] Compile all frameworks and commit as `feat: define explicit PTY process ownership contracts`.
+- [x] Verify all existing Start/StartAsync snapshots and startup-cancellation tests still pass.
+- [x] Compile all frameworks and commit as `feat: define explicit PTY process ownership contracts`.
 
 ### PG03: Windows job ownership
 
@@ -139,17 +139,17 @@ modify WindowsNative/WindowsBackend and the scope fixture.
 `void Assign(SafeProcessHandle process)` and `PtyControlResult RequestTermination()`.
 The backend exposes it only through the PG02 boundary; never expose a raw job handle publicly.
 
-- [ ] Add `Owned_child_is_assigned_before_resume`, `Job_survives_primary_exit`,
+- [x] Add `Owned_child_is_assigned_before_resume`, `Job_survives_primary_exit`,
   `Assignment_failure_never_runs_child`, `Resume_failure_collects_child`,
   `Cancellation_before_transfer_cleans_job`, and `Nested_job_failure_is_explicit`.
   Use deterministic per-instance fault injection, never mutable global hooks.
-- [ ] Run WindowsOwnershipTests and verify failures; implement non-inheritable job ownership, kill-on-close,
+- [x] Run WindowsOwnershipTests and verify failures; implement non-inheritable job ownership, kill-on-close,
   suspended creation, assignment, checked resume, and rollback. Keep default launch behavior unchanged.
-- [ ] Verify a descendant created immediately after resume belongs to the job; after primary exit request
+- [x] Verify a descendant created immediately after resume belongs to the job; after primary exit request
   job termination and independently observe the known descendant stop.
-- [ ] Verify errors release thread/process/job/ConPTY/pipe resources and retain useful original failure context.
+- [x] Verify errors release thread/process/job/ConPTY/pipe resources and retain useful original failure context.
   Never wait for a task that needs a lock still held by disposal.
-- [ ] Run on Windows x64/ARM64, all frameworks; commit as `feat: own Windows PTY descendants with jobs`.
+- [x] Run on Windows x64/ARM64, all frameworks; commit as `feat: own Windows PTY descendants with jobs`.
 
 ### PG04: Unix group lifetime
 
@@ -163,19 +163,19 @@ The backend exposes it only through the PG02 boundary; never expose a raw job ha
 UnixProcessScope encapsulates validated anchored initial-group targeting; lifetime release and requests share
 one synchronization policy. Final method bodies follow PG01 evidence; do not substitute Process auto-reaping.
 
-- [ ] Add `Owned_group_survives_primary_exit`, `Primary_exit_is_reported_before_scope_disposal`,
+- [x] Add `Owned_group_survives_primary_exit`, `Primary_exit_is_reported_before_scope_disposal`,
   `Disposed_scope_reaps_anchor_once`, `Cancelled_handshake_reaps_native_child`,
   `Exec_failure_releases_all_pipes`, `Competing_reaper_disables_unsafe_targeting`, and
   `Unrelated_host_processes_are_untouched`.
-- [ ] Run UnixOwnershipTests to establish failures; implement the proven native launch/wait path only for
+- [x] Run UnixOwnershipTests to establish failures; implement the proven native launch/wait path only for
   PlatformScope, keeping existing helper lookup, installed-runtime use, close-on-exec status, and diagnostics.
-- [ ] Gate group control on completed session/group setup. During failed startup before that point, clean
+- [x] Gate group control on completed session/group setup. During failed startup before that point, clean
   the known child only; never negate an unvalidated identifier.
-- [ ] Preserve Unix timeout/caller-cancellation distinction and cleanup-before-failure semantics.
+- [x] Preserve Unix timeout/caller-cancellation distinction and cleanup-before-failure semantics.
   Primary Exit reports observed status; final reaping occurs once after final group requests.
-- [ ] Verify descriptors, retained wait records, and pending tasks are released on every failure and disposal
+- [x] Verify descriptors, retained wait records, and pending tasks are released on every failure and disposal
   path; maintain macOS read-ahead's primary-exit observation without stealing wait ownership.
-- [ ] Run on Linux/macOS x64/ARM64, all frameworks; commit as `feat: retain Unix PTY group identity for cleanup`.
+- [x] Run on Linux/macOS x64/ARM64, all frameworks; commit as `feat: retain Unix PTY group identity for cleanup`.
 
 ### PG05: explicit control dispatch
 
@@ -186,18 +186,18 @@ one synchronization policy. Final method bodies follow PG01 evidence; do not sub
 `PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target)` exactly as designed.
 Map named Unix signals using platform definitions; reject arbitrary numeric casts.
 
-- [ ] Add `Owned_scope_requires_launch_opt_in`, `Unix_native_signals_require_anchored_ownership`,
+- [x] Add `Owned_scope_requires_launch_opt_in`, `Unix_native_signals_require_anchored_ownership`,
   `Windows_native_signal_is_unsupported`,
   `Unix_interrupt_is_independent_of_terminal_mode`, `Missing_target_is_not_confirmed_scope_exit`,
   `Permission_error_is_not_success`, `Invalid_signal_has_no_side_effect`,
   `No_request_uses_host_or_broadcast_group`, and `Disposed_control_is_rejected`.
-- [ ] Run the control filter, implement validation/dispatch/error context, then verify request outcomes and
+- [x] Run the control filter, implement validation/dispatch/error context, then verify request outcomes and
   exact native targets through controlled seams. A successful group request must not claim every member exited.
-- [ ] Add real Unix fixtures for Hangup/Interrupt/Terminate handlers and uncatchable Kill; independently observe
+- [x] Add real Unix fixtures for Hangup/Interrupt/Terminate handlers and uncatchable Kill; independently observe
   acknowledgements/exits. Keep SendInterruptAsync's existing byte-level tests unchanged.
-- [ ] Test a child that moves to another group/session; report it outside scope and clean it through the
+- [x] Test a child that moves to another group/session; report it outside scope and clean it through the
   fixture's separately tracked ownership. Do not expect terminal-close side effects to be identical across OSes.
-- [ ] Run all frameworks/platforms and commit as `feat: expose scoped PTY process control`.
+- [x] Run all frameworks/platforms and commit as `feat: expose scoped PTY process control`.
 
 ### PG06: shutdown and disposal integration
 
@@ -208,17 +208,17 @@ extend PtyShutdownTests and add `src/Tests/Icod.Pty.Tests/PtyScopeDisposalTests.
 `PtyShutdownResult.TerminationResult`. Preserve the positional constructor/deconstruction.
 Pass the captured target through ShutdownCoordinator; primary Exit remains the completion condition.
 
-- [ ] Add `Default_shutdown_stays_primary_only`, `Owned_shutdown_records_target_and_outcome`,
+- [x] Add `Default_shutdown_stays_primary_only`, `Owned_shutdown_records_target_and_outcome`,
   `Graceful_primary_exit_does_not_imply_scope_cleanup`, `Unsupported_target_rejected_before_request_bytes`,
   `Shutdown_target_is_snapshotted`, and `Old_shutdown_result_constructor_and_deconstruction_work`.
-- [ ] Verify failures, then integrate target selection only into forced escalation. Preserve grace/termination
+- [x] Verify failures, then integrate target selection only into forced escalation. Preserve grace/termination
   budgets, single-shutdown guard, retry, cancellation, and no-output-consumption behavior.
-- [ ] Add `Owned_dispose_cleans_after_primary_exit`, `Default_dispose_does_not_dispatch_scope_control`,
+- [x] Add `Owned_dispose_cleans_after_primary_exit`, `Default_dispose_does_not_dispatch_scope_control`,
   `Concurrent_dispose_releases_once`, `Control_failure_still_releases_resources`, and
   `Cancellation_does_not_initiate_escalation`.
-- [ ] Implement owned disposal before identity release, attempt all cleanup, preserve primary status, and
+- [x] Implement owned disposal before identity release, attempt all cleanup, preserve primary status, and
   document that callers wanting guaranteed diagnostics should explicitly request control before disposal.
-- [ ] Run shutdown/startup/disposal filters and all legacy tests; commit as
+- [x] Run shutdown/startup/disposal filters and all legacy tests; commit as
   `feat: integrate owned scope cleanup with PTY lifecycle`.
 
 ### PG07: adversarial integration and output
@@ -229,15 +229,15 @@ extend scope fixture, PtyTestSupport, and relevant buffered-output tests.
 **Interfaces:** fixture modes from PG01 remain bounded and independently cleanable.
 Tests assert observed fixture identities and exit markers, not PID existence alone.
 
-- [ ] Test same-group descendants, primary-before-descendant exit, immediate descendants, pipelines changing
+- [x] Test same-group descendants, primary-before-descendant exit, immediate descendants, pipelines changing
   groups, a detached session, ignored graceful signals, repeated force requests, and teardown during startup.
-- [ ] Use gates/readiness markers for natural-exit versus force/dispose races. Test request failure, cancellation,
+- [x] Use gates/readiness markers for natural-exit versus force/dispose races. Test request failure, cancellation,
   and both output backpressure and a quiet surviving descendant retaining the terminal.
-- [ ] Verify a cooperative exit's complete final marker sequence with concurrent draining; do not assert lossless
+- [x] Verify a cooperative exit's complete final marker sequence with concurrent draining; do not assert lossless
   output for abrupt kill/disposal. Preserve macOS buffered output and all interactive-host tests.
-- [ ] Bound all waits and fixture cleanup. Ensure an intentionally surviving out-of-scope fixture is cleaned
+- [x] Bound all waits and fixture cleanup. Ensure an intentionally surviving out-of-scope fixture is cleaned
   without signaling reused numeric identifiers or unrelated processes.
-- [ ] Run the integration filter on all six platforms/all frameworks. Commit as
+- [x] Run the integration filter on all six platforms/all frameworks. Commit as
   `test: verify scoped cleanup under PTY lifecycle races`.
 
 ### PG08: consumer documentation and package verification
@@ -248,30 +248,30 @@ packaging/VerifyPackageConsumer.ps1, and PackageSmokeTests.
 **Interfaces:** sample `--scope-smoke` launches managed descendants in the documented scope, requests cleanup,
 observes their exit, and disposes. Success output: `PTY process-scope smoke check passed.`
 
-- [ ] Add a failing package/sample test for --scope-smoke, then implement the check using explicit ownership.
+- [x] Add a failing package/sample test for --scope-smoke, then implement the check using explicit ownership.
   Include primary-before-descendant exit; fixture/helper implementation remains C# under src.
-- [ ] Show ownership opt-in, capability checks, native signal versus ETX, scoped force, and separate primary
+- [x] Show ownership opt-in, capability checks, native signal versus ETX, scoped force, and separate primary
   exit/output draining. Explain Unix initial-group coverage, retained child-record cost, and disposal requirement.
-- [ ] Expand XML docs for each new public member, default, exception, and result field. Compile with XML docs.
-- [ ] Extend fresh NuGet and published-consumer verification across all frameworks using existing scripts.
+- [x] Expand XML docs for each new public member, default, exception, and result field. Compile with XML docs.
+- [x] Extend fresh NuGet and published-consumer verification across all frameworks using existing scripts.
   Run PowerShell checks with actual Windows PowerShell 5.1 where supported by the existing Windows job.
-- [ ] Add CMD/PowerShell 5.1 laptop instructions for scoped cleanup, normal exit, and host-console restoration.
+- [x] Add CMD/PowerShell 5.1 laptop instructions for scoped cleanup, normal exit, and host-console restoration.
   Keep manual acceptance unchecked until the user reports it.
-- [ ] Commit as `docs: demonstrate and verify PTY process scope ownership`.
+- [x] Commit as `docs: demonstrate and verify PTY process scope ownership`.
 
 ### PG09: completion and evidence
 
 **Files:** update this plan, design status, and main ROADMAP with actual results only.
 Modify workflows only if required for these checks; retain all six platform jobs.
 
-- [ ] Run Release build/test/pack locally on available platforms, then the existing six-platform CI matrix
+- [x] Run Release build/test/pack locally on available platforms, then the existing six-platform CI matrix
   for net8.0/net9.0/net10.0. Verify the exact package and fresh/published consumers.
-- [ ] Review public API compatibility, ownership lifetime, cancellation, error preservation, absence of C/Python,
+- [x] Review public API compatibility, ownership lifetime, cancellation, error preservation, absence of C/Python,
   AnyCPU outputs, and docs/sample consistency. Record any unsupported operations explicitly.
-- [ ] Record failures and fixes; rerun relevant jobs when needed. Do not mark native behavior proven by controlled
+- [x] Record failures and fixes; rerun relevant jobs when needed. Do not mark native behavior proven by controlled
   tests alone, or hide new ownership failures behind skips. Preserve the existing documented ConPTY exclusion.
 - [ ] Record Windows laptop results separately when supplied. Leave them pending otherwise.
-- [ ] Mark only evidenced tranches complete and report merge readiness. Version selection and NuGet publication
+- [x] Mark only evidenced tranches complete and report merge readiness. Version selection and NuGet publication
   remain separate user actions. Commit completion evidence as `docs: record process scope cleanup verification`.
 
 ## Verification commands
@@ -302,8 +302,8 @@ Final completion requires both native CI evidence and whole-branch review.
 
 - Native feasibility: [run 37199198321](https://github.com/uniblab/Icod.Pty/actions/runs/37199198321), all six platforms and all three frameworks passed, including package consumers.
 - PG02: ownership contract tests 5/5 on each framework locally; Linux net10 regression suite 91/91.
-- PG03: [run 37200436474](https://github.com/uniblab/Icod.Pty/actions/runs/37200436474) exposed double termination during cancellation and a nested-job test setup error on Windows; fixes are under verification. The four Unix jobs passed.
-- PG04: initial Linux net10 ownership tests 2/2 passed, covering primary status/final output, post-primary group signaling, descendant acknowledgement, and exactly-once reap. Broader acceptance remains pending.
+- PG03: [run 37200436474](https://github.com/uniblab/Icod.Pty/actions/runs/37200436474) exposed double termination during cancellation and a nested-job test setup error on Windows; fixes passed run 37201220251 and final acceptance below. The four Unix jobs passed.
+- PG04: initial Linux net10 ownership tests 2/2 passed, covering primary status/final output, post-primary group signaling, descendant acknowledgement, and exactly-once reap. Broader acceptance passed the final six-platform run below.
 
 Owned Linux launch requires glibc 2.34 or newer for atomic close-from file actions. macOS uses
 POSIX_SPAWN_CLOEXEC_DEFAULT. Startup rollback stops the anchored primary, observes its exit without reaping,
@@ -315,9 +315,9 @@ then requests group cleanup before releasing the anchor; this prevents group cre
 - New integration: known descendant exit after primary exit via explicit force or concurrent disposal; detached session, changed group and real job-control pipeline outside scope; native interrupt in raw mode; ignored graceful termination followed by force; unrelated session remains usable. Linux net10 local integration passed.
 - Added owned-mode large final output/backpressure checks, production SIGCHLD host guards in isolated fixture processes, exec-failure rollback, permission injection, lost wait ownership, and exactly-once cleanup checks.
 - Local Release build: all frameworks, zero warnings/errors. Full Linux net10 suite: 131/131 before the final startup dual-error/deferred-reap additions.
-- Scope package smoke RED: unsupported switch; GREEN: all five sample smoke modes passed locally. Fresh/published consumers now include `--scope-smoke`; current-head native package acceptance is pending.
+- Scope package smoke RED: unsupported switch; GREEN: all five sample smoke modes passed locally. Fresh/published consumers now include `--scope-smoke`; final native package acceptance passed as recorded below.
 - Local test transport uses the existing xUnit runner because this environment blocks standard test-host sockets. CI continues to use standard `dotnet test`.
-- Final review and Windows laptop acceptance remain pending; only the latter requires user observations.
+- Final review is complete. Windows laptop acceptance remains pending and requires user observations.
 
 ### Final review and acceptance fixes
 
@@ -331,7 +331,7 @@ race, native-success, denial, and managed-uncertainty tests cover these boundari
 passed Windows/Linux x64/ARM64 including the new scope package consumers. Both macOS jobs exposed a
 backpressured owned-disposal timeout: native exit could wait for terminal drain before the owner released
 terminal resources. The fix releases streams before waiting while preserving the identity anchor through
-final group control/reap. The existing owned-backpressure regression remains enabled; native rerun is required.
+final group control/reap. The existing owned-backpressure regression remained enabled and passed final native acceptance.
 
 ### Final verification checkpoint (2026-10-04)
 
@@ -341,6 +341,33 @@ final group control/reap. The existing owned-backpressure regression remains ena
 - macOS x64 remained in SDK installation for more than twelve minutes without reaching build/tests. This documentation checkpoint starts a fresh CI attempt; no C# or package-tooling changes were made after the source head above. The [PR checks](https://github.com/uniblab/Icod.Pty/pull/3/checks) are the current acceptance gate.
 - Independent whole-branch review reported two important findings, both fixed in the single review-fix pass with deterministic coverage and the 137/137 suites. No critical or minor findings remain.
 - Windows laptop acceptance remains pending. Version 0.1.0-alpha.1 is unchanged; no merge, tag, or publication was performed.
+
+### Completed automated acceptance (2026-10-04)
+
+[Run 37216992802](https://github.com/uniblab/Icod.Pty/actions/runs/37216992802) passed at source commit
+`355c00ceb731c8dfd224916db56e969ba1f3d7d3`. All six jobs built and tested net8.0/net9.0/net10.0,
+verified the exact package, and exercised fresh and published consumers. Both Darwin architectures passed
+138 tests per framework, including the twelve-iteration cleanup regression. Windows x64 exercised the
+packaging scripts with Windows PowerShell 5.1. Windows ARM64's earlier SDK-installation failure did not recur.
+
+| Platform | Native tests and package consumers |
+| --- | --- |
+| Windows x64 | Passed |
+| Windows ARM64 | Passed |
+| Linux x64 | Passed |
+| Linux ARM64 | Passed |
+| macOS x64 | Passed |
+| macOS ARM64 | Passed |
+
+The refreshed local Release build had zero warnings/errors; the complete local Linux suite passed
+**138/138 on each framework**. The independent whole-branch review's two important findings were fixed;
+no critical or deferred minor findings remain. The native acceptance regression discovered afterward is
+recorded below with its failing diagnostic run and passing final run.
+
+PG01-PG08 and PG09 automated acceptance are complete. The final evidence commit changes documentation only;
+its own status is available in the [PR checks](https://github.com/uniblab/Icod.Pty/pull/3/checks).
+The branch is ready for user review. Windows laptop acceptance remains unchecked; prior foundation checks
+are not evidence for this new milestone. Merge, version selection, and publication remain separate actions.
 
 ### Recorded implementation decisions
 
@@ -352,7 +379,7 @@ state after EPERM, while retaining errors for live members, missing anchors, and
 `TargetUnavailable` remains a dispatch outcome, not proof of completed descendant exit. A twelve-iteration
 native regression covers repeated force/disposal, and its output wait is bounded. Windows ARM64 in the
 diagnostic run failed during SDK installation with an internal CLR error before repository execution.
-The corrected source must pass a fresh six-platform run before PG09 is complete.
+The corrected source passed the final six-platform run recorded above.
 
 Primary references: [XNU exit ordering](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_exit.c),
 [group iteration](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_proc.c),
