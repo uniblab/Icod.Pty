@@ -15,6 +15,27 @@ public sealed class InteractiveSampleTests {
 		return info;
 	}
 	[Fact]
+	public async Task Native_host_output_backpressure_does_not_prevent_cleanup() {
+		// This reproduces a Linux native write stalled in Console.OpenStandardOutput.
+		// Other native lifetimes are covered by the common stalled-output probe.
+		if (!OperatingSystem.IsLinux()) return;
+		string marker = Path.Combine(Path.GetTempPath(), "icod-pty-backpressure-" + Guid.NewGuid().ToString("N"));
+		try {
+			await using PtyProcess outer = await PtyProcess.StartAsync(Sample("backpressure-exit", marker));
+			Task? drain = null;
+			try {
+				using CancellationTokenSource startup = new(TimeSpan.FromSeconds(10));
+				while (!File.Exists(marker)) await Task.Delay(10, startup.Token);
+				// Deliberately do not read outer.Output until the sample has stopped.
+				Assert.Equal(1, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10)));
+			} finally {
+				drain = outer.Output.CopyToAsync(Stream.Null);
+				await outer.DisposeAsync();
+				try { await drain.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception error) when (error is ObjectDisposedException or IOException) { }
+			}
+		} finally { File.Delete(marker); }
+	}
+	[Fact]
 	public async Task Sample_restores_host_after_start_failure() => await Probe("start-failure", 1);
 	[Fact]
 	public async Task Sample_restores_host_after_child_exit() => await Probe("child-exit", 37);
@@ -64,12 +85,13 @@ public sealed class InteractiveSampleTests {
 	}
 	[Fact]
 	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks() {
-		await using PtyProcess outer = await PtyProcess.StartAsync(Sample("raw-input"));
-		await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
 		byte[] bytes = Encoding.UTF8.GetBytes("雪\u001b[A\u001b[12;34R");
+		await using PtyProcess outer = await PtyProcess.StartAsync(Sample("raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+		await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
 		// Split inside a multibyte character and inside both escape sequences.
 		foreach (byte value in bytes) await outer.Input.WriteAsync(new[] { value });
-		foreach (byte value in bytes) await PtyTestSupport.ReadUntil(outer.Output, $"BYTE:{value:X2}");
+		// One response avoids interpreting ConPTY screen-diff output as a line log.
+		await PtyTestSupport.ReadUntil(outer.Output, "SEQUENCE:" + Convert.ToHexString(bytes));
 		await outer.Input.WriteAsync(new byte[] { 4 });
 		Task<string> drain = PtyTestSupport.Drain(outer.Output);
 		Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;

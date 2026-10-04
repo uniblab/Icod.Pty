@@ -22,7 +22,7 @@ internal sealed class UnixHostConsole : HostConsole {
 #if ICOD_PTY_TEST_FAULTS
 			HostConsoleFaults.AfterModeChange?.Invoke();
 #endif
-			output = Console.OpenStandardOutput();
+			output = new UnixConsoleOutput();
 		} catch {
 			if (captured) Native.tcsetattr(input, 0, original);
 			Marshal.FreeHGlobal(original); Native.close(input); throw;

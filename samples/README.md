@@ -54,6 +54,8 @@ The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Acc
 
 ## Lifetimes and limits
 
-On host-input EOF the sample waits five seconds for the primary child, then requests forced termination and waits up to five more seconds. It sends no guessed shell command. After primary exit it stops its input/resize tasks and gives output five seconds to drain. A descendant retaining the terminal can trigger a drain-timeout diagnostic; incomplete output is reported as failure. Host modes and Windows code pages are restored during normal disposal, including handled failures. Force-killing the sample itself cannot run restoration code.
+On host-input EOF the sample waits five seconds for the primary child, then requests forced termination and waits up to five more seconds. It sends no guessed shell command. After primary exit it stops its input/resize tasks and gives output five seconds to drain. A descendant retaining the terminal or a blocked host output can trigger a drain timeout; incomplete output is reported as failure. Native output writes are cancellable and finish before host restoration. If the host cannot accept the error message within 250 ms, the sample still returns failure. Host modes and Windows code pages are restored during normal disposal, including handled failures. Force-killing the sample itself cannot run restoration code.
+
+Descendant lifetime follows the native backend: Linux may keep the terminal open, while macOS terminal revocation and Windows ConPTY teardown can yield EOF at primary exit. The library does not own detached descendants.
 
 `--line` uses line input and is not an interactive terminal host. The default executable is `%COMSPEC%` (falling back to `cmd.exe`) on Windows and `/bin/sh` on Unix. `--interactive` is optional; `--` ends sample options before the executable. Arguments are passed as individual arguments, without shell expansion.

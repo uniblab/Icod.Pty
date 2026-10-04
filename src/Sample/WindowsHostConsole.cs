@@ -30,7 +30,7 @@ internal sealed class WindowsHostConsole : HostConsole {
 #endif
 			Check(Native.SetConsoleMode(input, (inputMode & ~0x47u) | 0x280u), "set input mode");
 			Check(Native.SetConsoleMode(outputHandle, outputMode | 0xdu), "set output mode");
-			output = Console.OpenStandardOutput();
+			output = new WindowsConsoleOutput();
 			TaskCompletionSource<SafeWaitHandle> started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 			reader = new Thread(() => ReadLoop(started)) { IsBackground = true, Name = "Icod.Pty.Sample input" };
 			reader.Start(); readerHandle = started.Task.GetAwaiter().GetResult();

@@ -13,6 +13,10 @@ if (args is ["retained-holder", string recordPath]) {
 	await Task.Delay(TimeSpan.FromSeconds(60)); return 0;
 }
 if (args is ["exit"]) { Console.WriteLine("FINAL-MARKER"); return 37; }
+if (args is ["backpressure-exit", string finished]) {
+	using Stream stdout = Console.OpenStandardOutput();
+	stdout.Write(new byte[20000]); File.WriteAllText(finished, "finished"); return 0;
+}
 if (args is ["flood"]) { while (true) Console.Write(new string('x', 4096)); }
 if (args is ["final-output"]) {
 	Console.WriteLine("FINAL-READY");
@@ -21,6 +25,16 @@ if (args is ["final-output"]) {
 	for (int i = 0; i < 1024; i++) Console.WriteLine($"FINAL:{i:D4}:" + new string('x', 128));
 	Console.WriteLine("FINAL-END");
 	return 23;
+}
+if (args is ["raw-sequence", string length]) {
+	using IDisposable mode = TerminalModes.EnterRawInput();
+	Console.WriteLine("RAW-READY");
+	byte[] bytes = new byte[int.Parse(length, System.Globalization.CultureInfo.InvariantCulture)];
+	for (int i = 0; i < bytes.Length; i++) {
+		int value = TerminalModes.ReadByte(); if (value < 0) return 2; bytes[i] = (byte)value;
+	}
+	Console.WriteLine("SEQUENCE:" + Convert.ToHexString(bytes));
+	return TerminalModes.ReadByte() == 4 ? 23 : 2;
 }
 if (args is ["raw-input"]) {
 	using IDisposable mode = TerminalModes.EnterRawInput();

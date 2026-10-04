@@ -38,6 +38,6 @@ try {
 	using HostConsole console = HostConsole.Open();
 	return await InteractiveSession.RunAsync(start, console, CancellationToken.None);
 } catch (Exception error) {
-	Console.Error.WriteLine("Icod.Pty.Sample: " + error.Message);
+	await HostConsole.ReportErrorAsync("Icod.Pty.Sample: " + error.Message);
 	return 1;
 }
