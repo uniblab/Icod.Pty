@@ -105,11 +105,19 @@ jobs:
           -o artifacts
           -p:ContinuousIntegrationBuild=true
       - name: Verify exact Staging package artifacts
-        shell: ${{ matrix.os == 'windows-latest' && 'powershell' || 'pwsh' }}
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
         run: >-
           ./packaging/VerifyPackageArtifact.ps1
           -ArtifactDirectory artifacts
           -Configuration '${{ env.CONFIGURATION }}'
       - name: Verify package consumer and publish output
-        shell: ${{ matrix.os == 'windows-latest' && 'powershell' || 'pwsh' }}
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
         run: ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
+      - name: Verify package and consumer with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          ./packaging/VerifyPackageArtifact.ps1 -ArtifactDirectory artifacts -Configuration Staging
+          ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
