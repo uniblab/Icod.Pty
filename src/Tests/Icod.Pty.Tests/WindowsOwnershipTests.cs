@@ -74,7 +74,7 @@ public sealed class WindowsOwnershipTests {
 			process => {
 				using WindowsJob outer = WindowsJob.CreateAssigned(process);
 				using WindowsJob restricted = new(); uint restrictions = 0x40;
-				Assert.True(SetJobUiRestrictions(restricted.Handle, 4, ref restrictions, 4));
+				Assert.True(SetJobUiRestrictions(outer.Handle, 4, ref restrictions, 4));
 				restricted.Assign(process); throw new InvalidOperationException("Restricted nested assignment unexpectedly succeeded.");
 			}, WindowsNative.ResumeThread));
 		Assert.Contains("AssignProcessToJobObject", failure.Message);

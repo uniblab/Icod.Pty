@@ -122,13 +122,16 @@ internal sealed class WindowsBackend : IPtyBackend {
 	public void Terminate() {
 		lock (gate) {
 			if (WindowsNative.WaitForSingleObject(process, 0) == 0) return;
-			if (!WindowsNative.TerminateProcess(process, 1) && WindowsNative.WaitForSingleObject(process, 0) != 0) throw Error("TerminateProcess");
+			if (!WindowsNative.TerminateProcess(process, 1)) {
+				IOException failure = Error("TerminateProcess");
+				if (WindowsNative.WaitForSingleObject(process, 0) != 0) throw failure;
+			}
 		}
 	}
 	public void Dispose() {
 		lock (gate) {
 			if (disposed) return; disposed = true;
-			try { job?.RequestTermination(); Terminate(); }
+			try { if (job != null) job.RequestTermination(); else Terminate(); }
 			finally { job?.Dispose(); Input.Dispose(); Output.Dispose(); console.Dispose(); }
 		}
 		try { Exit.GetAwaiter().GetResult(); } finally { process.Dispose(); }

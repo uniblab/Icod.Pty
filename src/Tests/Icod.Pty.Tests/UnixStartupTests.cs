@@ -4,22 +4,24 @@ using Xunit;
 namespace Icod.Pty.Tests;
 
 public sealed class UnixStartupTests {
-	[Fact]
-	public async Task Unix_cancelled_handshake_reaps_helper() {
+	[Theory]
+	[InlineData(false)] [InlineData(true)]
+	public async Task Unix_cancelled_handshake_reaps_helper(bool owned) {
 		if (OperatingSystem.IsWindows()) return;
-		await CheckHandshake(true, TimeSpan.FromSeconds(15));
+		await CheckHandshake(true, TimeSpan.FromSeconds(15), owned);
 	}
-	[Fact]
-	public async Task Unix_handshake_timeout_is_not_caller_cancellation() {
+	[Theory]
+	[InlineData(false)] [InlineData(true)]
+	public async Task Unix_handshake_timeout_is_not_caller_cancellation(bool owned) {
 		if (OperatingSystem.IsWindows()) return;
-		await CheckHandshake(false, TimeSpan.FromMilliseconds(300));
+		await CheckHandshake(false, TimeSpan.FromMilliseconds(300), owned);
 	}
 	[Fact]
 	public async Task Unix_caller_cancellation_before_deadline_preserves_caller_token() {
 		if (OperatingSystem.IsWindows()) return;
 		await CheckHandshake(true, TimeSpan.FromSeconds(3));
 	}
-	private static async Task CheckHandshake(bool cancelCaller, TimeSpan timeout) {
+	private static async Task CheckHandshake(bool cancelCaller, TimeSpan timeout, bool owned = false) {
 		if (OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
 		string directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "icod-pty-start-" + Guid.NewGuid().ToString("N"))).FullName;
 		string script = Path.Combine(directory, "host"), pidFile = Path.Combine(directory, "pid");
@@ -28,6 +30,7 @@ public sealed class UnixStartupTests {
 		File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 		using CancellationTokenSource cancellation = new();
 		PtyStartInfo info = PtyTestSupport.Child(); info.DotNetHostPath = script; info.StartTimeout = timeout;
+		if (owned) info.Ownership = PtyProcessOwnership.PlatformScope;
 		Task<PtyProcess> pending = PtyProcess.StartAsync(info, cancellation.Token);
 		int pid = 0;
 		try {

@@ -90,7 +90,7 @@ internal static class ProcessScopeFixture {
 		}
 	}
 	internal static async Task<int> ParentAsync(string directory) {
-		if (setsid() != Environment.ProcessId) throw new IOException("setsid failed.");
+		if (getsid(0) != Environment.ProcessId && setsid() != Environment.ProcessId) throw new IOException("setsid failed.");
 		using Process child = Process.Start(new ProcessStartInfo(DotNet) {
 			UseShellExecute = false,
 			ArgumentList = { typeof(ProcessScopeFixture).Assembly.Location, "scope-child", directory }

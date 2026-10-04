@@ -1,6 +1,6 @@
 # Process-Group Control and Descendant Cleanup Design
 
-**Status:** approved for implementation on 2026-10-04; PG01 feasibility work is in progress.
+**Status:** approved for implementation on 2026-10-04; PG01 native feasibility passed on six platforms; implementation and lifecycle acceptance are in progress.
 Public ownership APIs are not implemented yet. Findings below qualify the proposed native mechanism.
 **Companion:** [development roadmap](Process-Group-Cleanup-Implementation-Plan.md).
 

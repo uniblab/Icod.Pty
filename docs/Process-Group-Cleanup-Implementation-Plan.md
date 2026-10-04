@@ -14,8 +14,8 @@ the managed Unix helper, xUnit, CMD/SH/PowerShell 5.1-compatible tooling.
 
 **Spec:** [Process-group cleanup design](Process-Group-Cleanup-Design.md).
 Also read the [main roadmap](../ROADMAP.md). The user selected the feature set on 2026-10-04;
-the design and implementation sequence were approved on 2026-10-04. PG01 is in progress; dependent stages
-remain gated on its evidence, and no public ownership implementation is complete.
+the design and implementation sequence were approved on 2026-10-04. PG01 native feasibility passed across all six platforms and three frameworks. Ownership backends are
+being implemented; subsequent public dispatch and lifecycle acceptance remain in progress.
 
 ## Global constraints
 
@@ -47,10 +47,10 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 
 | Tranche | Deliverable | Depends on | State |
 | --- | --- | --- | --- |
-| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | In progress |
-| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Planned |
-| PG03 | Windows job ownership before application execution | PG02 | Planned |
-| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Planned |
+| PG01 | Native identity and launch feasibility gate | Reviewed design/plan | Native gate passed |
+| PG02 | Public contracts, snapshots, and backend boundary | PG01 accepted evidence | Implemented; local tests passed |
+| PG03 | Windows job ownership before application execution | PG02 | Implemented; Windows CI fixes under verification |
+| PG04 | Unix initial-group ownership and retained identity | PG01-PG02 | Implemented; acceptance in progress |
 | PG05 | Scoped control and native Unix signals | PG03-PG04 | Planned |
 | PG06 | Shutdown targeting and deterministic disposal | PG05 | Planned |
 | PG07 | Adversarial lifecycle integration | PG03-PG06 | Planned |
@@ -297,3 +297,14 @@ Existing package commands, from a PowerShell shell (Windows PowerShell 5.1 on th
 Expected final result: no new failures, all supported ownership cases pass on six platforms/three frameworks,
 and package consumers reproduce the documented scope behavior.
 This planning change itself requires documentation/link/diff review, not execution of tests for unimplemented APIs.
+
+## Implementation evidence
+
+- Native feasibility: [run 37199198321](https://github.com/uniblab/Icod.Pty/actions/runs/37199198321), all six platforms and all three frameworks passed, including package consumers.
+- PG02: ownership contract tests 5/5 on each framework locally; Linux net10 regression suite 91/91.
+- PG03: [run 37200436474](https://github.com/uniblab/Icod.Pty/actions/runs/37200436474) exposed double termination during cancellation and a nested-job test setup error on Windows; fixes are under verification. The four Unix jobs passed.
+- PG04: initial Linux net10 ownership tests 2/2 passed, covering primary status/final output, post-primary group signaling, descendant acknowledgement, and exactly-once reap. Broader acceptance remains pending.
+
+Owned Linux launch requires glibc 2.34 or newer for atomic close-from file actions. macOS uses
+POSIX_SPAWN_CLOEXEC_DEFAULT. Startup rollback stops the anchored primary, observes its exit without reaping,
+then requests group cleanup before releasing the anchor; this prevents group creation racing rollback.
