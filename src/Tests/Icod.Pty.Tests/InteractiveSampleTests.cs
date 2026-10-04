@@ -83,18 +83,31 @@ public sealed class InteractiveSampleTests {
 		Task<string> drain = PtyTestSupport.Drain(outer.Output);
 		Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
 	}
-	[Fact]
-	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks() {
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public async Task Sample_preserves_utf8_vt_and_query_reply_chunks(bool nested) {
 		byte[] bytes = Encoding.UTF8.GetBytes("雪\u001b[A\u001b[12;34R");
-		await using PtyProcess outer = await PtyProcess.StartAsync(Sample("raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-		await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
-		// Split inside a multibyte character and inside both escape sequences.
-		foreach (byte value in bytes) await outer.Input.WriteAsync(new[] { value });
-		// One response avoids interpreting ConPTY screen-diff output as a line log.
-		await PtyTestSupport.ReadUntil(outer.Output, "SEQUENCE:" + Convert.ToHexString(bytes));
-		await outer.Input.WriteAsync(new byte[] { 4 });
-		Task<string> drain = PtyTestSupport.Drain(outer.Output);
-		Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
+		string trace = Path.Combine(Path.GetTempPath(), "icod-pty-raw-" + Guid.NewGuid().ToString("N"));
+		try {
+			for (int attempt = 0; attempt < 5; attempt++) {
+				string[] arguments = ["raw-sequence", bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), trace];
+				await using PtyProcess outer = await PtyProcess.StartAsync(nested ? Sample(arguments) : PtyTestSupport.Child(arguments));
+				try {
+					await PtyTestSupport.ReadUntil(outer.Output, "RAW-READY");
+					// Split inside a multibyte character and inside both escape sequences.
+					foreach (byte value in bytes) await outer.Input.WriteAsync(new[] { value });
+					await PtyTestSupport.ReadUntil(outer.Output, "SEQUENCE:" + Convert.ToHexString(bytes));
+					Assert.Equal(bytes, File.ReadAllBytes(trace));
+					await outer.Input.WriteAsync(new byte[] { 4 });
+					Task<string> drain = PtyTestSupport.Drain(outer.Output);
+					Assert.Equal(23, await outer.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20))); await drain;
+				} catch (Exception error) {
+					string received = File.Exists(trace) ? Convert.ToHexString(File.ReadAllBytes(trace)) : "<no trace>";
+					throw new IOException($"Raw input attempt {attempt}, nested={nested}, exited={outer.HasExited}, received={received}.", error);
+				}
+			}
+		} finally { File.Delete(trace); }
 	}
 	[Fact]
 	public async Task Sample_interrupt_reaches_child_not_host() {
