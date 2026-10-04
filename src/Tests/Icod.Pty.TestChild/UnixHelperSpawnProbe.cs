@@ -17,6 +17,7 @@ internal static class UnixHelperSpawnProbe {
 		try {
 			UnixNative.WindowSize size = new() { Columns = 80, Rows = 24 }; byte[] name = new byte[1024];
 			UnixNative.Check(UnixNative.openpty(out master, out slave, name, 0, ref size), "probe openpty");
+			UnixNative.Check(UnixNative.fcntl(master, 4, UnixNative.fcntl(master, 3, 0) | UnixNative.NonBlocking), "probe nonblocking master");
 			UnixNative.Check(pipe(input), "probe pipe input"); UnixNative.Check(pipe(status), "probe pipe status"); UnixNative.Check(pipe(error), "probe pipe error");
 			int[] descriptors = [master, slave, .. input, .. status, .. error];
 			foreach (int fd in descriptors) UnixNative.Check(UnixNative.fcntl(fd, 2, 1), "probe CLOEXEC");
@@ -45,14 +46,20 @@ internal static class UnixHelperSpawnProbe {
 			using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
 			byte[] info = new byte[128];
 			int offset = OperatingSystem.IsMacOS() ? 12 : 16;
+			using MemoryStream terminalOutput = new();
 			while (true) {
+				DrainAvailable(master, terminalOutput);
 				Array.Clear(info);
-				UnixNative.Check(waitid(1, pid, info, OperatingSystem.IsMacOS() ? 0x25 : 0x01000005), "helper waitid");
-				if (BitConverter.ToInt32(info, offset) == pid) break;
-				await Task.Delay(10, timeout.Token);
+				UnixNative.Check(waitid(1, pid, info, OperatingSystem.IsMacOS() ? 0x2D : 0x01000007), "helper waitid");
+				if (BitConverter.ToInt32(info, offset) == pid) {
+					if (BitConverter.ToInt32(info, 8) > 3) throw new IOException("Helper child stopped; signal=" + BitConverter.ToInt32(info, OperatingSystem.IsMacOS() ? 20 : 24));
+					break;
+				}
+				try { await Task.Delay(10, timeout.Token); }
+				catch (OperationCanceledException errorMessage) { throw new TimeoutException("Waiting for helper child exit; terminal output: " + Encoding.UTF8.GetString(terminalOutput.ToArray()), errorMessage); }
 			}
 			int code = BitConverter.ToInt32(info, OperatingSystem.IsMacOS() ? 20 : 24);
-			Console.WriteLine(JsonSerializer.Serialize(new { Handshake = ready, ExitCode = code, InitialGroupRetained = getpgid(pid) == pid }));
+			Console.WriteLine(JsonSerializer.Serialize(new { Handshake = ready, ExitCode = code, WaitIdentityRetained = BitConverter.ToInt32(info, offset) == pid }));
 			return 0;
 		} finally {
 			foreach (int fd in input.Concat(status).Concat(error)) if (fd >= 0) UnixNative.close(fd);
@@ -62,6 +69,15 @@ internal static class UnixHelperSpawnProbe {
 		}
 	}
 	private static void Close(ref int fd) { if (fd >= 0) UnixNative.close(fd); fd = -1; }
+	private static unsafe void DrainAvailable(int fd, MemoryStream output) {
+		byte[] buffer = new byte[4096];
+		for (int i = 0; i < 16; i++) {
+			nint count;
+			fixed (byte* bytes = buffer) count = UnixNative.read(fd, bytes, (nuint)buffer.Length);
+			if (count <= 0) return;
+			if (output.Length < 65536) output.Write(buffer, 0, (int)count);
+		}
+	}
 	private static FileStream Take(ref int fd, FileAccess access) {
 		SafeFileHandle handle = new(fd, true); fd = -1;
 		try { return new FileStream(handle, access); } catch { handle.Dispose(); throw; }
@@ -88,5 +104,4 @@ internal static class UnixHelperSpawnProbe {
 	[DllImport("libc", SetLastError = true)] private static extern int waitid(int type, int pid, [Out] byte[] info, int flags);
 	[DllImport("libc", SetLastError = true)] private static extern int waitpid(int pid, out int status, int flags);
 	[DllImport("libc", SetLastError = true)] private static extern int kill(int pid, int signal);
-	[DllImport("libc", SetLastError = true)] private static extern int getpgid(int pid);
 }

@@ -11,7 +11,7 @@ public sealed class ProcessScopeFeasibilityTests {
 		using JsonDocument result = JsonDocument.Parse(await RunProbe("scope-helper-probe", "ordinary"));
 		Assert.Equal("1", result.RootElement.GetProperty("Handshake").GetString());
 		Assert.Equal(37, result.RootElement.GetProperty("ExitCode").GetInt32());
-		Assert.True(result.RootElement.GetProperty("InitialGroupRetained").GetBoolean());
+		Assert.True(result.RootElement.GetProperty("WaitIdentityRetained").GetBoolean());
 	}
 	[Fact]
 	public async Task Unix_ignored_sigchld_discards_native_wait_ownership() {

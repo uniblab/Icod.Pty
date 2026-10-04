@@ -52,7 +52,9 @@ internal static class ProcessScopeFixture {
 			File.WriteAllText(Path.Combine(directory, "exit-primary"), "exit");
 			byte[] status = await ObserveExit(pid);
 			int code = BitConverter.ToInt32(status, StatusOffset);
-			bool retained = BitConverter.ToInt32(status, PidOffset) == pid && getpgid(pid) == pid;
+			// Darwin getpgid excludes zombies even while waitid retains the child identity.
+			// Group membership was established above while live; group delivery is tested below.
+			bool retained = BitConverter.ToInt32(status, PidOffset) == pid;
 			// Deliver an unrelated managed-child SIGCHLD while retaining the native zombie.
 			using Process second = Process.Start(new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", "exit 12" }, UseShellExecute = false })!;
 			await second.WaitForExitAsync();
