@@ -77,7 +77,7 @@ and disposes the session. It does not rely on request success alone.
 
 Afterward, run `ver` in CMD or `$PSVersionTable.PSVersion` in PowerShell, type and edit a command, and confirm
 normal echo and history. Also run `--lifecycle-smoke` to check cooperative primary exit. Record OS/architecture,
-framework, command output, and host restoration observations. **Laptop acceptance for this milestone is pending.**
+framework, command output, and host restoration observations. **Reported 2026-10-04:** the user checked out `feature/process-group-cleanup-roadmap` and ran the Release net10.0 command without `--no-build` on the previously identified Windows x64 laptop; output was `PTY process-scope smoke check passed.` Other-framework, lifecycle, and explicit console-restoration observations remain unreported.
 
 The regular interactive sample still uses primary-only ownership; `--scope-smoke` explicitly opts in.
 The library README describes Windows job coverage and Unix initial-group/host-reaper limits.

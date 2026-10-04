@@ -15,7 +15,7 @@ the managed Unix helper, xUnit, CMD/SH/PowerShell 5.1-compatible tooling.
 **Spec:** [Process-group cleanup design](Process-Group-Cleanup-Design.md).
 Also read the [main roadmap](../ROADMAP.md). The user selected the feature set on 2026-10-04;
 the design and implementation sequence were approved on 2026-10-04. Implementation and independent code review are complete. Final native tests and package acceptance passed all six platforms on all three frameworks.
-Windows laptop observations remain pending and separate from automated completion.
+Windows x64 net10.0 scope smoke passed on the user's laptop; other manual observations remain separate from automated completion.
 
 ## Global constraints
 
@@ -55,7 +55,7 @@ general process-tree sweep, or foreground-job API as an implementation shortcut.
 | PG06 | Shutdown targeting and deterministic disposal | PG05 | Complete; evidence below |
 | PG07 | Adversarial lifecycle integration | PG03-PG06 | Complete; evidence below |
 | PG08 | Samples, XML documentation, and package consumers | PG07 | Complete; evidence below |
-| PG09 | Six-platform acceptance and completion review | PG01-PG08 | Automated acceptance complete; laptop pending |
+| PG09 | Six-platform acceptance and completion review | PG01-PG08 | Automated acceptance complete; laptop net10 scope smoke passed |
 
 Execute sequentially; each tranche ends with focused verification and a commit.
 For new behavior: write the named failing tests, verify the expected behavioral failure, implement, then rerun.
@@ -270,7 +270,7 @@ Modify workflows only if required for these checks; retain all six platform jobs
   AnyCPU outputs, and docs/sample consistency. Record any unsupported operations explicitly.
 - [x] Record failures and fixes; rerun relevant jobs when needed. Do not mark native behavior proven by controlled
   tests alone, or hide new ownership failures behind skips. Preserve the existing documented ConPTY exclusion.
-- [ ] Record Windows laptop results separately when supplied. Leave them pending otherwise.
+- [x] Record the supplied Windows x64 net10.0 scope-smoke result separately. Other laptop observations remain unreported, as detailed below.
 - [x] Mark only evidenced tranches complete and report merge readiness. Version selection and NuGet publication
   remain separate user actions. Commit completion evidence as `docs: record process scope cleanup verification`.
 
@@ -366,8 +366,32 @@ recorded below with its failing diagnostic run and passing final run.
 
 PG01-PG08 and PG09 automated acceptance are complete. The final evidence commit changes documentation only;
 its own status is available in the [PR checks](https://github.com/uniblab/Icod.Pty/pull/3/checks).
-The branch is ready for user review. Windows laptop acceptance remains unchecked; prior foundation checks
-are not evidence for this new milestone. Merge, version selection, and publication remain separate actions.
+The branch is ready for user review. Prior foundation checks are not evidence for this new milestone.
+Merge, version selection, and publication remain separate actions.
+
+### Windows laptop evidence (2026-10-04)
+
+The user checked out `feature/process-group-cleanup-roadmap` on the previously identified Windows
+10.0.26200.9457 x64 laptop and reported:
+
+```cmd
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 -- --scope-smoke
+PTY process-scope smoke check passed.
+```
+
+This verifies the scope sample's primary-before-descendant exit, owned termination, independently observed
+descendant exit, and disposal on that laptop with net10.0. The prompt returned. The transcript does not
+supply an exact commit SHA or additional framework/lifecycle/console observations.
+
+| Laptop check | Reported result |
+| --- | --- |
+| Release net10.0 scope smoke | Passed |
+| net8.0/net9.0 scope smoke | Not yet reported |
+| Lifecycle smoke | Not yet reported for this milestone |
+| Explicit echo, editing/history, CMD ver / PowerShell version checks | Not yet reported for this milestone |
+
+The preceding documentation commit also passed [run 37217347704](https://github.com/uniblab/Icod.Pty/actions/runs/37217347704).
+This acceptance-record update changes documentation only; its checks remain visible on the PR.
 
 ### Recorded implementation decisions
 
