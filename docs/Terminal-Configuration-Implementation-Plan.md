@@ -10,7 +10,7 @@
 
 **Spec:** [Terminal-Configuration-Design.md](Terminal-Configuration-Design.md).
 
-**Status:** implementation approved on 2026-10-05. TC01-TC08 passed; TC09 final verification is in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
+**Status:** TC01-TC09 implementation and hosted acceptance passed on 2026-10-05. Manual Windows laptop observation remains pending. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
 
 ## Global constraints
 
@@ -170,12 +170,14 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 
 **Files:** implementation evidence in this plan and status in ROADMAP/design; no unrelated workflow changes.
 
-- [ ] Run full Release build/test/pack and exact-package checks below; record exact head SHA, OS/architecture/framework matrix, counts, failure fixes, warning counts, and workflow URLs.
-- [ ] Review public API compatibility, null/default native paths, every required capability bit, Raw masks, helper/package layout, both ownership paths, fault cleanup, and the five review-focus cases. Resolve important findings with RED/GREEN regressions.
-- [ ] Verify all six CI jobs pass on the final runtime head, with 32 package invocations per job and no new skip hiding an unsupported/failed test. Retain the existing native ConPTY limitation documentation.
-- [ ] Request manual Windows laptop results for the new smoke mode and preserve still-unreported interactive observations as pending. Never promote hosted CI to laptop evidence.
-- [ ] Mark only evidenced tasks complete; report merge readiness without merging, selecting a version, tagging, or publishing automatically.
-- [ ] Commit `docs: record terminal configuration acceptance`.
+- [x] Run full Release build/test/pack and exact-package checks below; record exact head SHA, OS/architecture/framework matrix, counts, failure fixes, warning counts, and workflow URLs.
+- [x] Review public API compatibility, null/default native paths, every required capability bit, Raw masks, helper/package layout, both ownership paths, fault cleanup, and the five review-focus cases. Resolve important findings with RED/GREEN regressions.
+- [x] Verify all six CI jobs pass on the final runtime head, with 32 package invocations per job and no new skip hiding an unsupported/failed test. Retain the existing native ConPTY limitation documentation.
+- [x] Request manual Windows laptop results for the new smoke mode and preserve still-unreported interactive observations as pending. Never promote hosted CI to laptop evidence.
+- [x] Mark only evidenced tasks complete; report merge readiness without merging, selecting a version, tagging, or publishing automatically.
+- [x] Commit `docs: record terminal configuration acceptance`.
+
+Final runtime head `e9c81ea7b789918f5f1f6e0057d977d3deb17545` passed [workflow run 68](https://github.com/uniblab/Icod.Pty/actions/runs/37359837005) on Windows x64/ARM64, Linux x64/ARM64, and macOS x64/ARM64. Each job built with zero warnings/errors, ran 229 tests on each of net8.0, net9.0, and net10.0, verified the exact package, and completed eight modes across three fresh framework consumers plus published net10.0 output (32 invocations). The first Windows ARM64 attempt timed out only in the pre-existing `--scope-smoke`; its failed-job rerun passed tests and package verification without a product or timeout change. Runs 62-66 diagnosed and corrected test-fixture syntax, prefix-only synchronization, and parallel descriptor-accounting defects before this final run.
 
 ## Final commands
 

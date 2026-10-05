@@ -1,6 +1,6 @@
 # Terminal configuration and capability discovery
 
-**Status:** implementation and acceptance are in progress in PR #5. TC01-TC03 have passed their six-platform gates.
+**Status:** implementation and hosted acceptance are complete in PR #5; manual Windows laptop observation is pending.
 
 **Decision:** option 7 plus a focused portion of option 4. This milestone adds explicit child-terminal configuration and truthful discovery of the controls the backend implements. It does not add general tracing or terminal emulation.
 
