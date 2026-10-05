@@ -93,7 +93,7 @@ public sealed class TerminalConfigurationTests {
 	public void Windows_explicit_options_fail_before_launch(PtyTerminalOptions options) {
 		if (!OperatingSystem.IsWindows()) return;
 		PtyStartInfo start = PtyTestSupport.Child("exit"); start.TerminalOptions = options;
-		Assert.Throws<PlatformNotSupportedException>(() => PtyProcess.StartAsync(start));
+		Assert.Throws<PlatformNotSupportedException>(() => { _ = PtyProcess.StartAsync(start); });
 	}
 
 	[Theory]
