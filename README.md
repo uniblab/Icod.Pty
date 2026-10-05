@@ -63,13 +63,22 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 Use `PtySession` when one component should own the process, serialize all input, forward output, drain final bytes, and clean the selected process scope:
 
 ```csharp
+var sessionStart = new PtyStartInfo(
+    OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh");
+string lineEnding = OperatingSystem.IsWindows() ? "\r" : "\n";
+string exitRequest = "exit" + lineEnding;
+
 using var output = new MemoryStream();
-await using var session = await PtySession.StartAsync(start, new(output) {
-    Input = Console.OpenStandardInput(),
+await using var session = await PtySession.StartAsync(sessionStart, new(output) {
     DrainTimeout = TimeSpan.FromSeconds(5)
 });
 
-await session.WriteAsync("status\n"u8.ToArray());
+await session.WriteAsync(System.Text.Encoding.UTF8.GetBytes("echo status" + lineEnding));
+await session.ShutdownAsync(new() {
+    Request = System.Text.Encoding.UTF8.GetBytes(exitRequest),
+    GracePeriod = TimeSpan.FromSeconds(5),
+    ForceTermination = true
+});
 PtySessionResult result = await session.Completion;
 Console.WriteLine($"Exit={result.ExitCode}; output={result.OutputStatus}");
 ```
