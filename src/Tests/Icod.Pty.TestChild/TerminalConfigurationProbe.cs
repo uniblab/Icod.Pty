@@ -16,7 +16,7 @@ internal static class TerminalConfigurationProbe {
 		WriteDescriptor(1, "INITIAL:" + JsonSerializer.Serialize(TerminalState.Read(0).Report()) + "\nREAD-READY\n");
 		byte[] bytes = new byte[readSize];
 		int count = ReadDescriptor(0, bytes);
-		WriteDescriptor(1, $"READ:{count}:{Convert.ToHexString(bytes.AsSpan(0, count))}\n");
+		WriteDescriptor(1, $"READ:{count}:{Convert.ToHexString(bytes.AsSpan(0, count))}:END\n");
 		return 0;
 	}
 

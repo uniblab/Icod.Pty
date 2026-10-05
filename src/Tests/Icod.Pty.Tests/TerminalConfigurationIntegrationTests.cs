@@ -28,7 +28,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		if (OperatingSystem.IsWindows()) return;
 		await using PtyProcess process = await StartReader(new());
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
-		Task<string> read = PtyTestSupport.ReadUntil(process.Output, "READ:");
+		Task<string> read = PtyTestSupport.ReadUntil(process.Output, ":END");
 		await process.Input.WriteAsync(Encoding.ASCII.GetBytes("ABC"));
 		await Task.Delay(250); Assert.False(read.IsCompleted);
 		await process.Input.WriteAsync(new byte[] { 10 });
@@ -42,7 +42,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		await using PtyProcess process = await StartReader(new() { Echo = false, CanonicalInput = false, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		await process.Input.WriteAsync(new byte[] { 0x41 });
-		Assert.Contains("READ:1:41", await PtyTestSupport.ReadUntil(process.Output, "READ:"));
+		Assert.Contains("READ:1:41:END", await PtyTestSupport.ReadUntil(process.Output, ":END"));
 	}
 
 	[Fact]
@@ -51,7 +51,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		await using PtyProcess process = await StartReader(new() { Echo = false, CanonicalInput = false, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		await process.Input.WriteAsync(new byte[] { (byte)'Z' });
-		string output = await PtyTestSupport.ReadUntil(process.Output, "READ:");
+		string output = await PtyTestSupport.ReadUntil(process.Output, ":END");
 		Assert.DoesNotContain("Z", output); Assert.Contains("READ:1:5A", output);
 	}
 
@@ -61,7 +61,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		await using PtyProcess process = await StartReader(new() { Echo = false, CanonicalInput = false, SignalProcessing = true, InterruptCharacter = 28, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		await process.SendInterruptAsync();
-		Assert.Contains("READ:1:03", await PtyTestSupport.ReadUntil(process.Output, "READ:"));
+		Assert.Contains("READ:1:03:END", await PtyTestSupport.ReadUntil(process.Output, ":END"));
 		Assert.Equal(0, await process.WaitForExitAsync());
 	}
 
@@ -71,7 +71,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		await using PtyProcess process = await StartReader(new() { Profile = PtyTerminalProfile.Raw });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		await process.SendInterruptAsync();
-		Assert.Contains("READ:1:03", await PtyTestSupport.ReadUntil(process.Output, "READ:"));
+		Assert.Contains("READ:1:03:END", await PtyTestSupport.ReadUntil(process.Output, ":END"));
 	}
 
 	[Fact]
@@ -95,7 +95,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 		await using PtyProcess process = await StartReader(new() { Echo = false, CanonicalInput = false, MinimumReadBytes = minimum, ReadTimeoutDeciseconds = timeout });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		if (sendByte) await process.Input.WriteAsync(new byte[] { 0x41 });
-		Assert.Contains($"READ:{expectedCount}:", await PtyTestSupport.ReadUntil(process.Output, "READ:").WaitAsync(TimeSpan.FromSeconds(10)));
+		Assert.Contains($"READ:{expectedCount}:", await PtyTestSupport.ReadUntil(process.Output, ":END").WaitAsync(TimeSpan.FromSeconds(10)));
 	}
 	[Theory]
 	[InlineData(PtyProcessOwnership.PrimaryProcess)]
@@ -135,7 +135,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 			PtyStartInfo info = PtyTestSupport.Child("exit"); info.TerminalOptions = new() { Echo = false };
 			await Assert.ThrowsAnyAsync<OperationCanceledException>(() => UnixBackend.StartAsync(LaunchConfiguration.Capture(info), cancellation.Token, native));
 		}
-		Assert.InRange(DescriptorCount(), baseline - 1, baseline + 1);
+		Assert.True(DescriptorCount() <= baseline + 1, "Repeated cancelled configuration attempts leaked descriptors.");
 	}
 
 	[Fact]

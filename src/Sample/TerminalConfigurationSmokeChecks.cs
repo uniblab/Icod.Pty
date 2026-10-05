@@ -26,7 +26,7 @@ internal static class TerminalConfigurationSmokeChecks {
 			PtyStartInfo configured = Child();
 			configured.TerminalOptions = new() { Echo = false, CanonicalInput = false, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 };
 			await using PtyProcess process = await PtyProcess.StartAsync(configured, deadline.Token);
-			string ready = await ReadUntilAsync(process.Output, "CONFIG-READY", deadline.Token);
+			string ready = await ReadUntilAsync(process.Output, "CANONICAL:0", deadline.Token);
 			Require(ready.Contains("ECHO:0", StringComparison.Ordinal) && ready.Contains("CANONICAL:0", StringComparison.Ordinal), "Child did not observe requested initial modes.");
 			await process.Input.WriteAsync(new byte[] { 0x5a }, deadline.Token);
 			string acknowledgement = await ReadUntilAsync(process.Output, "ACK:5A", deadline.Token);
