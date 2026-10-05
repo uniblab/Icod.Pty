@@ -63,8 +63,8 @@ ownership, glibc requirements, retained identity, and native permission limitati
 **Decision, 2026-10-04:** the user selected **option 3 plus a focused subset of option 4** and requested a
 new planning PR, an updated full option menu, and a proper development roadmap.
 
-**Status:** implemented and reviewed on PR #4. The final implementation passed
-[six-platform CI run 42](https://github.com/uniblab/Icod.Pty/actions/runs/37302728188) on all three target
+**Status:** implemented and reviewed on PR #4. The final head passed
+[six-platform CI run 45](https://github.com/uniblab/Icod.Pty/actions/runs/37324970675) on all three target
 frameworks and all package-consumer modes. No version bump or publication is part of this PR; the package
 remains 0.1.0-alpha.1. Windows laptop observations remain separate and pending.
 
