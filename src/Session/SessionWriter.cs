@@ -2,13 +2,14 @@ namespace Icod.Pty.Session;
 
 internal sealed class SessionWriter {
 	private readonly Stream input;
+	private readonly Action<int>? completed;
 	private readonly SemaphoreSlim admission = new(1, 1);
 	private readonly object gate = new();
 	private readonly CancellationTokenSource normalStop = new(), allStop = new();
 	private bool sealedInput, stopped;
 	private int pending;
 	private TaskCompletionSource idle = CompletedSignal();
-	internal SessionWriter(Stream input) => this.input = input;
+	internal SessionWriter(Stream input, Action<int>? completed = null) { this.input = input; this.completed = completed; }
 	internal Task Idle { get { lock (gate) return idle.Task; } }
 	internal ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken token) => Write(bytes, token, false);
 	internal ValueTask WriteShutdownAsync(ReadOnlyMemory<byte> bytes, CancellationToken token) => Write(bytes, token, true);
@@ -26,7 +27,7 @@ internal sealed class SessionWriter {
 			using CancellationTokenSource linked = shutdown ? CancellationTokenSource.CreateLinkedTokenSource(token, allStop.Token)
 				: CancellationTokenSource.CreateLinkedTokenSource(token, normalStop.Token, allStop.Token);
 			await admission.WaitAsync(linked.Token).ConfigureAwait(false);
-			try { linked.Token.ThrowIfCancellationRequested(); await input.WriteAsync(bytes, linked.Token).ConfigureAwait(false); }
+			try { linked.Token.ThrowIfCancellationRequested(); await input.WriteAsync(bytes, linked.Token).ConfigureAwait(false); completed?.Invoke(bytes.Length); }
 			finally { admission.Release(); }
 		} finally { lock (gate) { if (--pending == 0) idle.TrySetResult(); } }
 	}

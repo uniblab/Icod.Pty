@@ -38,12 +38,23 @@ public sealed class PtySession : IDisposable, IAsyncDisposable {
 	/// <summary>Gets output EOF, timeout, stop, or failure independently of primary exit.</summary>
 	public Task<PtySessionOutputStatus> OutputCompletion => coordinator.OutputCompletion;
 	/// <summary>Writes one ordered input operation. Keep the memory unchanged until completion.</summary>
-	public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default) => coordinator.Writer.WriteAsync(bytes, cancellationToken);
+	public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default) => coordinator.WriteAsync(bytes, cancellationToken);
 	/// <summary>Writes one ordered ETX byte. Terminal modes determine its effect.</summary>
 	public ValueTask SendInterruptAsync(CancellationToken cancellationToken = default) {
 		if (HasExited) throw new InvalidOperationException("The child has exited.");
 		return WriteAsync(new byte[] { 3 }, cancellationToken);
 	}
+	/// <summary>Seals ordinary input, sends an optional ordered request, and waits under the supplied shutdown policy.</summary>
+	public Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, CancellationToken cancellationToken = default) =>
+		coordinator.ShutdownAsync(options, cancellationToken);
+	/// <summary>Changes the terminal's character-cell dimensions.</summary>
+	public void Resize(PtySize size) => coordinator.Process.Resize(size);
+	/// <summary>Requests termination of the selected process target.</summary>
+	public PtyControlResult RequestTermination(PtyProcessTarget target) => coordinator.Process.RequestTermination(target);
+	/// <summary>Sends a Unix signal to the selected process target.</summary>
+	public PtyControlResult SendSignal(PtySignal signal, PtyProcessTarget target) => coordinator.Process.SendSignal(signal, target);
+	/// <summary>Gets a detached lifecycle snapshot.</summary>
+	public PtySessionDiagnostics GetDiagnostics() => coordinator.Diagnostics;
 	/// <summary>Releases the session and joins owned work.</summary>
 	public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
 	/// <summary>Releases the session and joins owned work without blocking the calling thread.</summary>
