@@ -19,9 +19,10 @@ internal static class TerminalConfigurationSmokeChecks {
 			PtyStartInfo rejected = Child(); rejected.TerminalOptions = new() { Echo = false };
 			try { _ = PtyProcess.StartAsync(rejected, deadline.Token); throw new IOException("Windows accepted an explicit terminal request."); }
 			catch (PlatformNotSupportedException) { }
-			await using PtyProcess baseline = await PtyProcess.StartAsync(Child(), deadline.Token);
-			string output = await ReadAllAsync(baseline.Output, deadline.Token);
-			Require(await baseline.WaitForExitAsync(deadline.Token) == 0 && output.Contains("DEFAULT-OK", StringComparison.Ordinal), "Windows default launch failed.");
+			using MemoryStream output = new();
+			await using PtySession baseline = await PtySession.StartAsync(Child(), new(output), deadline.Token);
+			PtySessionResult result = await baseline.Completion.WaitAsync(deadline.Token);
+			Require(result.ExitCode == 0 && Encoding.UTF8.GetString(output.ToArray()).Contains("DEFAULT-OK", StringComparison.Ordinal), "Windows default session launch failed.");
 		} else {
 			PtyStartInfo configured = Child();
 			configured.TerminalOptions = new() { Echo = false, CanonicalInput = false, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 };
@@ -57,9 +58,6 @@ internal static class TerminalConfigurationSmokeChecks {
 			if (value.Contains(marker, StringComparison.Ordinal)) return value;
 		}
 		throw new IOException("Terminal configuration child did not emit " + marker + ".");
-	}
-	private static async Task<string> ReadAllAsync(Stream stream, CancellationToken token) {
-		using StreamReader reader = new(stream, Encoding.UTF8, false, 4096, true); return await reader.ReadToEndAsync(token);
 	}
 	private static unsafe void Write(string value) {
 		byte[] bytes = Encoding.UTF8.GetBytes(value); fixed (byte* pointer = bytes) { if (write(1, pointer, (nuint)bytes.Length) != bytes.Length) throw new IOException("Native smoke output failed."); }
