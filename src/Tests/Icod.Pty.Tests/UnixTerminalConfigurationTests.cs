@@ -69,6 +69,24 @@ public sealed class UnixTerminalConfigurationTests {
 		Assert.Equal(1, native.SetCalls);
 	}
 
+	[Fact]
+	public void Darwin_raw_readback_ignores_transient_pendin() {
+		FakeTerminalOperations native = new(State(UnixTerminalPlatform.Darwin)) {
+			ReadbackMutation = state => state.LocalFlags |= 0x20000000
+		};
+		UnixTerminalConfiguration.Apply(42, TerminalConfiguration.Capture(new() { Profile = PtyTerminalProfile.Raw }, All)!, native);
+		Assert.Equal(1, native.SetCalls);
+	}
+
+	[Fact]
+	public void Echo_on_verifies_newline_echo_is_preserved() {
+		UnixTerminalState original = State(UnixTerminalPlatform.Linux); UnixTerminalConstants constants = UnixTerminalConstants.For(original.Platform);
+		original.LocalFlags = (original.LocalFlags & ~constants.Echo) | constants.EchoNewline;
+		FakeTerminalOperations native = new(original) { ReadbackMutation = state => state.LocalFlags &= ~constants.EchoNewline };
+		IOException error = Assert.Throws<IOException>(() => UnixTerminalConfiguration.Apply(42, TerminalConfiguration.Capture(new() { Echo = true }, All)!, native));
+		Assert.Contains("Echo", error.Message, StringComparison.OrdinalIgnoreCase);
+	}
+
 	[Theory]
 	[InlineData(0, "tcgetattr before")]
 	[InlineData(1, "tcsetattr")]
@@ -180,6 +198,7 @@ public sealed class UnixTerminalConfigurationTests {
 		internal (int Result, int Error) SetResult { get; set; }
 		internal byte DisabledCharacter { get; set; }
 		internal bool ApplySet { get; set; } = true;
+		internal Action<UnixTerminalState>? ReadbackMutation { get; init; }
 		internal int GetCalls { get; private set; }
 		internal int SetCalls { get; private set; }
 		internal int DisabledCalls { get; private set; }
@@ -187,7 +206,8 @@ public sealed class UnixTerminalConfigurationTests {
 		public int LastError { get; private set; }
 		internal FakeTerminalOperations(UnixTerminalState state) { current = state.Clone(); DisabledCharacter = state.Platform == UnixTerminalPlatform.Darwin ? (byte)255 : (byte)0; }
 		public int GetAttributes(int descriptor, out UnixTerminalState state) {
-			GetCalls++; (int result, int error) = GetResults.Count == 0 ? (0, 0) : GetResults.Dequeue(); LastError = error; state = current.Clone(); return result;
+			GetCalls++; (int result, int error) = GetResults.Count == 0 ? (0, 0) : GetResults.Dequeue(); LastError = error; state = current.Clone();
+			if (GetCalls > 1) ReadbackMutation?.Invoke(state); return result;
 		}
 		public int SetAttributes(int descriptor, UnixTerminalState state) {
 			SetCalls++; LastError = SetResult.Error; Written = state.Clone(); if (SetResult.Result == 0 && ApplySet) current = state.Clone(); return SetResult.Result;

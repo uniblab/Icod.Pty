@@ -78,6 +78,16 @@ public sealed class TerminalConfigurationIntegrationTests {
 	[Fact]
 	public async Task Custom_control_characters_take_effect() {
 		if (OperatingSystem.IsWindows()) return;
+		await using PtyProcess process = await StartReader(new() { Echo = false, EndOfFileCharacter = 5, EraseCharacter = 8 });
+		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
+		await process.Input.WriteAsync(new byte[] { (byte)'A', (byte)'B', 8, (byte)'C', 5 });
+		Assert.Contains("READ:2:4143:END", await PtyTestSupport.ReadUntil(process.Output, ":END"));
+		Assert.Equal(0, await process.WaitForExitAsync());
+	}
+
+	[Fact]
+	public async Task Custom_interrupt_character_leaves_ETX_as_data() {
+		if (OperatingSystem.IsWindows()) return;
 		await using PtyProcess process = await StartReader(new() { Echo = false, CanonicalInput = false, SignalProcessing = true, InterruptCharacter = 28, MinimumReadBytes = 1, ReadTimeoutDeciseconds = 0 });
 		await PtyTestSupport.ReadUntil(process.Output, "READ-READY");
 		await process.SendInterruptAsync();
