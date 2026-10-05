@@ -64,7 +64,7 @@ ownership, glibc requirements, retained identity, and native permission limitati
 new planning PR, an updated full option menu, and a proper development roadmap.
 
 **Status:** implemented and reviewed on PR #4. The test-corrected implementation passed
-[six-platform CI run 47](https://github.com/uniblab/Icod.Pty/actions/runs/37327912155) on all three target
+[six-platform CI run 49](https://github.com/uniblab/Icod.Pty/actions/runs/37329904247) on all three target
 frameworks and all package-consumer modes. No version bump or publication is part of this PR; the package
 remains 0.1.0-alpha.1. Windows laptop observations remain separate and pending.
 
