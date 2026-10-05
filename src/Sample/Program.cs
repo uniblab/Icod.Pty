@@ -3,6 +3,10 @@ using Icod.Pty;
 using Icod.Pty.Sample;
 
 try {
+	if (args is ["--session-smoke"]) return await SessionSmokeChecks.RunAsync();
+	if (args is ["--session-scope-smoke"]) return await SessionSmokeChecks.RunScopeAsync();
+	if (args is ["--session-scope-parent", string sessionScopeDirectory]) return await SessionSmokeChecks.ParentAsync(sessionScopeDirectory);
+	if (args is ["--session-scope-descendant", string sessionChildDirectory]) return await SessionSmokeChecks.DescendantAsync(sessionChildDirectory);
 	if (args is ["--scope-smoke"]) return await ProcessScopeSmokeChecks.RunAsync();
 	if (args is ["--scope-parent", string scopeDirectory]) return await ProcessScopeSmokeChecks.ParentAsync(scopeDirectory);
 	if (args is ["--scope-descendant", string childDirectory]) return await ProcessScopeSmokeChecks.DescendantAsync(childDirectory);

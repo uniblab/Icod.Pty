@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample forwards terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, and `--smoke` for a noninteractive package check.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, and `--session-smoke` for the reusable-owner package check.
 
 Build once from the repository root:
 
@@ -54,7 +54,7 @@ The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Acc
 
 ## Lifetimes and limits
 
-On host-input EOF the sample waits five seconds for the primary child, then requests forced termination and waits up to five more seconds. It sends no guessed shell command. After primary exit it stops its input/resize tasks and gives output five seconds to drain. A descendant retaining the terminal or a blocked host output can trigger a drain timeout; incomplete output is reported as failure. Native output writes are cancellable and finish before host restoration. If the host cannot accept the error message within 250 ms, the sample still returns failure. Host modes and Windows code pages are restored during normal disposal, including handled failures. Force-killing the sample itself cannot run restoration code.
+On host-input EOF the session permanently seals ordinary input, waits five seconds for the primary child, then requests forced primary termination and waits up to five more seconds. It sends no guessed shell command. After primary exit the session gives output five seconds to reach EOF and flush. A descendant retaining the terminal or a blocked host output can trigger a drain timeout; incomplete output is reported as failure. Native output writes are cancellable and finish before host restoration. If the host cannot accept the error message within 250 ms, the sample still returns failure. Host modes and Windows code pages are restored during normal disposal, including handled failures. Force-killing the sample itself cannot run restoration code.
 
 Descendant lifetime follows the native backend: Linux may keep the terminal open, while macOS terminal revocation and Windows ConPTY teardown can yield EOF at primary exit. The library does not own detached descendants.
 
@@ -81,3 +81,14 @@ framework, command output, and host restoration observations. **Reported 2026-10
 
 The regular interactive sample still uses primary-only ownership; `--scope-smoke` explicitly opts in.
 The library README describes Windows job coverage and Unix initial-group/host-reaper limits.
+
+## Session-owner acceptance
+
+Run these checks on each target framework:
+
+```text
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --session-smoke
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --session-scope-smoke
+```
+
+The expected messages are `PTY session smoke check passed.` and `PTY session scope smoke check passed.` The first check exercises owned output forwarding, primary exit, EOF/flush, and the final result. The second opts into platform-scope ownership, lets a descendant retain the terminal after primary exit 37, observes drain expiry, and verifies that session finalization stops the descendant. Repeat from CMD and Windows PowerShell 5.1 on the minimum supported Windows build and record host restoration separately.

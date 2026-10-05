@@ -1,6 +1,6 @@
 # Reusable Session Orchestration and Lifecycle Diagnostics
 
-**Status:** feature selection approved 2026-10-04; proposed contracts for review before implementation.
+**Status:** approved contracts implemented on feature branch; six-platform acceptance pending.
 **Selection:** roadmap option 3 plus a focused subset of option 4.
 **Companion:** [development roadmap](Session-Orchestration-Implementation-Plan.md).
 
@@ -43,7 +43,7 @@ are deferred. Host-console modes, code pages, and resize detection remain sample
 
 ## Proposed public surface
 
-All new types are in namespace Icod.Pty. This document proposes signatures, not an implemented API.
+All new types are in namespace Icod.Pty. The implemented public signatures are:
 
 ```csharp
 public sealed class PtySessionOptions {

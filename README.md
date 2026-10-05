@@ -1,10 +1,10 @@
 # Icod.Pty
 
-Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, and deterministic cleanup.
+Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, a reusable session owner, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). The [interactive hosting design](docs/Interactive-Hosting-Design.md) defines the contracts, with implementation and acceptance evidence in the [development roadmap](docs/Interactive-Hosting-Implementation-Plan.md).
+Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). The reusable owner is specified by the [session orchestration design](docs/Session-Orchestration-Design.md), with implementation and acceptance evidence in its [development roadmap](docs/Session-Orchestration-Implementation-Plan.md).
 
 ## Platforms
 
@@ -57,6 +57,30 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 - Disposing the input stream is not a portable half-close or an EOF command. Send the application's normal exit command, or terminate/dispose the session.
 - `StartAsync` snapshots launch settings before yielding. A token cancelled before launch creates no child; cancellation during startup waits for cleanup before reporting cancellation. Cancelling that token after successful startup does not stop the child. Do not mutate launch settings concurrently with the initial call.
 - Unix `StartTimeout` bounds the helper handshake (15 seconds by default), independently of caller cancellation. It does not bound native creation or cleanup and is unused on Windows. Startup reports helper/exec failures to the caller. Synchronous `Start` uses the same startup path.
+
+### Reusable session owner
+
+Use `PtySession` when one component should own the process, serialize all input, forward output, drain final bytes, and clean the selected process scope:
+
+```csharp
+using var output = new MemoryStream();
+await using var session = await PtySession.StartAsync(start, new(output) {
+    Input = Console.OpenStandardInput(),
+    DrainTimeout = TimeSpan.FromSeconds(5)
+});
+
+await session.WriteAsync("status\n"u8.ToArray());
+PtySessionResult result = await session.Completion;
+Console.WriteLine($"Exit={result.ExitCode}; output={result.OutputStatus}");
+```
+
+`Input` is optional; its EOF stops that forwarding pump while explicit `WriteAsync` calls remain available. All PTY writes, including `SendInterruptAsync` and shutdown request bytes, share one writer. Each admitted write remains contiguous. Cancellation before admission sends no bytes; cancellation during a stream write can follow a partial native write and is never retried automatically. Keep caller memory unchanged until the returned `ValueTask` completes.
+
+Primary exit seals ordinary input and starts `DrainTimeout`. `Completion` waits for output EOF and flush, or reports `TimedOut` when the drain interval expires. A descendant can retain a terminal after the primary exits. Session disposal always releases the selected ownership scope, even after graceful primary exit. `OutputCompletion` reports output independently, so early output EOF does not imply process exit.
+
+Operational input, output, process-observation, and cleanup failures are retained in `PtySessionResult.Failures`; `Completion` itself returns that shared result. `DisposeAsync` joins the same finalizer and throws `AggregateException` when failures were retained. Caller cancellation of `Completion.WaitAsync` cancels only that wait. Startup cancellation owns cleanup only until `StartAsync` successfully returns.
+
+`GetDiagnostics()` returns a detached snapshot: the current phase, input-seal state, completed byte counts, and the latest 32 lifecycle events. It contains no command, environment, input, output, transcript, or exception-message data. `DroppedEvents` reports ring-buffer eviction. Use `PtyProcess` when the caller deliberately wants direct streams and manual lifetime coordination.
 
 ### Interrupt and controlled shutdown
 
@@ -181,7 +205,7 @@ dotnet run --project samples/Icod.Pty.Sample -f net10.0 -- --smoke
 
 The sample accepts an executable followed by arguments and forwards input immediately. With no arguments it opens the platform shell. It copies terminal dimensions, forwards resize changes, and restores host modes and Windows code pages on normal exit and handled failures. Use `--line` for line input or redirected streams, `--interactive` to state the default explicitly, or `--` before the executable. The host terminal renders output.
 
-Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, and `--scope-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published net10.0 output; `--interrupt-child` is the managed counterpart used by the interrupt check.
+Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, and `--session-scope-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published net10.0 output; internal child switches support the interrupt and scope checks.
 
 ### Windows laptop acceptance
 
@@ -190,6 +214,8 @@ From CMD on the minimum supported Windows build:
 ```cmd
 build.cmd
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --smoke
+dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --session-smoke
+dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --session-scope-smoke
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- cmd.exe
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLogo -NoProfile
 ```
