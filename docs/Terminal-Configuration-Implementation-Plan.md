@@ -10,7 +10,7 @@
 
 **Spec:** [Terminal-Configuration-Design.md](Terminal-Configuration-Design.md).
 
-**Status:** implementation approved on 2026-10-05. TC01-TC02 passed; TC03-TC09 are in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
+**Status:** implementation approved on 2026-10-05. TC01-TC08 passed; TC09 final verification is in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
 
 ## Global constraints
 
@@ -103,68 +103,68 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 **Files:** UnixTerminalConfiguration, UnixTerminalNative, UnixTerminalConfigurationTests.
 **Interfaces:** `UnixTerminalConfiguration.Apply(int slaveFd, TerminalConfiguration configuration) : void`; an internal test seam substitutes native get/set/readback operations, never a public hook. Define explicit Linux/Darwin termios structs from TC01.
 
-- [ ] Add failing `Preserve_changes_only_requested_fields`, `Echo_off_clears_newline_echo`, `Raw_sets_verified_masks_and_read_timing`, `Disabled_character_is_not_a_literal_byte`, and `Partial_native_success_fails_readback` tests. Assert unrelated fields/speeds/cc entries survive Preserve; ignore ABI padding in semantic comparisons.
-- [ ] Run `UnixTerminalConfigurationTests` and record RED.
-- [ ] Implement read-modify-TCSANOW-readback using the original native state. Resolve native disabled-character encoding; reject literal bytes colliding with it. Raw uses native cfmakeraw plus VMIN=1/VTIME=0; compare all fields defined by that transformation.
-- [ ] Inject get, set, and readback native errors independently; assert IOException identifies the failed operation and preserves the native error where present. Assert a simulated successful-but-unapplied field raises IOException, without returning success or writing terminal-content data.
-- [ ] Run tests on all four Unix platforms and all TFMs; confirm no production syscall occurs for null/default requests.
-- [ ] Commit `feat: apply and verify Unix terminal configuration`.
+- [x] Add failing `Preserve_changes_only_requested_fields`, `Echo_off_clears_newline_echo`, `Raw_sets_verified_masks_and_read_timing`, `Disabled_character_is_not_a_literal_byte`, and `Partial_native_success_fails_readback` tests. Assert unrelated fields/speeds/cc entries survive Preserve; ignore ABI padding in semantic comparisons.
+- [x] Run `UnixTerminalConfigurationTests` and record RED. [Run 58](https://github.com/uniblab/Icod.Pty/actions/runs/37354423945) failed because the Unix adapter contract did not exist.
+- [x] Implement read-modify-TCSANOW-readback using the original native state. Resolve native disabled-character encoding; reject literal bytes colliding with it. Raw uses native cfmakeraw plus VMIN=1/VTIME=0; compare all fields defined by that transformation.
+- [x] Inject get, set, and readback native errors independently; assert IOException identifies the failed operation and preserves the native error where present. Assert a simulated successful-but-unapplied field raises IOException, without returning success or writing terminal-content data.
+- [x] Run tests on all four Unix platforms and all TFMs; confirm no production syscall occurs for null/default requests. [Run 60](https://github.com/uniblab/Icod.Pty/actions/runs/37355421340) passed all six jobs, package checks, and all target frameworks after correcting fixed-buffer marshalling diagnosed by run 59.
+- [x] Commit `feat: apply and verify Unix terminal configuration` (`631cca0c4fb162b6a8e3434d884f297f6a494f47`, fix `3453686d01005dc5c4b056ab458139706ce6bd2c`).
 
 ## Task 4: TC04 startup integration and resource rollback
 
 **Files:** UnixBackend, TerminalConfigurationIntegrationTests, existing UnixStartupTests/UnixLifetimeFaultTests as needed.
 **Interfaces:** consume the captured configuration and TC03 Apply on the existing owned slave descriptor, before either launch path.
 
-- [ ] Add `Configuration_precedes_both_launch_paths`, `Configuration_failure_never_launches_child`, `Cancelled_configuration_releases_descriptors`, and `Session_configuration_failure_leaves_streams_open`. Use startup factory/operation counters and a child marker to prove order, not a delay-based inference.
-- [ ] Run the new tests to RED.
-- [ ] Insert Apply inside the existing cleanup boundary, add cancellation checks surrounding configuration, and preserve startup exception/cleanup handling. Do not extend slave lifetime or the helper wire format.
-- [ ] Inject failure before get, at set, after set/readback, and immediately before launch. Verify descriptors return to the warmed baseline across repeated attempts, no new helper/child survives, and supplied session streams remain open.
-- [ ] Run the new tests plus existing startup, ownership, and session-start filters on every TFM; verify no changes to PrimaryProcess/PlatformScope defaults.
-- [ ] Commit `feat: configure child terminals before launch`.
+- [x] Add `Configuration_precedes_both_launch_paths`, `Configuration_failure_never_launches_child`, `Cancelled_configuration_releases_descriptors`, and `Session_configuration_failure_leaves_streams_open`. Use startup factory/operation counters and a child marker to prove order, not a delay-based inference.
+- [x] Run the new tests to RED.
+- [x] Insert Apply inside the existing cleanup boundary, add cancellation checks surrounding configuration, and preserve startup exception/cleanup handling. Do not extend slave lifetime or the helper wire format.
+- [x] Inject failure before get, at set, after set/readback, and immediately before launch. Verify descriptors return to the warmed baseline across repeated attempts, no new helper/child survives, and supplied session streams remain open.
+- [x] Run the new tests plus existing startup, ownership, and session-start filters on every TFM; verify no changes to PrimaryProcess/PlatformScope defaults.
+- [x] Commit `feat: configure child terminals before launch`. Expected RED is [run 61](https://github.com/uniblab/Icod.Pty/actions/runs/37356263091); startup integration, rollback, platform behavior, and package consumers passed in [run 67](https://github.com/uniblab/Icod.Pty/actions/runs/37358836220).
 
 ## Task 5: TC05 Windows rejection and unchanged default behavior
 
 **Files:** TerminalConfigurationTests, TerminalConfigurationIntegrationTests; common validation only if a defect is exposed.
 **Interfaces:** None capabilities on Windows; null/all-default configuration is legal.
 
-- [ ] Add `Windows_explicit_options_fail_before_launch` for each capability family, `Windows_default_options_preserve_launch`, and `Rejected_options_do_not_change_host_console`. Assert no child marker/factory call for rejection and identical host mode/code-page snapshots before/after in the existing terminal fixture.
-- [ ] Run tests to RED before adding missing rejection checks; if TC02 already supplies the behavior, record these as additional coverage rather than claiming a new defect.
-- [ ] Verify `PtyProcess.Start`, `StartAsync`, and `PtySession.StartAsync`; verify both ownership policies and caller-owned session streams after rejection.
-- [ ] Run on Windows x64 and ARM64 for all TFMs, with no skips substituting for unsupported-request assertions. Keep the existing ConPTY fragmented-query exclusion unchanged.
-- [ ] Commit `test: verify Windows terminal option boundaries`.
+- [x] Add `Windows_explicit_options_fail_before_launch` for each capability family, `Windows_default_options_preserve_launch`, and `Rejected_options_do_not_change_host_console`. Assert no child marker/factory call for rejection and identical host mode/code-page snapshots before/after in the existing terminal fixture.
+- [x] Run tests to RED before adding missing rejection checks; if TC02 already supplies the behavior, record these as additional coverage rather than claiming a new defect.
+- [x] Verify `PtyProcess.Start`, `StartAsync`, and `PtySession.StartAsync`; verify both ownership policies and caller-owned session streams after rejection.
+- [x] Run on Windows x64 and ARM64 for all TFMs, with no skips substituting for unsupported-request assertions. Keep the existing ConPTY fragmented-query exclusion unchanged.
+- [x] Commit `test: verify Windows terminal option boundaries`. Run 67 passed Windows x64/ARM64 on net8.0/net9.0/net10.0, including Windows PowerShell 5.1 package verification on x64.
 
 ## Task 6: TC06 native behavioral and compatibility acceptance
 
 **Files:** TerminalConfigurationIntegrationTests; test-child Program and TerminalConfigurationProbe.
 **Interfaces:** child modes report initial semantic state, acknowledge receipt of byte sequences, and deliberately change their own modes when directed. Native reads avoid managed console line buffering.
 
-- [ ] Add `Child_first_state_matches_request`, `Canonical_waits_for_delimiter`, `Noncanonical_reads_without_delimiter`, `Echo_off_emits_no_input_echo`, `Custom_control_characters_take_effect`, `Raw_ETX_is_data`, and `Child_may_change_initial_configuration`.
-- [ ] Include VMIN/VTIME combinations (0,0), (0,1), (1,0), and (2,1), using synchronization and broad watchdog bounds rather than exact scheduler timing. Separate terminal zero-length reads from transport EOF expectations.
-- [ ] Add an ETX regression: with custom VINTR or Raw, SendInterruptAsync still sends byte 3; native SendSignal remains independent. Verify canonical EOF is not a promised portable half-close.
-- [ ] Run RED for each missing behavior; implement only spec-conforming fixes. Repeat through both ownership policies and session/process entry points, with child-side first-state reporting before any self-configuration.
-- [ ] Run all new native cases and existing session shutdown/output/drain tests on six platforms/three TFMs. Record any timing corrections as test changes, not silent product-default changes.
-- [ ] Commit `test: verify terminal modes and lifecycle compatibility`.
+- [x] Add `Child_first_state_matches_request`, `Canonical_waits_for_delimiter`, `Noncanonical_reads_without_delimiter`, `Echo_off_emits_no_input_echo`, `Custom_control_characters_take_effect`, `Raw_ETX_is_data`, and `Child_may_change_initial_configuration`.
+- [x] Include VMIN/VTIME combinations (0,0), (0,1), (1,0), and (2,1), using synchronization and broad watchdog bounds rather than exact scheduler timing. Separate terminal zero-length reads from transport EOF expectations.
+- [x] Add an ETX regression: with custom VINTR or Raw, SendInterruptAsync still sends byte 3; native SendSignal remains independent. Verify canonical EOF is not a promised portable half-close.
+- [x] Run RED for each missing behavior; implement only spec-conforming fixes. Repeat through both ownership policies and session/process entry points, with child-side first-state reporting before any self-configuration.
+- [x] Run all new native cases and existing session shutdown/output/drain tests on six platforms/three TFMs. Record any timing corrections as test changes, not silent product-default changes.
+- [x] Commit `test: verify terminal modes and lifecycle compatibility`. Run 65 exposed prefix-only report reads; the synchronized complete-report correction and serialized descriptor accounting passed in run 67.
 
 ## Task 7: TC07 example and exact-package consumers
 
 **Files:** TerminalConfigurationSmokeChecks, sample Program, PackageSmokeTests, VerifyPackageConsumer.ps1.
 **Interfaces:** `--terminal-config-smoke` invokes `TerminalConfigurationSmokeChecks.RunAsync() : Task<int>` and prints `PTY terminal configuration smoke check passed.`; an internal `--terminal-config-child` mode supplies the native-reading fixture. Public interactive sample defaults are unchanged.
 
-- [ ] Add `--terminal-config-smoke` to PackageSmokeTests and both verifier mode lists, run it to RED before implementing the switch.
-- [ ] Implement the Unix check with a child native state/byte acknowledgement for no-echo noncanonical input, then graceful completion. Bound the parent wait and ensure cleanup even on failed assertions.
-- [ ] Implement the Windows check as capability=None, explicit-request rejection before child creation, and a successful null/default session launch. Print success only after these assertions, not after a skip.
-- [ ] Verify fresh package consumers on net8.0/net9.0/net10.0 plus published net10.0: eight modes, 32 invocations per platform. Windows x64 artifact and consumer verification must run under Windows PowerShell 5.1.
-- [ ] Commit `feat: demonstrate initial terminal configuration`.
+- [x] Add `--terminal-config-smoke` to PackageSmokeTests and both verifier mode lists, run it to RED before implementing the switch.
+- [x] Implement the Unix check with a child native state/byte acknowledgement for no-echo noncanonical input, then graceful completion. Bound the parent wait and ensure cleanup even on failed assertions.
+- [x] Implement the Windows check as capability=None, explicit-request rejection before child creation, and a successful null/default session launch. Print success only after these assertions, not after a skip.
+- [x] Verify fresh package consumers on net8.0/net9.0/net10.0 plus published net10.0: eight modes, 32 invocations per platform. Windows x64 artifact and consumer verification must run under Windows PowerShell 5.1.
+- [x] Commit `feat: demonstrate initial terminal configuration`. Run 67 passed eight modes across each fresh net8.0/net9.0/net10.0 consumer and published net10.0 output: 32 invocations on every platform job.
 
 ## Task 8: TC08 documentation and public API closure
 
 **Files:** README, samples README, public XML documentation, ROADMAP, this design and plan.
 
-- [ ] Add a self-contained capability-gated example and a platform table; distinguish Preserve from host inheritance, noncanonical from Raw, and initial from live state. Show explicit Windows unsupported handling.
-- [ ] Document exclusive Raw rules, disabled/literal character semantics, VMIN/VTIME units, fixed ETX behavior, verified readback, failed-start ownership, and the retained Unix helper/runtime requirement.
-- [ ] Add CMD/SH/PowerShell 5.1 commands for the new mode. Keep interactive host restoration and prior laptop observations separate; do not infer success on untested frameworks from net10.0 evidence.
-- [ ] Compile documentation examples as temporary package consumers on all TFMs and run appropriate platform branches. Check XML docs build without warnings, local links resolve, and the menu records completed versus remaining portions of options 4 and 7 truthfully.
-- [ ] Commit `docs: explain terminal configuration capabilities and limits`.
+- [x] Add a self-contained capability-gated example and a platform table; distinguish Preserve from host inheritance, noncanonical from Raw, and initial from live state. Show explicit Windows unsupported handling.
+- [x] Document exclusive Raw rules, disabled/literal character semantics, VMIN/VTIME units, fixed ETX behavior, verified readback, failed-start ownership, and the retained Unix helper/runtime requirement.
+- [x] Add CMD/SH/PowerShell 5.1 commands for the new mode. Keep interactive host restoration and prior laptop observations separate; do not infer success on untested frameworks from net10.0 evidence.
+- [x] Compile documentation examples as temporary package consumers on all TFMs and run appropriate platform branches. Check XML docs build without warnings, local links resolve, and the menu records completed versus remaining portions of options 4 and 7 truthfully.
+- [x] Commit `docs: explain terminal configuration capabilities and limits`.
 
 ## Task 9: TC09 final verification and review
 

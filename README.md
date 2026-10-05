@@ -1,10 +1,10 @@
 # Icod.Pty
 
-Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, a reusable session owner, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
+Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). The reusable owner is specified by the [session orchestration design](docs/Session-Orchestration-Design.md), with implementation and acceptance evidence in its [development roadmap](docs/Session-Orchestration-Implementation-Plan.md).
+Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md) and its [development roadmap](docs/Terminal-Configuration-Implementation-Plan.md).
 
 ## Platforms
 
@@ -57,6 +57,47 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 - Disposing the input stream is not a portable half-close or an EOF command. Send the application's normal exit command, or terminate/dispose the session.
 - `StartAsync` snapshots launch settings before yielding. A token cancelled before launch creates no child; cancellation during startup waits for cleanup before reporting cancellation. Cancelling that token after successful startup does not stop the child. Do not mutate launch settings concurrently with the initial call.
 - Unix `StartTimeout` bounds the helper handshake (15 seconds by default), independently of caller cancellation. It does not bound native creation or cleanup and is unused on Windows. Startup reports helper/exec failures to the caller. Synchronous `Start` uses the same startup path.
+
+### Initial terminal configuration
+
+Query support before launch, then attach options to `PtyStartInfo`:
+
+```csharp
+PtyTerminalCapabilities capabilities = PtyProcess.GetTerminalCapabilities();
+PtyTerminalCapabilities required =
+    PtyTerminalCapabilities.Echo |
+    PtyTerminalCapabilities.CanonicalInput |
+    PtyTerminalCapabilities.ReadTiming;
+
+if ((capabilities & required) == required) {
+    var start = new PtyStartInfo("/bin/sh") {
+        TerminalOptions = new PtyTerminalOptions {
+            Echo = false,
+            CanonicalInput = false,
+            MinimumReadBytes = 1,
+            ReadTimeoutDeciseconds = 0
+        }
+    };
+    await using PtyProcess process = await PtyProcess.StartAsync(start);
+} else {
+    // Windows currently reports None. An explicit request would throw
+    // PlatformNotSupportedException before allocating a PTY or child.
+}
+```
+
+| Platform | Reported launch-time controls |
+| --- | --- |
+| Windows x64/ARM64 | `None`; null or all-default options preserve ConPTY launch behavior |
+| Linux x64/ARM64 | Raw, echo, canonical input, signal processing, control characters, read timing |
+| macOS x64/ARM64 | Raw, echo, canonical input, signal processing, control characters, read timing |
+
+`Preserve` means retain the newly allocated PTY's baseline except for requested fields; it does not copy the host terminal. Setting `CanonicalInput = false` selects noncanonical delivery without applying the other changes made by `Raw`. `Raw` uses the platform's native raw transformation and sets one-byte blocking reads (`VMIN=1`, `VTIME=0`); it is exclusive and cannot be combined with individual overrides.
+
+Control-character properties accept byte values from 0 through 255. Use `PtyTerminalOptions.DisabledCharacter` instead of spelling the platform's disabled byte as a literal; a colliding literal is rejected. `MinimumReadBytes` is native `VMIN`, and `ReadTimeoutDeciseconds` is native `VTIME` in tenths of a second. Both require `CanonicalInput = false`.
+
+These settings establish the child's initial state. The child may change them later; the library does not expose live query, update, or restoration. Unix applies the request to the owned slave before either launch path, reads the requested fields back, and fails startup with `IOException` if native calls fail or the request is not honored. Failed startup releases its descriptors and child resources; `PtySession.StartAsync` leaves supplied streams open. Unix still requires the packaged managed helper and an installed `dotnet` runtime.
+
+`SendInterruptAsync` always writes byte `0x03`. A custom interrupt byte or Raw mode can make that byte ordinary input. `SendSignal` remains a separate native Unix operation. Canonical EOF is terminal input behavior and is not a portable stream half-close.
 
 ### Reusable session owner
 
@@ -214,7 +255,7 @@ dotnet run --project samples/Icod.Pty.Sample -f net10.0 -- --smoke
 
 The sample accepts an executable followed by arguments and forwards input immediately. With no arguments it opens the platform shell. It copies terminal dimensions, forwards resize changes, and restores host modes and Windows code pages on normal exit and handled failures. Use `--line` for line input or redirected streams, `--interactive` to state the default explicitly, or `--` before the executable. The host terminal renders output.
 
-Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, and `--session-scope-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published net10.0 output; internal child switches support the interrupt and scope checks.
+Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, and `--terminal-config-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published net10.0 output; internal child switches support the behavioral checks.
 
 ### Windows laptop acceptance
 
@@ -225,6 +266,7 @@ build.cmd
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --smoke
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --session-smoke
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --session-scope-smoke
+dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- --terminal-config-smoke
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- cmd.exe
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLogo -NoProfile
 ```
