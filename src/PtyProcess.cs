@@ -29,6 +29,7 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 			return new PtyProcess(backend, new PtySize(launch.Columns, launch.Rows));
 		} catch (Exception error) { CleanupActions.AfterFailure(error, backend.Dispose); throw; }
 	}
+	internal static Task<PtyProcess> StartCapturedAsync(LaunchConfiguration launch, CancellationToken token) => StartCoreAsync(launch, token, CreateBackendAsync);
 	private static Task<IPtyBackend> CreateBackendAsync(LaunchConfiguration launch, CancellationToken token) {
 		if (OperatingSystem.IsWindows()) return Windows.WindowsBackend.StartAsync(launch, token);
 		if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) return Unix.UnixBackend.StartAsync(launch, token);
