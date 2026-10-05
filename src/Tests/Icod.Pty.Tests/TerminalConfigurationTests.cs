@@ -94,6 +94,9 @@ public sealed class TerminalConfigurationTests {
 		if (!OperatingSystem.IsWindows()) return;
 		PtyStartInfo start = PtyTestSupport.Child("exit"); start.TerminalOptions = options;
 		Assert.Throws<PlatformNotSupportedException>(() => { _ = PtyProcess.StartAsync(start); });
+		using MemoryStream output = new();
+		Assert.Throws<PlatformNotSupportedException>(() => { _ = PtySession.StartAsync(start, new(output)); });
+		Assert.True(output.CanWrite);
 	}
 
 	[Theory]

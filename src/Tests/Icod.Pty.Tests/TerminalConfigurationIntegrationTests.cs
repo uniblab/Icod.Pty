@@ -13,10 +13,12 @@ public sealed class TerminalConfigurationIntegrationCollection {
 
 [Collection(TerminalConfigurationIntegrationCollection.Name)]
 public sealed class TerminalConfigurationIntegrationTests {
-	[Fact]
-	public async Task Child_first_state_matches_request() {
+	[Theory]
+	[InlineData(PtyProcessOwnership.PrimaryProcess)]
+	[InlineData(PtyProcessOwnership.PlatformScope)]
+	public async Task Child_first_state_matches_request(PtyProcessOwnership ownership) {
 		if (OperatingSystem.IsWindows()) return;
-		PtyStartInfo info = PtyTestSupport.Child("terminal-config-state"); info.TerminalOptions = new() {
+		PtyStartInfo info = PtyTestSupport.Child("terminal-config-state"); info.Ownership = ownership; info.TerminalOptions = new() {
 			Echo = false, CanonicalInput = false, SignalProcessing = false,
 			InterruptCharacter = 28, EndOfFileCharacter = 5, EraseCharacter = 8, MinimumReadBytes = 2, ReadTimeoutDeciseconds = 1
 		};
@@ -27,6 +29,18 @@ public sealed class TerminalConfigurationIntegrationTests {
 		Assert.False(state.GetProperty("Echo").GetBoolean()); Assert.False(state.GetProperty("CanonicalInput").GetBoolean()); Assert.False(state.GetProperty("SignalProcessing").GetBoolean());
 		Assert.Equal(28, state.GetProperty("InterruptCharacter").GetByte()); Assert.Equal(5, state.GetProperty("EndOfFileCharacter").GetByte()); Assert.Equal(8, state.GetProperty("EraseCharacter").GetByte());
 		Assert.Equal(2, state.GetProperty("MinimumReadBytes").GetByte()); Assert.Equal(1, state.GetProperty("ReadTimeoutDeciseconds").GetByte());
+	}
+
+	[Fact]
+	public async Task Session_child_first_state_matches_request() {
+		if (OperatingSystem.IsWindows()) return;
+		PtyStartInfo info = PtyTestSupport.Child("terminal-config-state"); info.TerminalOptions = new() { Echo = false };
+		using MemoryStream output = new();
+		await using PtySession session = await PtySession.StartAsync(info, new(output));
+		PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(20));
+		Assert.Equal(0, result.ExitCode);
+		using JsonDocument report = JsonDocument.Parse(Encoding.UTF8.GetString(output.ToArray()).Replace("\r", "", StringComparison.Ordinal).Trim());
+		Assert.False(report.RootElement.GetProperty("Echo").GetBoolean());
 	}
 
 	[Fact]
@@ -121,13 +135,18 @@ public sealed class TerminalConfigurationIntegrationTests {
 		Assert.True(operations.IndexOf("readback") < operations.IndexOf("launch"));
 	}
 
-	[Fact]
-	public async Task Configuration_failure_never_launches_child() {
+	[Theory]
+	[InlineData(0)]
+	[InlineData(1)]
+	[InlineData(2)]
+	[InlineData(3)]
+	public async Task Configuration_failure_never_launches_child(int failureStage) {
 		if (OperatingSystem.IsWindows()) return;
 		string marker = Path.Combine(Path.GetTempPath(), "icod-pty-terminal-" + Guid.NewGuid().ToString("N"));
 		PtyStartInfo info = PtyTestSupport.Child("write-marker", marker); info.TerminalOptions = new() { Echo = false };
-		RecordingOperations native = new([]) { FailSet = true };
-		await Assert.ThrowsAsync<IOException>(() => UnixBackend.StartAsync(LaunchConfiguration.Capture(info), default, native, () => Assert.Fail("launch reached")));
+		RecordingOperations native = new([]) { FailFirstGet = failureStage == 0, FailSet = failureStage == 1, FailReadback = failureStage == 2 };
+		Action beforeLaunch = failureStage == 3 ? () => throw new IOException("Injected before-launch failure.") : () => Assert.Fail("launch reached");
+		await Assert.ThrowsAsync<IOException>(() => UnixBackend.StartAsync(LaunchConfiguration.Capture(info), default, native, beforeLaunch));
 		Assert.False(File.Exists(marker));
 	}
 
@@ -167,13 +186,14 @@ public sealed class TerminalConfigurationIntegrationTests {
 	private sealed class RecordingOperations(List<string> operations) : IUnixTerminalOperations {
 		private int gets;
 		private UnixTerminalState current = Initial();
+		internal bool FailFirstGet { get; init; }
 		internal bool FailSet { get; init; }
 		internal bool FailReadback { get; init; }
 		internal Action? AfterSet { get; init; }
 		public int LastError { get; private set; }
 		public int GetAttributes(int descriptor, out UnixTerminalState state) {
 			gets++; operations.Add(gets == 1 ? "get" : "readback"); state = current.Clone();
-			if (gets > 1 && FailReadback) { LastError = 5; return -1; }
+			if ((gets == 1 && FailFirstGet) || (gets > 1 && FailReadback)) { LastError = 5; return -1; }
 			return 0;
 		}
 		public int SetAttributes(int descriptor, UnixTerminalState state) {
