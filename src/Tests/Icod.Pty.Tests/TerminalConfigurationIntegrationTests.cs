@@ -6,6 +6,12 @@ using Xunit;
 
 namespace Icod.Pty.Tests;
 
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class TerminalConfigurationIntegrationCollection {
+	public const string Name = "Terminal configuration integration";
+}
+
+[Collection(TerminalConfigurationIntegrationCollection.Name)]
 public sealed class TerminalConfigurationIntegrationTests {
 	[Fact]
 	public async Task Child_first_state_matches_request() {
@@ -135,7 +141,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 			PtyStartInfo info = PtyTestSupport.Child("exit"); info.TerminalOptions = new() { Echo = false };
 			await Assert.ThrowsAnyAsync<OperationCanceledException>(() => UnixBackend.StartAsync(LaunchConfiguration.Capture(info), cancellation.Token, native));
 		}
-		Assert.True(DescriptorCount() <= baseline + 1, "Repeated cancelled configuration attempts leaked descriptors.");
+		Assert.InRange(DescriptorCount(), baseline - 1, baseline + 1);
 	}
 
 	[Fact]
