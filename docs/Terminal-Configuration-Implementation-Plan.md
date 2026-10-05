@@ -10,7 +10,7 @@
 
 **Spec:** [Terminal-Configuration-Design.md](Terminal-Configuration-Design.md).
 
-**Status:** planning only, 2026-10-05. All TC01-TC09 implementation/acceptance steps remain unchecked. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
+**Status:** implementation approved on 2026-10-05. TC01 passed; TC02-TC09 are in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
 
 ## Global constraints
 
@@ -66,12 +66,12 @@ Expected RED is the specified assertion failure (or absent proposed API for init
 **Files:** new test-child probe and UnixTerminalConfigurationTests; this spec's evidence section.
 **Interfaces:** native probe modes report initial semantic fields and raw bytes; do not publish public API yet.
 
-- [ ] Add a C# probe that allocates a fresh PTY, reads/modifies/applies/readbacks slave state before launch, and reports the fields seen by a managed child before that child changes modes.
-- [ ] Verify Linux/Darwin structs, native constants, cc indices, disabled value lookup, and cfmakeraw transformation on Unix x64 and ARM64; record exact layouts and authoritative platform references here.
-- [ ] Prove initial noncanonical/no-echo input, Raw VMIN=1/VTIME=0, configured VINTR/VEOF/VERASE, and no-op baseline preservation for both ownership policies.
-- [ ] Confirm Windows cannot provide the proposed host-side controls through the existing ConPTY contract; exercise no-op launch and explicit-request rejection expectations without AttachConsole/host mutation.
-- [ ] Record the capability matrix and evidence links. Stop on a required Unix mismatch or need for broader Windows machinery; present a revised design before production work. Freeze the spec's public names/values only after the gate passes.
-- [ ] Commit `test: prove initial terminal configuration feasibility`.
+- [x] Add a C# probe that allocates a fresh PTY, reads/modifies/applies/readbacks slave state before launch, and reports the fields seen by a managed child before that child changes modes.
+- [x] Verify Linux/Darwin structs, native constants, cc indices, disabled value lookup, and cfmakeraw transformation on Unix x64 and ARM64; record exact layouts and authoritative platform references in the design.
+- [x] Prove initial noncanonical/no-echo input, Raw VMIN=1/VTIME=0, configured VINTR/VEOF/VERASE, and no-op baseline preservation through both ownership policies. Configured ownership-path integration remains explicitly covered by TC04/TC06 because TC01 has no production request surface.
+- [x] Confirm Windows has no termios endpoint in the existing ConPTY contract and exercise the unchanged default path without AttachConsole/host mutation. The frozen explicit-request rejection is executable in TC02/TC05 after request types exist.
+- [x] Record the capability matrix and evidence links. The gate passed on all six OS/architecture jobs in [workflow run 53](https://github.com/uniblab/Icod.Pty/actions/runs/37350262099); freeze the spec's public names/values.
+- [x] Commit `test: prove initial terminal configuration feasibility` (probe checkpoint `7e2381484bb052ac497cd67376d1d1f936aef885`; evidence follow-up records the final gate result).
 
 ## Task 2: TC02 options, capture, and prelaunch capabilities
 
@@ -197,4 +197,6 @@ From PowerShell (Windows PowerShell 5.1 for the Windows x64 acceptance host):
 
 Planning baseline: PR #4 merged on 2026-10-05. Its final head `17abff97b1d1a534f443d33bc108ff6e1b3b941e` passed [six-platform run 51](https://github.com/uniblab/Icod.Pty/actions/runs/37342768776). The user reported Windows x64 Release net10.0 success for both session smoke modes. This is baseline evidence, not evidence for the proposed terminal configuration feature.
 
-No TC01 probe, new runtime implementation, new API, or terminal-config smoke mode exists yet. First executable work after approval is TC01. Live read/update/restoration, serial-port controls, native Windows child shims, general tracing/exporters, transcript recording, foreground retargeting, and the separate ConPTY investigation remain deferred.
+TC01 passed in [six-platform workflow run 53](https://github.com/uniblab/Icod.Pty/actions/runs/37350262099). The pure-C# probe verified Linux/Darwin layouts and constants, disabled-byte values, Preserve/custom/Raw transformations, semantic readback, managed-child first state, and unchanged default ownership paths on net8.0/net9.0/net10.0. Windows confirmed the no-termios/default boundary; explicit request rejection remains an executable TC02/TC05 acceptance item.
+
+No production terminal-configuration implementation, new public API, or terminal-config smoke mode exists at the end of TC01. Live read/update/restoration, serial-port controls, native Windows child shims, general tracing/exporters, transcript recording, foreground retargeting, and the separate ConPTY investigation remain deferred.

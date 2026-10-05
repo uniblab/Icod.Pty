@@ -1,6 +1,6 @@
 # Terminal configuration and capability discovery
 
-**Status:** proposed design for review; planning authorized on 2026-10-05. Runtime implementation is not yet approved.
+**Status:** implementation approved on 2026-10-05. TC01 passed the six-platform feasibility gate; TC02-TC09 are in progress.
 
 **Decision:** option 7 plus a focused portion of option 4. This milestone adds explicit child-terminal configuration and truthful discovery of the controls the backend implements. It does not add general tracing or terminal emulation.
 
@@ -32,7 +32,7 @@ Approval of this design explicitly approves this first-increment boundary. Broad
 
 ## Proposed public surface
 
-Freeze the following additive shape only after the TC01 native feasibility gate. Any evidence-driven change to this contract must be documented and reviewed before dependent implementation.
+TC01 passed the native feasibility gate in [workflow run 53](https://github.com/uniblab/Icod.Pty/actions/runs/37350262099). The following additive shape and numeric values are frozen for this increment. Any later evidence-driven change must be documented and reviewed before dependent implementation.
 
 | Member | Contract |
 | --- | --- |
@@ -72,7 +72,16 @@ Discovery describes implemented operations, not an active child's current settin
 
 Windows ConPTY is not a termios endpoint. The proposed Windows result is deliberately `None` for these optional launch controls, not a claim that Windows applications cannot configure their own console. Do not add AttachConsole, injected child code, a Windows shim, terminal escape-sequence guesses, or parent-console SetConsoleMode calls to simulate support. Such an expansion requires a separate proposal.
 
-TC01 must prove the Unix path with pure C# native probes on all four Unix OS/architecture combinations. Confirm termios field widths, offsets, array lengths, native flag/index constants, disabled-character encoding, and cfmakeraw behavior against platform headers/documentation. Existing sample/test interop is a starting reference, not independent proof of production ABI correctness. If either Unix platform fails a required semantic test, stop and report the failed gate; do not quietly ship less than this proposed matrix.
+TC01 proved the Unix path with a pure-C# native probe on all four Unix OS/architecture combinations. The probe allocates a new PTY, reads the slave state, applies Preserve/custom/Raw states, reads each back, and compares the result with the first state reported by a separately spawned managed child before Console initialization. Existing default launches also produced the same baseline semantics through both ownership policies.
+
+### TC01 native evidence
+
+| ABI | Layout and control-character indices | Disabled byte | Verified Raw transformation |
+| --- | --- | --- | --- |
+| Linux x64/ARM64 | 60 bytes; four 32-bit flags at 0/4/8/12, line byte at 16, 32-byte `c_cc` at 17, speeds at 52/56. VINTR=0, VEOF=4, VERASE=2, VMIN=6, VTIME=5. | 0 | glibc `cfmakeraw`: clear input mask `0x05eb`, OPOST, local mask `0x804b`, and control mask `0x0130`; set CS8 `0x0030`, VMIN=1, VTIME=0. |
+| Darwin x64/ARM64 | 72 bytes; four 64-bit flags at 0/8/16/24, 20-byte `c_cc` at 32, speeds at 56/64. VINTR=8, VEOF=0, VERASE=3, VMIN=16, VTIME=17. | 255 | Apple `cfmakeraw`: clear input mask `0x27fe` then set IGNBRK; clear OPOST; clear local mask `0xa040059e`; clear control mask `0x1300` then set CS8/CREAD `0x0b00`; set VMIN=1, VTIME=0. |
+
+The probe ignored ABI padding and Darwin's transient PENDIN bit in semantic comparisons. It verified noncanonical/no-echo configuration, VINTR/VEOF/VERASE, Raw timing, readback, and child-first-state equality on Linux and macOS x64/ARM64. Windows builds and default ConPTY behavior passed without any termios or host-console configuration path. Executable rejection of the frozen explicit options follows in TC02/TC05, after those request types exist.
 
 ## Native implementation boundary
 
@@ -112,6 +121,8 @@ A child can replace initial settings immediately. Tests asserting initial state 
 - [POSIX termios definitions](https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/termios.h.html).
 - [POSIX tcsetattr and readback semantics](https://pubs.opengroup.org/onlinepubs/009696799/functions/tcsetattr.html).
 - [Linux termios and cfmakeraw reference](https://man7.org/linux/man-pages/man3/termios.3.html).
+- [Apple Darwin termios layout and constants](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/termios.h).
+- [Apple libc cfmakeraw implementation](https://github.com/apple-oss-distributions/Libc/blob/main/gen/FreeBSD/termios.c).
 - [Microsoft CreatePseudoConsole](https://learn.microsoft.com/en-us/windows/console/createpseudoconsole) and [pseudoconsole session creation](https://learn.microsoft.com/en-us/windows/console/creating-a-pseudoconsole-session).
 
-These references inform the proposal; TC01 supplies executable evidence. No new configuration behavior is claimed implemented by this document.
+These references and workflow run 53 supply the TC01 evidence. Production configuration behavior begins in TC02-TC04.
