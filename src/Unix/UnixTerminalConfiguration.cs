@@ -40,14 +40,13 @@ internal static class UnixTerminalConfiguration {
 			VerifyFlags("Raw input flags", actual.InputFlags, desired.InputFlags, constants.RawInputClear | constants.RawInputSet);
 			VerifyFlags("Raw output flags", actual.OutputFlags, desired.OutputFlags, constants.OutputPostProcessing);
 			VerifyFlags("Raw control flags", actual.ControlFlags, desired.ControlFlags, constants.RawControlClear | constants.RawControlSet);
-			VerifyFlags("Raw local flags", actual.LocalFlags, desired.LocalFlags, constants.RawLocalClear);
+			VerifyFlags("Raw local flags", actual.LocalFlags, desired.LocalFlags, constants.RawLocalClear & ~constants.TransientLocal);
 			VerifyCharacter("Raw VMIN", actual, desired, constants.MinimumIndex);
 			VerifyCharacter("Raw VTIME", actual, desired, constants.TimeoutIndex);
 			return;
 		}
 		if (configuration.Echo.HasValue) {
-			ulong mask = configuration.Echo.Value ? constants.Echo : constants.Echo | constants.EchoNewline;
-			VerifyFlags("Echo", actual.LocalFlags, desired.LocalFlags, mask);
+			VerifyFlags("Echo", actual.LocalFlags, desired.LocalFlags, constants.Echo | constants.EchoNewline);
 		}
 		if (configuration.CanonicalInput.HasValue) VerifyFlags("CanonicalInput", actual.LocalFlags, desired.LocalFlags, constants.Canonical);
 		if (configuration.SignalProcessing.HasValue) VerifyFlags("SignalProcessing", actual.LocalFlags, desired.LocalFlags, constants.SignalProcessing);

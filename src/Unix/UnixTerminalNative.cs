@@ -24,10 +24,10 @@ internal sealed class UnixTerminalState {
 internal sealed record UnixTerminalConstants(
 	int ControlCount, int InterruptIndex, int EndOfFileIndex, int EraseIndex, int MinimumIndex, int TimeoutIndex,
 	ulong Echo, ulong EchoNewline, ulong Canonical, ulong SignalProcessing, ulong OutputPostProcessing,
-	ulong RawInputClear, ulong RawInputSet, ulong RawControlClear, ulong RawControlSet, ulong RawLocalClear) {
+	ulong RawInputClear, ulong RawInputSet, ulong RawControlClear, ulong RawControlSet, ulong RawLocalClear, ulong TransientLocal) {
 	internal static UnixTerminalConstants For(UnixTerminalPlatform platform) => platform == UnixTerminalPlatform.Darwin
-		? new(20, 8, 0, 3, 16, 17, 0x08, 0x10, 0x100, 0x80, 0x01, 0x27fe, 0x01, 0x1300, 0x0b00, 0xa040059e)
-		: new(32, 0, 4, 2, 6, 5, 0x08, 0x40, 0x02, 0x01, 0x01, 0x05eb, 0, 0x0130, 0x0030, 0x804b);
+		? new(20, 8, 0, 3, 16, 17, 0x08, 0x10, 0x100, 0x80, 0x01, 0x27fe, 0x01, 0x1300, 0x0b00, 0xa040059e, 0x20000000)
+		: new(32, 0, 4, 2, 6, 5, 0x08, 0x40, 0x02, 0x01, 0x01, 0x05eb, 0, 0x0130, 0x0030, 0x804b, 0);
 	internal ulong RawInput(ulong value) => (value & ~RawInputClear) | RawInputSet;
 	internal ulong RawControl(ulong value) => (value & ~RawControlClear) | RawControlSet;
 }
