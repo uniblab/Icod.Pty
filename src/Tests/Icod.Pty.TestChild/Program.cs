@@ -10,6 +10,7 @@ if (args is ["terminal-config-state"]) return TerminalConfigurationProbe.ReportC
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 if (args is ["terminal-config-native-probe"]) return await TerminalConfigurationProbe.RunAsync();
+if (args is ["write-marker", string markerPath]) { File.WriteAllText(markerPath, "started"); return 0; }
 if (args is ["scope-native-probe", string scopeScenario]) return await ProcessScopeFixture.ProbeAsync(scopeScenario);
 if (args is ["scope-parent", string scopeDirectory]) return await ProcessScopeFixture.ParentAsync(scopeDirectory);
 if (args is ["scope-parent", string scopeDirectoryMode, string scopeMode]) return await ProcessScopeFixture.ParentAsync(scopeDirectoryMode, scopeMode);
