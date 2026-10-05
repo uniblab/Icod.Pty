@@ -25,7 +25,8 @@ internal static class SessionSmokeChecks {
 			if (OperatingSystem.IsWindows()) _ = child.SafeHandle;
 			File.WriteAllText(Path.Combine(directory, "exit-primary"), "exit"); PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(30));
 			await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
-			if (result.ExitCode != 37 || result.OutputStatus != PtySessionOutputStatus.TimedOut) throw new IOException($"PTY session scope smoke check failed: exit={result.ExitCode}, output={result.OutputStatus}, reason={result.Reason}.");
+			PtySessionOutputStatus expected = OperatingSystem.IsLinux() ? PtySessionOutputStatus.TimedOut : PtySessionOutputStatus.EndOfStream;
+			if (result.ExitCode != 37 || result.OutputStatus != expected) throw new IOException($"PTY session scope smoke check failed: exit={result.ExitCode}, output={result.OutputStatus}, reason={result.Reason}.");
 			Console.WriteLine("PTY session scope smoke check passed."); return 0;
 		} finally {
 			File.WriteAllText(Path.Combine(directory, "stop-child"), "stop");

@@ -62,6 +62,7 @@ internal static class InteractiveSession {
 		internal Task Completion => completion.Task;
 		public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) {
 			try { int count = await console.ReadAsync(buffer, token).ConfigureAwait(false); if (count == 0) completion.TrySetResult(); return count; }
+			catch (OperationCanceledException) when (token.IsCancellationRequested) { completion.TrySetCanceled(token); throw new OperationCanceledException(token); }
 			catch (Exception error) { completion.TrySetException(error); throw; }
 		}
 		public override bool CanRead => true; public override bool CanSeek => false; public override bool CanWrite => false;

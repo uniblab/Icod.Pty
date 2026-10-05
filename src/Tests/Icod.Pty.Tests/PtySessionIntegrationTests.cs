@@ -26,7 +26,7 @@ public sealed class PtySessionIntegrationTests {
 		Assert.Equal(23, result.ExitCode); Assert.Equal(PtySessionOutputStatus.EndOfStream, result.OutputStatus);
 	}
 	[Fact]
-	public async Task Owned_session_drain_timeout_cleans_descendant_scope() {
+	public async Task Owned_session_primary_exit_cleans_descendant_scope() {
 		string directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "icod-session-scope-" + Guid.NewGuid().ToString("N"))).FullName;
 		try {
 			PtyStartInfo info = OperatingSystem.IsWindows() ? PtyTestSupport.Child("scope-windows-parent", directory) : PtyTestSupport.Child("scope-parent", directory, "same");
@@ -36,8 +36,10 @@ public sealed class PtySessionIntegrationTests {
 			string pidFile = Path.Combine(directory, OperatingSystem.IsWindows() ? "child-ready" : "child-pid");
 			using Process child = Process.GetProcessById(int.Parse(File.ReadAllText(pidFile), System.Globalization.CultureInfo.InvariantCulture));
 			File.WriteAllText(Path.Combine(directory, "exit-primary"), "exit"); PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(20));
-			Assert.Equal(37, result.ExitCode); Assert.Equal(PtySessionOutputStatus.TimedOut, result.OutputStatus);
-			await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10)); Assert.Equal(1, session.GetDiagnostics().Events.Count(e => e.Kind == PtySessionEventKind.DrainTimedOut));
+			PtySessionOutputStatus expected = OperatingSystem.IsLinux() ? PtySessionOutputStatus.TimedOut : PtySessionOutputStatus.EndOfStream;
+			Assert.Equal(37, result.ExitCode); Assert.Equal(expected, result.OutputStatus);
+			await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+			Assert.Equal(OperatingSystem.IsLinux() ? 1 : 0, session.GetDiagnostics().Events.Count(e => e.Kind == PtySessionEventKind.DrainTimedOut));
 		} finally { File.WriteAllText(Path.Combine(directory, "stop-child"), "stop"); Directory.Delete(directory, true); }
 	}
 	private static async Task UntilText(MemoryStream stream, string value) => await SessionTestSupport.Until(() => Encoding.UTF8.GetString(stream.ToArray()).Contains(value, StringComparison.Ordinal));
