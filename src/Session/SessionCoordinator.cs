@@ -31,7 +31,7 @@ internal sealed class SessionCoordinator {
 		lock (gate) {
 			if (error != null) failures.Add(new(stage!.Value, error));
 			reason ??= why;
-			cancelRelease = why == PtySessionEndReason.Disposed;
+			cancelRelease = why != PtySessionEndReason.PrimaryExited;
 			terminal.TrySetResult();
 		}
 		if (cancelRelease) releaseNow.Cancel();
@@ -50,8 +50,11 @@ internal sealed class SessionCoordinator {
 			Task delay = Task.Delay(configuration.DrainTimeout, releaseNow.Token);
 			Task first = await Task.WhenAny(output, delay).ConfigureAwait(false);
 			if (first != output) {
-				lock (gate) outputOverride = releaseNow.IsCancellationRequested ? PtySessionOutputStatus.Stopped : PtySessionOutputStatus.TimedOut;
-				if (!releaseNow.IsCancellationRequested) journal.Record(PtySessionEventKind.DrainTimedOut);
+				PtySessionOutputStatus? assigned = null;
+				lock (gate) {
+					if (outputOverride == null) outputOverride = assigned = releaseNow.IsCancellationRequested ? PtySessionOutputStatus.Stopped : PtySessionOutputStatus.TimedOut;
+				}
+				if (assigned == PtySessionOutputStatus.TimedOut) journal.Record(PtySessionEventKind.DrainTimedOut);
 				Cleanup(outputStop.Cancel);
 			}
 		} else { lock (gate) outputOverride ??= PtySessionOutputStatus.Stopped; Cleanup(outputStop.Cancel); }
@@ -101,16 +104,18 @@ internal sealed class SessionCoordinator {
 		Task<PtyShutdownResult> operation; TaskCompletionSource<PtyShutdownResult> tracked = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		lock (gate) {
 			ObjectDisposedException.ThrowIf(reason != null, this);
-			operation = Process.ShutdownAsync(options, WriteShutdownAsync, token);
+			operation = Process.ShutdownAsync(options, AcceptShutdown, WriteShutdownAsync, token);
 			shutdowns.Add(tracked.Task);
-			inputSealed = true;
 		}
-		Writer.Seal(); journal.SealInput(); journal.Record(PtySessionEventKind.ShutdownStarted);
 		_ = ObserveShutdownAsync(operation, tracked);
 		return tracked.Task;
 	}
+	private void AcceptShutdown() {
+		inputSealed = true; Writer.Seal(); Cleanup(inputStop.Cancel);
+		journal.SealInput(); journal.Record(PtySessionEventKind.ShutdownStarted);
+	}
 	private async ValueTask WriteShutdownAsync(ReadOnlyMemory<byte> bytes, CancellationToken token) {
-		try { await Writer.WriteShutdownAsync(bytes, token).ConfigureAwait(false); }
+		try { await Writer.Idle.WaitAsync(token).ConfigureAwait(false); await Writer.WriteShutdownAsync(bytes, token).ConfigureAwait(false); }
 		catch (Exception error) when (error is not OperationCanceledException and not ObjectDisposedException) {
 			Trigger(PtySessionEndReason.InputFailed, PtySessionFailureStage.Input, error); throw;
 		}

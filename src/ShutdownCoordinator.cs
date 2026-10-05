@@ -15,6 +15,8 @@ internal static class ShutdownCoordinator {
 				}
 				int code = await backend.Exit.WaitAsync(grace.Token).ConfigureAwait(false);
 				return new(PtyShutdownStatus.Exited, code, false);
+			} catch (OperationCanceledException) when (backend.Exit.IsCompletedSuccessfully) {
+				return Collected(backend, false);
 			} catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
 				throw new OperationCanceledException(cancellationToken);
 			} catch (OperationCanceledException) when (grace.IsCancellationRequested) {

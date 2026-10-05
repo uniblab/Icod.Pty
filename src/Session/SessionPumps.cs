@@ -12,7 +12,7 @@ internal static class SessionPumps {
 				catch (InvalidOperationException) when (token.IsCancellationRequested) { return; }
 				catch (Exception error) when (token.IsCancellationRequested && error is IOException or ObjectDisposedException) { return; }
 			}
-		} catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+		} catch (OperationCanceledException error) when (IsExpectedCancellation(error, token)) { }
 		catch (Exception error) { failed(error); }
 	}
 	internal static async Task<PtySessionOutputStatus> OutputAsync(Stream source, Stream destination,
@@ -31,7 +31,9 @@ internal static class SessionPumps {
 				await destination.WriteAsync(buffer.AsMemory(0, count), token).ConfigureAwait(false);
 				written?.Invoke(count);
 			}
-		} catch (OperationCanceledException) when (token.IsCancellationRequested) { return PtySessionOutputStatus.Stopped; }
+		} catch (OperationCanceledException error) when (IsExpectedCancellation(error, token)) { return PtySessionOutputStatus.Stopped; }
 		catch (Exception error) { failed(error); return PtySessionOutputStatus.Faulted; }
 	}
+	private static bool IsExpectedCancellation(OperationCanceledException error, CancellationToken token) =>
+		token.IsCancellationRequested && error.CancellationToken == token;
 }

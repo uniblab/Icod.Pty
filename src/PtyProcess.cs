@@ -83,14 +83,18 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 		}
 		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken);
 	}
-	internal Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> writeRequest, CancellationToken cancellationToken) {
-		ArgumentNullException.ThrowIfNull(options); ArgumentNullException.ThrowIfNull(writeRequest);
+	internal Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, Action accepted,
+		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> writeRequest, CancellationToken cancellationToken) {
+		ArgumentNullException.ThrowIfNull(options); ArgumentNullException.ThrowIfNull(accepted); ArgumentNullException.ThrowIfNull(writeRequest);
 		var snapshot = options.Capture();
 		lock (gate) {
 			ThrowIfDisposed(); cancellationToken.ThrowIfCancellationRequested(); ValidateTarget(snapshot.Target);
 			if (Interlocked.CompareExchange(ref shutdownActive, 1, 0) != 0) throw new InvalidOperationException("A shutdown operation is already in progress.");
 		}
-		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken, writeRequest);
+		try {
+			accepted();
+			return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken, writeRequest);
+		} catch { Interlocked.Exchange(ref shutdownActive, 0); throw; }
 	}
 	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, PtyProcessTarget target, CancellationToken cancellationToken, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? writeRequest = null) {
 		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken, target, writeRequest).ConfigureAwait(false); }
