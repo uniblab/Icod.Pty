@@ -10,7 +10,7 @@
 
 **Spec:** [Terminal-Configuration-Design.md](Terminal-Configuration-Design.md).
 
-**Status:** implementation approved on 2026-10-05. TC01 passed; TC02-TC09 are in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
+**Status:** implementation approved on 2026-10-05. TC01-TC02 passed; TC03-TC09 are in progress. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
 
 ## Global constraints
 
@@ -78,7 +78,7 @@ Expected RED is the specified assertion failure (or absent proposed API for init
 **Files:** public types, TerminalConfiguration, PtyStartInfo, PtyProcess, LaunchConfiguration, TerminalConfigurationTests.
 **Interfaces:** `PtyProcess.GetTerminalCapabilities()` and public members exactly as in the spec. Internal `TerminalConfiguration? Capture(PtyTerminalOptions? options, PtyTerminalCapabilities capabilities)` returns an immutable snapshot or null for a no-op; `RequiredCapabilities` reports the requested flags.
 
-- [ ] Add tests named `Default_options_are_noop`, `Capture_is_detached`, `Invalid_settings_never_reach_factory`, and `Capabilities_are_side_effect_free`. Pin enum numeric values and DisabledCharacter=-1.
+- [x] Add tests named `Default_options_are_noop`, `Capture_is_detached`, `Invalid_settings_never_reach_factory`, and `Capabilities_are_side_effect_free`. Pin enum numeric values and DisabledCharacter=-1.
 
 ```csharp
 Assert.Null(TerminalConfiguration.Capture(null, PtyTerminalCapabilities.None));
@@ -93,10 +93,10 @@ Assert.Throws<PlatformNotSupportedException>(() => TerminalConfiguration.Capture
 
 Here `all` is the union of the six individually defined capability flags. Cover character bounds -2/-1/0/255/256, timing -1/0/255/256, undefined profiles, every Raw/override pairing, CanonicalInput=true with timing, and mutation after capture. Platform-disabled-byte rejection is additionally covered in TC03.
 
-- [ ] Run the `TerminalConfigurationTests` filter and retain RED evidence.
-- [ ] Implement capture and validation; add prelaunch capability discovery for the verified OS/architecture matrix. Reuse capture from process and session startup; do not add a duplicate session options property.
-- [ ] Run that filter on all TFMs; compile the helper and solution with `dotnet build Icod.Pty.sln -c Release`, expecting zero warnings/errors and unchanged helper JSON.
-- [ ] Commit `feat: define initial terminal options and capabilities`.
+- [x] Run the `TerminalConfigurationTests` filter and retain RED evidence. Run 55 failed on all TFMs only for the intentionally absent public/internal contract types.
+- [x] Implement capture and validation; add prelaunch capability discovery for the verified OS/architecture matrix. Process and session startup reuse `LaunchConfiguration.Capture`; no duplicate session property exists.
+- [x] Run the contract and affected regressions on all TFMs; compile the helper and solution with zero warnings/errors and unchanged helper JSON. [Run 56](https://github.com/uniblab/Icod.Pty/actions/runs/37352587915) passed all six jobs after a Windows ARM64 rerun isolated two different pre-existing net10 timing flakes; the final attempt passed tests and package consumers.
+- [x] Commit `feat: define initial terminal options and capabilities` (`f373c91fb2769fa612c98dfe8a4f759b3e68cbcc`).
 
 ## Task 3: TC03 native transformation and verified application
 
