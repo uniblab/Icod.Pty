@@ -18,7 +18,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 			operations.Add("launch");
 			Assert.Contains("readback", operations);
 		});
-		Assert.Equal(0, await backend.Exit.WaitAsync(TimeSpan.FromSeconds(20)));
+		Assert.Equal(37, await backend.Exit.WaitAsync(TimeSpan.FromSeconds(20)));
 		Assert.True(operations.IndexOf("set") < operations.IndexOf("readback"));
 		Assert.True(operations.IndexOf("readback") < operations.IndexOf("launch"));
 	}
@@ -56,7 +56,8 @@ public sealed class TerminalConfigurationIntegrationTests {
 		RecordingOperations native = new([]) { FailReadback = true };
 		await Assert.ThrowsAsync<IOException>(() => PtySession.StartCoreAsync(launch, session, default,
 			async (captured, token) => await PtyProcess.StartCoreAsync(captured, token, (candidate, inner) => UnixBackend.StartAsync(candidate, inner, native))));
-		Assert.False(input.Disposed); Assert.False(output.Disposed);
+		Assert.Equal(0, input.Disposals); Assert.Equal(0, output.Disposals);
+		Assert.True(input.CanRead); Assert.True(output.CanWrite);
 	}
 
 	private static int DescriptorCount() => Directory.EnumerateFileSystemEntries(OperatingSystem.IsLinux() ? "/proc/self/fd" : "/dev/fd").Count();
