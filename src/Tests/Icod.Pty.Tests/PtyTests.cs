@@ -204,5 +204,6 @@ public sealed class PtyTests {
 		}
 		throw new IOException("Output limit exceeded.");
 	}
-	private static string StripAnsi(string text) => System.Text.RegularExpressions.Regex.Replace(text, "\u001b\\[[0-?]*[ -/]*[@-~]", "");
+	private static string StripAnsi(string text) => System.Text.RegularExpressions.Regex.Replace(text,
+		"\u001b(?:\\[[0-?]*[ -/]*[@-~]|\\][^\u0007\u001b]*(?:\u0007|\u001b\\\\))", "");
 }
