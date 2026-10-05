@@ -33,9 +33,10 @@ public sealed class UnixTerminalConfigurationTests {
 	}
 
 	[Theory]
-	[InlineData(UnixTerminalPlatform.Linux)]
-	[InlineData(UnixTerminalPlatform.Darwin)]
-	public void Raw_sets_verified_masks_and_read_timing(UnixTerminalPlatform platform) {
+	[InlineData(false)]
+	[InlineData(true)]
+	public void Raw_sets_verified_masks_and_read_timing(bool darwin) {
+		UnixTerminalPlatform platform = darwin ? UnixTerminalPlatform.Darwin : UnixTerminalPlatform.Linux;
 		UnixTerminalState original = State(platform); FakeTerminalOperations native = new(original);
 		UnixTerminalConfiguration.Apply(42, TerminalConfiguration.Capture(new() { Profile = PtyTerminalProfile.Raw }, All)!, native);
 		UnixTerminalConstants constants = UnixTerminalConstants.For(platform); UnixTerminalState written = native.Written!;
