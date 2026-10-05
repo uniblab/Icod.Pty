@@ -66,20 +66,20 @@ internal sealed class UnixTerminalNative : IUnixTerminalOperations {
 	}
 
 	private static unsafe UnixTerminalState From(LinuxTermios value) {
-		byte[] controls = new byte[32]; fixed (byte* source = value.ControlCharacters) Marshal.Copy((nint)source, controls, 0, controls.Length);
+		byte[] controls = new byte[32]; byte* source = value.ControlCharacters; Marshal.Copy((nint)source, controls, 0, controls.Length);
 		return new(UnixTerminalPlatform.Linux, value.InputFlags, value.OutputFlags, value.ControlFlags, value.LocalFlags, value.Line, controls, value.InputSpeed, value.OutputSpeed);
 	}
 	private static unsafe UnixTerminalState From(DarwinTermios value) {
-		byte[] controls = new byte[20]; fixed (byte* source = value.ControlCharacters) Marshal.Copy((nint)source, controls, 0, controls.Length);
+		byte[] controls = new byte[20]; byte* source = value.ControlCharacters; Marshal.Copy((nint)source, controls, 0, controls.Length);
 		return new(UnixTerminalPlatform.Darwin, value.InputFlags, value.OutputFlags, value.ControlFlags, value.LocalFlags, 0, controls, value.InputSpeed, value.OutputSpeed);
 	}
 	private static unsafe LinuxTermios ToLinux(UnixTerminalState state) {
 		LinuxTermios value = new() { InputFlags = (uint)state.InputFlags, OutputFlags = (uint)state.OutputFlags, ControlFlags = (uint)state.ControlFlags, LocalFlags = (uint)state.LocalFlags, Line = state.Line, InputSpeed = (uint)state.InputSpeed, OutputSpeed = (uint)state.OutputSpeed };
-		fixed (byte* target = value.ControlCharacters) Marshal.Copy(state.ControlCharacters, 0, (nint)target, 32); return value;
+		byte* target = value.ControlCharacters; Marshal.Copy(state.ControlCharacters, 0, (nint)target, 32); return value;
 	}
 	private static unsafe DarwinTermios ToDarwin(UnixTerminalState state) {
 		DarwinTermios value = new() { InputFlags = state.InputFlags, OutputFlags = state.OutputFlags, ControlFlags = state.ControlFlags, LocalFlags = state.LocalFlags, InputSpeed = state.InputSpeed, OutputSpeed = state.OutputSpeed };
-		fixed (byte* target = value.ControlCharacters) Marshal.Copy(state.ControlCharacters, 0, (nint)target, 20); return value;
+		byte* target = value.ControlCharacters; Marshal.Copy(state.ControlCharacters, 0, (nint)target, 20); return value;
 	}
 	private static void Copy(LinuxTermios value, UnixTerminalState state) { UnixTerminalState changed = From(value); Copy(changed, state); }
 	private static void Copy(DarwinTermios value, UnixTerminalState state) { UnixTerminalState changed = From(value); Copy(changed, state); }
