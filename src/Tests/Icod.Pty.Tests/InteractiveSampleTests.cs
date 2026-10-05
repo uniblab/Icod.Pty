@@ -175,7 +175,8 @@ public sealed class InteractiveSampleTests {
 		info.ArgumentList.Insert(1, "--interactive"); info.ArgumentList.Insert(2, "--");
 		info.Size = new PtySize(1024, 31);
 		await using PtyProcess outer = await PtyProcess.StartAsync(info);
-		string text = await PtyTestSupport.ReadUntil(outer.Output, "\n");
+		string text = await PtyTestSupport.ReadUntil(outer.Output, "READY:");
+		text += await PtyTestSupport.ReadUntil(outer.Output, "\n");
 		Assert.Contains("argument with spaces", text); Assert.Contains("snow-\\u96EA", text); Assert.Contains("ends\\\\", text);
 	}
 }
