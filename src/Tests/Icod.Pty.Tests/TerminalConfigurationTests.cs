@@ -35,7 +35,7 @@ public sealed class TerminalConfigurationTests {
 		options.InterruptCharacter = 1; options.EndOfFileCharacter = 2; options.EraseCharacter = 3;
 		options.MinimumReadBytes = null; options.ReadTimeoutDeciseconds = null;
 		Assert.Equal(PtyTerminalProfile.Preserve, captured.Profile);
-		Assert.False(captured.Echo); Assert.False(captured.CanonicalInput); Assert.True(captured.SignalProcessing);
+		Assert.Equal(false, captured.Echo); Assert.Equal(false, captured.CanonicalInput); Assert.Equal(true, captured.SignalProcessing);
 		Assert.Equal(28, captured.InterruptCharacter); Assert.Equal(5, captured.EndOfFileCharacter); Assert.Equal(PtyTerminalOptions.DisabledCharacter, captured.EraseCharacter);
 		Assert.Equal(2, captured.MinimumReadBytes); Assert.Equal(3, captured.ReadTimeoutDeciseconds);
 		Assert.Equal(All & ~PtyTerminalCapabilities.RawProfile, captured.RequiredCapabilities);

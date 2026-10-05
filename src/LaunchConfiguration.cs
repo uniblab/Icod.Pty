@@ -15,6 +15,7 @@ internal sealed class LaunchConfiguration {
 	public string? DotNetHostPath { get; set; }
 
 #if !PTY_HELPER
+	internal TerminalConfiguration? TerminalConfiguration { get; set; }
 	internal static LaunchConfiguration Capture(PtyStartInfo info) {
 		ArgumentNullException.ThrowIfNull(info);
 		PtyProcessOwnership ownership = info.Ownership;
@@ -36,7 +37,8 @@ internal sealed class LaunchConfiguration {
 		}
 		string[] arguments = info.ArgumentList.ToArray();
 		foreach (string argument in arguments) ValidateText(argument, "argument", false);
-		return new LaunchConfiguration { FileName = ResolveExecutable(info.FileName, directory, environment), Ownership = ownership, Arguments = arguments, WorkingDirectory = directory, Environment = environment, Columns = info.Size.Columns, Rows = info.Size.Rows, StartTimeout = info.StartTimeout, DotNetHostPath = info.DotNetHostPath };
+		TerminalConfiguration? terminal = Icod.Pty.TerminalConfiguration.Capture(info.TerminalOptions, PtyProcess.GetTerminalCapabilities());
+		return new LaunchConfiguration { FileName = ResolveExecutable(info.FileName, directory, environment), Ownership = ownership, Arguments = arguments, WorkingDirectory = directory, Environment = environment, Columns = info.Size.Columns, Rows = info.Size.Rows, StartTimeout = info.StartTimeout, DotNetHostPath = info.DotNetHostPath, TerminalConfiguration = terminal };
 	}
 	internal static string ResolveExecutable(string name, string directory, IReadOnlyDictionary<string, string> environment) {
 		IEnumerable<string> candidates;
