@@ -33,6 +33,10 @@ public sealed class PtySession : IDisposable, IAsyncDisposable {
 	public PtyProcessOwnership Ownership => coordinator.Process.Ownership;
 	/// <summary>Gets supported native controls, not target liveness.</summary>
 	public PtyProcessCapabilities Capabilities => coordinator.Process.Capabilities;
+	/// <summary>Gets the shared result after all owned work and cleanup settle.</summary>
+	public Task<PtySessionResult> Completion => coordinator.Completion;
+	/// <summary>Gets output EOF, timeout, stop, or failure independently of primary exit.</summary>
+	public Task<PtySessionOutputStatus> OutputCompletion => coordinator.OutputCompletion;
 	/// <summary>Writes one ordered input operation. Keep the memory unchanged until completion.</summary>
 	public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default) => coordinator.Writer.WriteAsync(bytes, cancellationToken);
 	/// <summary>Writes one ordered ETX byte. Terminal modes determine its effect.</summary>
