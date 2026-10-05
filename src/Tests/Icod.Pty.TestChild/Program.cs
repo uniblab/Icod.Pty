@@ -7,7 +7,7 @@ if (args is ["scope-auto-reap-probe", _]) return await ProcessScopeFixture.AutoR
 if (args is ["scope-host-guard", string guard]) return await ProcessScopeFixture.HostGuardAsync(guard);
 // Capture the terminal before Console initialization or application mode changes.
 if (args is ["terminal-config-state"]) return TerminalConfigurationProbe.ReportCurrentState();
-if (args is ["terminal-config-read", string readSize]) return TerminalConfigurationProbe.ReadOnce(int.Parse(readSize, System.Globalization.CultureInfo.InvariantCulture));
+if (args is ["terminal-config-read", string terminalReadSize]) return TerminalConfigurationProbe.ReadOnce(int.Parse(terminalReadSize, System.Globalization.CultureInfo.InvariantCulture));
 if (args is ["terminal-config-change"]) return TerminalConfigurationProbe.ChangeOwnState();
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
