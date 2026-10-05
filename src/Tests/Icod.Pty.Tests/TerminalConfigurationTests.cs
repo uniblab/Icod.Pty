@@ -88,6 +88,42 @@ public sealed class TerminalConfigurationTests {
 		Assert.Throws<PlatformNotSupportedException>(() => TerminalConfiguration.Capture(new() { CanonicalInput = false, MinimumReadBytes = 1 }, PtyTerminalCapabilities.None));
 	}
 
+	[Theory]
+	[MemberData(nameof(ExplicitOptionFamilies))]
+	public void Windows_explicit_options_fail_before_launch(PtyTerminalOptions options) {
+		if (!OperatingSystem.IsWindows()) return;
+		PtyStartInfo start = PtyTestSupport.Child("exit"); start.TerminalOptions = options;
+		Assert.Throws<PlatformNotSupportedException>(() => PtyProcess.StartAsync(start));
+	}
+
+	[Theory]
+	[InlineData(PtyProcessOwnership.PrimaryProcess)]
+	[InlineData(PtyProcessOwnership.PlatformScope)]
+	public async Task Windows_default_options_preserve_launch(PtyProcessOwnership ownership) {
+		if (!OperatingSystem.IsWindows()) return;
+		PtyStartInfo start = PtyTestSupport.Child("exit"); start.Ownership = ownership; start.TerminalOptions = new();
+		await using PtyProcess process = await PtyProcess.StartAsync(start);
+		Assert.Equal(37, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20)));
+	}
+
+	[Fact]
+	public void Rejected_options_do_not_change_host_console() {
+		if (!OperatingSystem.IsWindows()) return;
+		ConsoleSnapshot before = ConsoleSnapshot.Capture();
+		PtyStartInfo start = PtyTestSupport.Child("exit"); start.TerminalOptions = new() { Echo = false };
+		Assert.Throws<PlatformNotSupportedException>(() => PtyProcess.Start(start));
+		Assert.Equal(before, ConsoleSnapshot.Capture());
+	}
+
+	public static IEnumerable<object[]> ExplicitOptionFamilies() {
+		yield return [new PtyTerminalOptions { Profile = PtyTerminalProfile.Raw }];
+		yield return [new PtyTerminalOptions { Echo = false }];
+		yield return [new PtyTerminalOptions { CanonicalInput = false }];
+		yield return [new PtyTerminalOptions { SignalProcessing = false }];
+		yield return [new PtyTerminalOptions { InterruptCharacter = 3 }];
+		yield return [new PtyTerminalOptions { CanonicalInput = false, MinimumReadBytes = 1 }];
+	}
+
 	private static IEnumerable<Action<PtyTerminalOptions>> RawOverrides() {
 		yield return value => value.Echo = false;
 		yield return value => value.CanonicalInput = false;
@@ -105,5 +141,17 @@ public sealed class TerminalConfigurationTests {
 			TerminalConfiguration? configuration = TerminalConfiguration.Capture(options, PtyTerminalCapabilities.None);
 			if (configuration != null) { calls++; await Task.Yield(); }
 		} finally { Assert.Equal(0, calls); }
+	}
+
+	private readonly record struct ConsoleSnapshot(uint InputMode, uint OutputMode, uint InputCodePage, uint OutputCodePage) {
+		internal static ConsoleSnapshot Capture() {
+			nint input = GetStdHandle(-10), output = GetStdHandle(-11);
+			GetConsoleMode(input, out uint inputMode); GetConsoleMode(output, out uint outputMode);
+			return new(inputMode, outputMode, GetConsoleCP(), GetConsoleOutputCP());
+		}
+		[DllImport("kernel32.dll")] private static extern nint GetStdHandle(int handle);
+		[DllImport("kernel32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetConsoleMode(nint handle, out uint mode);
+		[DllImport("kernel32.dll")] private static extern uint GetConsoleCP();
+		[DllImport("kernel32.dll")] private static extern uint GetConsoleOutputCP();
 	}
 }

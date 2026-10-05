@@ -3,6 +3,8 @@ using Icod.Pty;
 using Icod.Pty.Sample;
 
 try {
+	if (args is ["--terminal-config-child"]) return TerminalConfigurationSmokeChecks.RunChild();
+	if (args is ["--terminal-config-smoke"]) return await TerminalConfigurationSmokeChecks.RunAsync();
 	if (args is ["--session-smoke"]) return await SessionSmokeChecks.RunAsync();
 	if (args is ["--session-scope-smoke"]) return await SessionSmokeChecks.RunScopeAsync();
 	if (args is ["--session-scope-parent", string sessionScopeDirectory]) return await SessionSmokeChecks.ParentAsync(sessionScopeDirectory);

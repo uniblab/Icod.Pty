@@ -11,6 +11,24 @@ internal static class TerminalConfigurationProbe {
 		return 0;
 	}
 
+	internal static int ReadOnce(int readSize) {
+		if (OperatingSystem.IsWindows() || readSize <= 0 || readSize > 4096) return 2;
+		WriteDescriptor(1, "INITIAL:" + JsonSerializer.Serialize(TerminalState.Read(0).Report()) + "\nREAD-READY\n");
+		byte[] bytes = new byte[readSize];
+		int count = ReadDescriptor(0, bytes);
+		WriteDescriptor(1, $"READ:{count}:{Convert.ToHexString(bytes.AsSpan(0, count))}\n");
+		return 0;
+	}
+
+	internal static int ChangeOwnState() {
+		if (OperatingSystem.IsWindows()) return 2;
+		TerminalState initial = TerminalState.Read(0);
+		WriteDescriptor(1, "INITIAL:" + JsonSerializer.Serialize(initial.Report()) + "\n");
+		TerminalState changed = initial.Clone(); changed.MakeRaw(); changed.Apply(0);
+		WriteDescriptor(1, "CHANGED:" + JsonSerializer.Serialize(TerminalState.Read(0).Report()) + "\n");
+		return 0;
+	}
+
 	internal static async Task<int> RunAsync() {
 		if (OperatingSystem.IsWindows()) {
 			Console.WriteLine(JsonSerializer.Serialize(new { Platform = "Windows", NativeTermios = false, HostConsoleMutation = false }));
@@ -131,6 +149,15 @@ internal static class TerminalConfigurationProbe {
 			if (count > 0) { offset += checked((int)count); continue; }
 			if (Marshal.GetLastPInvokeError() == 4) continue;
 			throw Error("terminal state write");
+		}
+	}
+	private static unsafe int ReadDescriptor(int descriptor, byte[] bytes) {
+		while (true) {
+			nint count;
+			fixed (byte* pointer = bytes) count = UnixNative.read(descriptor, pointer, (nuint)bytes.Length);
+			if (count >= 0) return checked((int)count);
+			if (Marshal.GetLastPInvokeError() == 4) continue;
+			throw Error("terminal behavior read");
 		}
 	}
 
