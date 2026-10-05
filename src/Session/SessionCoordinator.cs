@@ -79,7 +79,7 @@ internal sealed class SessionCoordinator {
 	private async Task<PtySessionOutputStatus> PumpOutputAsync() {
 		PtySessionOutputStatus observed = await SessionPumps.OutputAsync(Output, configuration.Output, outputStop.Token,
 			error => {
-				lock (gate) outputOverride ??= PtySessionOutputStatus.Faulted;
+				lock (gate) { if (outputOverride is null or PtySessionOutputStatus.Stopped) outputOverride = PtySessionOutputStatus.Faulted; }
 				journal.Record(PtySessionEventKind.OutputFailed); Trigger(PtySessionEndReason.OutputFailed, PtySessionFailureStage.Output, error);
 			},
 			journal.AddReadFromPty, journal.AddWrittenToOutput).ConfigureAwait(false);

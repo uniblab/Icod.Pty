@@ -39,7 +39,8 @@ internal static class SessionSmokeChecks {
 	internal static async Task<int> DescendantAsync(string directory) {
 		using System.Runtime.InteropServices.PosixSignalRegistration? hangup = OperatingSystem.IsWindows() ? null :
 			System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGHUP, signal => signal.Cancel = true);
-		File.WriteAllText(Path.Combine(directory, "child-ready"), Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+		string ready = Path.Combine(directory, "child-ready");
+		File.WriteAllText(ready + ".tmp", Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture)); File.Move(ready + ".tmp", ready);
 		await Wait(directory, "stop-child", TimeSpan.FromSeconds(60)); return 0;
 	}
 	private static PtyStartInfo Self(params string[] arguments) {
