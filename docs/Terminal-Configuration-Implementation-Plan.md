@@ -61,7 +61,7 @@ dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Release -f net10.0 --f
 
 Expected RED is the specified assertion failure (or absent proposed API for initial surface tests), not an unrelated tooling error. Expected GREEN is zero failed tests and no new skips. Unix-specific behavioral assertions have explicit Windows capability/rejection counterparts.
 
-## TC01: native feasibility and support matrix
+## Task 1: TC01 native feasibility and support matrix
 
 **Files:** new test-child probe and UnixTerminalConfigurationTests; this spec's evidence section.
 **Interfaces:** native probe modes report initial semantic fields and raw bytes; do not publish public API yet.
@@ -73,7 +73,7 @@ Expected RED is the specified assertion failure (or absent proposed API for init
 - [ ] Record the capability matrix and evidence links. Stop on a required Unix mismatch or need for broader Windows machinery; present a revised design before production work. Freeze the spec's public names/values only after the gate passes.
 - [ ] Commit `test: prove initial terminal configuration feasibility`.
 
-## TC02: options, capture, and prelaunch capabilities
+## Task 2: TC02 options, capture, and prelaunch capabilities
 
 **Files:** public types, TerminalConfiguration, PtyStartInfo, PtyProcess, LaunchConfiguration, TerminalConfigurationTests.
 **Interfaces:** `PtyProcess.GetTerminalCapabilities()` and public members exactly as in the spec. Internal `TerminalConfiguration? Capture(PtyTerminalOptions? options, PtyTerminalCapabilities capabilities)` returns an immutable snapshot or null for a no-op; `RequiredCapabilities` reports the requested flags.
@@ -98,7 +98,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Run that filter on all TFMs; compile the helper and solution with `dotnet build Icod.Pty.sln -c Release`, expecting zero warnings/errors and unchanged helper JSON.
 - [ ] Commit `feat: define initial terminal options and capabilities`.
 
-## TC03: native transformation and verified application
+## Task 3: TC03 native transformation and verified application
 
 **Files:** UnixTerminalConfiguration, UnixTerminalNative, UnixTerminalConfigurationTests.
 **Interfaces:** `UnixTerminalConfiguration.Apply(int slaveFd, TerminalConfiguration configuration) : void`; an internal test seam substitutes native get/set/readback operations, never a public hook. Define explicit Linux/Darwin termios structs from TC01.
@@ -110,7 +110,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Run tests on all four Unix platforms and all TFMs; confirm no production syscall occurs for null/default requests.
 - [ ] Commit `feat: apply and verify Unix terminal configuration`.
 
-## TC04: startup integration and resource rollback
+## Task 4: TC04 startup integration and resource rollback
 
 **Files:** UnixBackend, TerminalConfigurationIntegrationTests, existing UnixStartupTests/UnixLifetimeFaultTests as needed.
 **Interfaces:** consume the captured configuration and TC03 Apply on the existing owned slave descriptor, before either launch path.
@@ -122,7 +122,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Run the new tests plus existing startup, ownership, and session-start filters on every TFM; verify no changes to PrimaryProcess/PlatformScope defaults.
 - [ ] Commit `feat: configure child terminals before launch`.
 
-## TC05: Windows rejection and unchanged default behavior
+## Task 5: TC05 Windows rejection and unchanged default behavior
 
 **Files:** TerminalConfigurationTests, TerminalConfigurationIntegrationTests; common validation only if a defect is exposed.
 **Interfaces:** None capabilities on Windows; null/all-default configuration is legal.
@@ -133,7 +133,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Run on Windows x64 and ARM64 for all TFMs, with no skips substituting for unsupported-request assertions. Keep the existing ConPTY fragmented-query exclusion unchanged.
 - [ ] Commit `test: verify Windows terminal option boundaries`.
 
-## TC06: native behavioral and compatibility acceptance
+## Task 6: TC06 native behavioral and compatibility acceptance
 
 **Files:** TerminalConfigurationIntegrationTests; test-child Program and TerminalConfigurationProbe.
 **Interfaces:** child modes report initial semantic state, acknowledge receipt of byte sequences, and deliberately change their own modes when directed. Native reads avoid managed console line buffering.
@@ -145,7 +145,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Run all new native cases and existing session shutdown/output/drain tests on six platforms/three TFMs. Record any timing corrections as test changes, not silent product-default changes.
 - [ ] Commit `test: verify terminal modes and lifecycle compatibility`.
 
-## TC07: example and exact-package consumers
+## Task 7: TC07 example and exact-package consumers
 
 **Files:** TerminalConfigurationSmokeChecks, sample Program, PackageSmokeTests, VerifyPackageConsumer.ps1.
 **Interfaces:** `--terminal-config-smoke` invokes `TerminalConfigurationSmokeChecks.RunAsync() : Task<int>` and prints `PTY terminal configuration smoke check passed.`; an internal `--terminal-config-child` mode supplies the native-reading fixture. Public interactive sample defaults are unchanged.
@@ -156,7 +156,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Verify fresh package consumers on net8.0/net9.0/net10.0 plus published net10.0: eight modes, 32 invocations per platform. Windows x64 artifact and consumer verification must run under Windows PowerShell 5.1.
 - [ ] Commit `feat: demonstrate initial terminal configuration`.
 
-## TC08: documentation and public API closure
+## Task 8: TC08 documentation and public API closure
 
 **Files:** README, samples README, public XML documentation, ROADMAP, this design and plan.
 
@@ -166,7 +166,7 @@ Here `all` is the union of the six individually defined capability flags. Cover 
 - [ ] Compile documentation examples as temporary package consumers on all TFMs and run appropriate platform branches. Check XML docs build without warnings, local links resolve, and the menu records completed versus remaining portions of options 4 and 7 truthfully.
 - [ ] Commit `docs: explain terminal configuration capabilities and limits`.
 
-## TC09: final verification and review
+## Task 9: TC09 final verification and review
 
 **Files:** implementation evidence in this plan and status in ROADMAP/design; no unrelated workflow changes.
 
