@@ -1,0 +1,200 @@
+# Terminal Configuration Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for native execution, or superpowers:subagent-driven-development only if the user selects that method. Steps use checkbox syntax for tracking. Read the spec before implementation; no runtime task is approved by this planning PR alone.
+
+**Goal:** launch children with explicit, verified terminal settings and truthful prelaunch capability discovery, while preserving existing defaults.
+
+**Architecture:** capture settings in the common launch path; apply/read back Unix slave settings before starting either helper path. Expose optional backend capabilities separately from existing process-control capabilities; reject unsupported Windows requests before native launch. Do not add live terminal mutation or change the helper protocol.
+
+**Tech Stack:** C# 13, .NET 8/9/10, existing P/Invoke and managed Unix helper, xUnit, CMD/SH/Windows PowerShell 5.1 tooling.
+
+**Spec:** [Terminal-Configuration-Design.md](Terminal-Configuration-Design.md).
+
+**Status:** planning only, 2026-10-05. All TC01-TC09 implementation/acceptance steps remain unchecked. Base: merged PR #4, `2bfeb1f7c183f6b528d45162907ee9260bba60e1`.
+
+## Global constraints
+
+- C# 13; net8.0, net9.0, and net10.0; AnyCPU assemblies.
+- Windows, Linux, and macOS, each on x64 and ARM64.
+- Minimum supported Windows build: 10.0.26200.9457.
+- CMD, SH, and PowerShell 5.1-compatible tooling; no C or Python.
+- Root solution and library project; every C# source file under root `src/`.
+- One NuGet library package; retain LGPL-3.0-or-later and the shared repository conventions.
+- Unix uses OS PTYs and the managed helper, with an installed .NET runtime and `dotnet` host.
+- Preserve both ownership policies, input/output byte transport, startup cancellation, shutdown, and session completion contracts.
+- No new runtime package dependencies, version bump, tag, merge, or publication in this planning PR.
+
+## Review focus
+
+1. A child changes modes immediately: initial configuration must not be described as ongoing enforcement (TC06).
+2. Native set succeeds partially: semantic readback must reject an unhonored request before any child runs (TC03-TC04).
+3. Raw and custom controls conflict: validation must be deterministic, and ETX must retain its existing API meaning (TC02, TC06).
+4. A cancellation or configuration failure occurs while terminal descriptors exist: close all new resources without transferring supplied session streams (TC04, TC06).
+5. An unsupported/default request is made on Windows: default must remain a no-op and explicit requests must not touch the parent console (TC05).
+
+## File and interface map
+
+| Files | Responsibility |
+| --- | --- |
+| New `src/PtyTerminalOptions.cs`, `src/PtyTerminalProfile.cs`, `src/PtyTerminalCapabilities.cs` | Public options, profiles, capability flags from the spec. |
+| Modify `src/PtyStartInfo.cs`, `src/PtyProcess.cs` | Add TerminalOptions and static GetTerminalCapabilities. No new live-mode methods. |
+| New `src/TerminalConfiguration.cs`; modify `src/LaunchConfiguration.cs` | Immutable parent-only snapshot, scalar/range/combination validation, required-capability calculation. |
+| New `src/Unix/UnixTerminalConfiguration.cs`, `src/Unix/UnixTerminalNative.cs` | Read/transform/apply/verify with platform-specific termios layouts; no public native masks. |
+| Modify `src/Unix/UnixBackend.cs` | Configure the owned slave inside its cleanup region, before both child-launch paths. |
+| New `src/Tests/Icod.Pty.Tests/TerminalConfigurationTests.cs`, `UnixTerminalConfigurationTests.cs`, `TerminalConfigurationIntegrationTests.cs` | Managed validation, fault injection, native behavior, startup/session acceptance. |
+| Modify `src/Tests/Icod.Pty.TestChild/Program.cs`; new `src/Tests/Icod.Pty.TestChild/TerminalConfigurationProbe.cs` | Native first-state report and byte-level child probes, independent of production transformation code. |
+| New `src/Sample/TerminalConfigurationSmokeChecks.cs`; modify `src/Sample/Program.cs` | New public verification mode and internal native-reading child mode. |
+| Modify `src/Tests/Icod.Pty.Tests/PackageSmokeTests.cs`, `packaging/VerifyPackageConsumer.ps1` | Include new mode in test matrix and both package-consumer lists. |
+| Modify `README.md`, `samples/README.md`, `ROADMAP.md`, these two planning documents | Document actual support, examples, evidence, and deferred portions. |
+
+The library captures terminal options under `#if !PTY_HELPER` and does not serialize them into helper JSON. Confirm `tools/Icod.Pty.Host/Icod.Pty.Host.csproj` still compiles its shared LaunchConfiguration without acquiring a dependency on the new parent-only types. Do not change sample host-console adapters as part of this feature.
+
+## Execution rules and commands
+
+For each task: add the named regression first, run it and record RED, implement the smallest change, run GREEN plus affected regressions, inspect the diff, then commit. A planning checklist is not test evidence. TC01 is an exploratory gate with explicit pass/fail observations, not a production implementation step.
+
+Use the following filtered command, replacing FILTER with the named test class/method; repeat for net8.0, net9.0, and net10.0:
+
+```text
+dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Release -f net10.0 --filter FILTER
+```
+
+Expected RED is the specified assertion failure (or absent proposed API for initial surface tests), not an unrelated tooling error. Expected GREEN is zero failed tests and no new skips. Unix-specific behavioral assertions have explicit Windows capability/rejection counterparts.
+
+## TC01: native feasibility and support matrix
+
+**Files:** new test-child probe and UnixTerminalConfigurationTests; this spec's evidence section.
+**Interfaces:** native probe modes report initial semantic fields and raw bytes; do not publish public API yet.
+
+- [ ] Add a C# probe that allocates a fresh PTY, reads/modifies/applies/readbacks slave state before launch, and reports the fields seen by a managed child before that child changes modes.
+- [ ] Verify Linux/Darwin structs, native constants, cc indices, disabled value lookup, and cfmakeraw transformation on Unix x64 and ARM64; record exact layouts and authoritative platform references here.
+- [ ] Prove initial noncanonical/no-echo input, Raw VMIN=1/VTIME=0, configured VINTR/VEOF/VERASE, and no-op baseline preservation for both ownership policies.
+- [ ] Confirm Windows cannot provide the proposed host-side controls through the existing ConPTY contract; exercise no-op launch and explicit-request rejection expectations without AttachConsole/host mutation.
+- [ ] Record the capability matrix and evidence links. Stop on a required Unix mismatch or need for broader Windows machinery; present a revised design before production work. Freeze the spec's public names/values only after the gate passes.
+- [ ] Commit `test: prove initial terminal configuration feasibility`.
+
+## TC02: options, capture, and prelaunch capabilities
+
+**Files:** public types, TerminalConfiguration, PtyStartInfo, PtyProcess, LaunchConfiguration, TerminalConfigurationTests.
+**Interfaces:** `PtyProcess.GetTerminalCapabilities()` and public members exactly as in the spec. Internal `TerminalConfiguration? Capture(PtyTerminalOptions? options, PtyTerminalCapabilities capabilities)` returns an immutable snapshot or null for a no-op; `RequiredCapabilities` reports the requested flags.
+
+- [ ] Add tests named `Default_options_are_noop`, `Capture_is_detached`, `Invalid_settings_never_reach_factory`, and `Capabilities_are_side_effect_free`. Pin enum numeric values and DisabledCharacter=-1.
+
+```csharp
+Assert.Null(TerminalConfiguration.Capture(null, PtyTerminalCapabilities.None));
+Assert.Null(TerminalConfiguration.Capture(new(), PtyTerminalCapabilities.None));
+Assert.Throws<ArgumentException>(() => TerminalConfiguration.Capture(
+    new() { Profile = PtyTerminalProfile.Raw, Echo = false }, all));
+Assert.Throws<ArgumentException>(() => TerminalConfiguration.Capture(
+    new() { MinimumReadBytes = 1 }, all));
+Assert.Throws<PlatformNotSupportedException>(() => TerminalConfiguration.Capture(
+    new() { Echo = false }, PtyTerminalCapabilities.None));
+```
+
+Here `all` is the union of the six individually defined capability flags. Cover character bounds -2/-1/0/255/256, timing -1/0/255/256, undefined profiles, every Raw/override pairing, CanonicalInput=true with timing, and mutation after capture. Platform-disabled-byte rejection is additionally covered in TC03.
+
+- [ ] Run the `TerminalConfigurationTests` filter and retain RED evidence.
+- [ ] Implement capture and validation; add prelaunch capability discovery for the verified OS/architecture matrix. Reuse capture from process and session startup; do not add a duplicate session options property.
+- [ ] Run that filter on all TFMs; compile the helper and solution with `dotnet build Icod.Pty.sln -c Release`, expecting zero warnings/errors and unchanged helper JSON.
+- [ ] Commit `feat: define initial terminal options and capabilities`.
+
+## TC03: native transformation and verified application
+
+**Files:** UnixTerminalConfiguration, UnixTerminalNative, UnixTerminalConfigurationTests.
+**Interfaces:** `UnixTerminalConfiguration.Apply(int slaveFd, TerminalConfiguration configuration) : void`; an internal test seam substitutes native get/set/readback operations, never a public hook. Define explicit Linux/Darwin termios structs from TC01.
+
+- [ ] Add failing `Preserve_changes_only_requested_fields`, `Echo_off_clears_newline_echo`, `Raw_sets_verified_masks_and_read_timing`, `Disabled_character_is_not_a_literal_byte`, and `Partial_native_success_fails_readback` tests. Assert unrelated fields/speeds/cc entries survive Preserve; ignore ABI padding in semantic comparisons.
+- [ ] Run `UnixTerminalConfigurationTests` and record RED.
+- [ ] Implement read-modify-TCSANOW-readback using the original native state. Resolve native disabled-character encoding; reject literal bytes colliding with it. Raw uses native cfmakeraw plus VMIN=1/VTIME=0; compare all fields defined by that transformation.
+- [ ] Inject get, set, and readback native errors independently; assert IOException identifies the failed operation and preserves the native error where present. Assert a simulated successful-but-unapplied field raises IOException, without returning success or writing terminal-content data.
+- [ ] Run tests on all four Unix platforms and all TFMs; confirm no production syscall occurs for null/default requests.
+- [ ] Commit `feat: apply and verify Unix terminal configuration`.
+
+## TC04: startup integration and resource rollback
+
+**Files:** UnixBackend, TerminalConfigurationIntegrationTests, existing UnixStartupTests/UnixLifetimeFaultTests as needed.
+**Interfaces:** consume the captured configuration and TC03 Apply on the existing owned slave descriptor, before either launch path.
+
+- [ ] Add `Configuration_precedes_both_launch_paths`, `Configuration_failure_never_launches_child`, `Cancelled_configuration_releases_descriptors`, and `Session_configuration_failure_leaves_streams_open`. Use startup factory/operation counters and a child marker to prove order, not a delay-based inference.
+- [ ] Run the new tests to RED.
+- [ ] Insert Apply inside the existing cleanup boundary, add cancellation checks surrounding configuration, and preserve startup exception/cleanup handling. Do not extend slave lifetime or the helper wire format.
+- [ ] Inject failure before get, at set, after set/readback, and immediately before launch. Verify descriptors return to the warmed baseline across repeated attempts, no new helper/child survives, and supplied session streams remain open.
+- [ ] Run the new tests plus existing startup, ownership, and session-start filters on every TFM; verify no changes to PrimaryProcess/PlatformScope defaults.
+- [ ] Commit `feat: configure child terminals before launch`.
+
+## TC05: Windows rejection and unchanged default behavior
+
+**Files:** TerminalConfigurationTests, TerminalConfigurationIntegrationTests; common validation only if a defect is exposed.
+**Interfaces:** None capabilities on Windows; null/all-default configuration is legal.
+
+- [ ] Add `Windows_explicit_options_fail_before_launch` for each capability family, `Windows_default_options_preserve_launch`, and `Rejected_options_do_not_change_host_console`. Assert no child marker/factory call for rejection and identical host mode/code-page snapshots before/after in the existing terminal fixture.
+- [ ] Run tests to RED before adding missing rejection checks; if TC02 already supplies the behavior, record these as additional coverage rather than claiming a new defect.
+- [ ] Verify `PtyProcess.Start`, `StartAsync`, and `PtySession.StartAsync`; verify both ownership policies and caller-owned session streams after rejection.
+- [ ] Run on Windows x64 and ARM64 for all TFMs, with no skips substituting for unsupported-request assertions. Keep the existing ConPTY fragmented-query exclusion unchanged.
+- [ ] Commit `test: verify Windows terminal option boundaries`.
+
+## TC06: native behavioral and compatibility acceptance
+
+**Files:** TerminalConfigurationIntegrationTests; test-child Program and TerminalConfigurationProbe.
+**Interfaces:** child modes report initial semantic state, acknowledge receipt of byte sequences, and deliberately change their own modes when directed. Native reads avoid managed console line buffering.
+
+- [ ] Add `Child_first_state_matches_request`, `Canonical_waits_for_delimiter`, `Noncanonical_reads_without_delimiter`, `Echo_off_emits_no_input_echo`, `Custom_control_characters_take_effect`, `Raw_ETX_is_data`, and `Child_may_change_initial_configuration`.
+- [ ] Include VMIN/VTIME combinations (0,0), (0,1), (1,0), and (2,1), using synchronization and broad watchdog bounds rather than exact scheduler timing. Separate terminal zero-length reads from transport EOF expectations.
+- [ ] Add an ETX regression: with custom VINTR or Raw, SendInterruptAsync still sends byte 3; native SendSignal remains independent. Verify canonical EOF is not a promised portable half-close.
+- [ ] Run RED for each missing behavior; implement only spec-conforming fixes. Repeat through both ownership policies and session/process entry points, with child-side first-state reporting before any self-configuration.
+- [ ] Run all new native cases and existing session shutdown/output/drain tests on six platforms/three TFMs. Record any timing corrections as test changes, not silent product-default changes.
+- [ ] Commit `test: verify terminal modes and lifecycle compatibility`.
+
+## TC07: example and exact-package consumers
+
+**Files:** TerminalConfigurationSmokeChecks, sample Program, PackageSmokeTests, VerifyPackageConsumer.ps1.
+**Interfaces:** `--terminal-config-smoke` invokes `TerminalConfigurationSmokeChecks.RunAsync() : Task<int>` and prints `PTY terminal configuration smoke check passed.`; an internal `--terminal-config-child` mode supplies the native-reading fixture. Public interactive sample defaults are unchanged.
+
+- [ ] Add `--terminal-config-smoke` to PackageSmokeTests and both verifier mode lists, run it to RED before implementing the switch.
+- [ ] Implement the Unix check with a child native state/byte acknowledgement for no-echo noncanonical input, then graceful completion. Bound the parent wait and ensure cleanup even on failed assertions.
+- [ ] Implement the Windows check as capability=None, explicit-request rejection before child creation, and a successful null/default session launch. Print success only after these assertions, not after a skip.
+- [ ] Verify fresh package consumers on net8.0/net9.0/net10.0 plus published net10.0: eight modes, 32 invocations per platform. Windows x64 artifact and consumer verification must run under Windows PowerShell 5.1.
+- [ ] Commit `feat: demonstrate initial terminal configuration`.
+
+## TC08: documentation and public API closure
+
+**Files:** README, samples README, public XML documentation, ROADMAP, this design and plan.
+
+- [ ] Add a self-contained capability-gated example and a platform table; distinguish Preserve from host inheritance, noncanonical from Raw, and initial from live state. Show explicit Windows unsupported handling.
+- [ ] Document exclusive Raw rules, disabled/literal character semantics, VMIN/VTIME units, fixed ETX behavior, verified readback, failed-start ownership, and the retained Unix helper/runtime requirement.
+- [ ] Add CMD/SH/PowerShell 5.1 commands for the new mode. Keep interactive host restoration and prior laptop observations separate; do not infer success on untested frameworks from net10.0 evidence.
+- [ ] Compile documentation examples as temporary package consumers on all TFMs and run appropriate platform branches. Check XML docs build without warnings, local links resolve, and the menu records completed versus remaining portions of options 4 and 7 truthfully.
+- [ ] Commit `docs: explain terminal configuration capabilities and limits`.
+
+## TC09: final verification and review
+
+**Files:** implementation evidence in this plan and status in ROADMAP/design; no unrelated workflow changes.
+
+- [ ] Run full Release build/test/pack and exact-package checks below; record exact head SHA, OS/architecture/framework matrix, counts, failure fixes, warning counts, and workflow URLs.
+- [ ] Review public API compatibility, null/default native paths, every required capability bit, Raw masks, helper/package layout, both ownership paths, fault cleanup, and the five review-focus cases. Resolve important findings with RED/GREEN regressions.
+- [ ] Verify all six CI jobs pass on the final runtime head, with 32 package invocations per job and no new skip hiding an unsupported/failed test. Retain the existing native ConPTY limitation documentation.
+- [ ] Request manual Windows laptop results for the new smoke mode and preserve still-unreported interactive observations as pending. Never promote hosted CI to laptop evidence.
+- [ ] Mark only evidenced tasks complete; report merge readiness without merging, selecting a version, tagging, or publishing automatically.
+- [ ] Commit `docs: record terminal configuration acceptance`.
+
+## Final commands
+
+```text
+dotnet build Icod.Pty.sln -c Release
+dotnet test Icod.Pty.sln -c Release --no-build
+dotnet pack Icod.Pty.csproj -c Release --no-build -o artifacts
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --terminal-config-smoke
+```
+
+From PowerShell (Windows PowerShell 5.1 for the Windows x64 acceptance host):
+
+```powershell
+./packaging/VerifyPackageArtifact.ps1 -ArtifactDirectory artifacts -Configuration Release
+./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
+```
+
+## Evidence and deferred work
+
+Planning baseline: PR #4 merged on 2026-10-05. Its final head `17abff97b1d1a534f443d33bc108ff6e1b3b941e` passed [six-platform run 51](https://github.com/uniblab/Icod.Pty/actions/runs/37342768776). The user reported Windows x64 Release net10.0 success for both session smoke modes. This is baseline evidence, not evidence for the proposed terminal configuration feature.
+
+No TC01 probe, new runtime implementation, new API, or terminal-config smoke mode exists yet. First executable work after approval is TC01. Live read/update/restoration, serial-port controls, native Windows child shims, general tracing/exporters, transcript recording, foreground retargeting, and the separate ConPTY investigation remain deferred.
