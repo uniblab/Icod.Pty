@@ -47,7 +47,7 @@ foreach ($source in @(Get-ChildItem -LiteralPath $sampleRoot -Filter '*.cs' -Rec
 Invoke-DotNet -Arguments @('restore', $project, '--source', $ArtifactDirectory, '--packages', (Join-Path $consumer 'packages'))
 foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
     Invoke-DotNet -Arguments @('build', $project, '--framework', $framework, '--configuration', 'Release', '--no-restore')
-    foreach ($mode in @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--interrupt-smoke', '--scope-smoke')) {
+    foreach ($mode in @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke')) {
         Invoke-DotNet -Arguments @('run', '--project', $project, '--framework', $framework, '--configuration', 'Release', '--no-build', '--no-restore', '--', $mode)
     }
 }
@@ -56,7 +56,7 @@ Invoke-DotNet -Arguments @('publish', $project, '--framework', 'net10.0', '--con
 foreach ($name in @('Icod.Pty.Host.dll', 'Icod.Pty.Host.deps.json', 'Icod.Pty.Host.runtimeconfig.json')) {
     if (-not (Test-Path -LiteralPath (Join-Path $publish "Icod.Pty.Host/$name") -PathType Leaf)) { throw "Published helper asset is missing: $name" }
 }
-foreach ($mode in @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--interrupt-smoke', '--scope-smoke')) {
+foreach ($mode in @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke')) {
     Invoke-DotNet -Arguments @((Join-Path $publish 'Consumer.dll'), $mode)
 }
 Write-Host 'Package consumer and publish verification passed.'

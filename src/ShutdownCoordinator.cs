@@ -2,15 +2,21 @@ namespace Icod.Pty;
 
 internal static class ShutdownCoordinator {
 	internal static async Task<PtyShutdownResult> RunAsync(IPtyBackend backend, byte[] request,
-		TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, CancellationToken cancellationToken, PtyProcessTarget target = PtyProcessTarget.PrimaryProcess) {
+		TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, CancellationToken cancellationToken, PtyProcessTarget target = PtyProcessTarget.PrimaryProcess,
+		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? writeRequest = null) {
 		cancellationToken.ThrowIfCancellationRequested();
 		if (backend.Exit.IsCompletedSuccessfully) return Collected(backend, false);
 		using (CancellationTokenSource grace = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)) {
 			grace.CancelAfter(gracePeriod);
 			try {
-				if (request.Length != 0) await backend.Input.WriteAsync(request, grace.Token).ConfigureAwait(false);
+				if (request.Length != 0) {
+					ValueTask write = writeRequest == null ? backend.Input.WriteAsync(request, grace.Token) : writeRequest(request, grace.Token);
+					await write.ConfigureAwait(false);
+				}
 				int code = await backend.Exit.WaitAsync(grace.Token).ConfigureAwait(false);
 				return new(PtyShutdownStatus.Exited, code, false);
+			} catch (OperationCanceledException) when (backend.Exit.IsCompletedSuccessfully) {
+				return Collected(backend, false);
 			} catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
 				throw new OperationCanceledException(cancellationToken);
 			} catch (OperationCanceledException) when (grace.IsCancellationRequested) {

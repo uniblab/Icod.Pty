@@ -29,6 +29,7 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 			return new PtyProcess(backend, new PtySize(launch.Columns, launch.Rows));
 		} catch (Exception error) { CleanupActions.AfterFailure(error, backend.Dispose); throw; }
 	}
+	internal static Task<PtyProcess> StartCapturedAsync(LaunchConfiguration launch, CancellationToken token) => StartCoreAsync(launch, token, CreateBackendAsync);
 	private static Task<IPtyBackend> CreateBackendAsync(LaunchConfiguration launch, CancellationToken token) {
 		if (OperatingSystem.IsWindows()) return Windows.WindowsBackend.StartAsync(launch, token);
 		if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) return Unix.UnixBackend.StartAsync(launch, token);
@@ -82,8 +83,21 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 		}
 		return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken);
 	}
-	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, PtyProcessTarget target, CancellationToken cancellationToken) {
-		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken, target).ConfigureAwait(false); }
+	internal Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, Action accepted,
+		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> writeRequest, CancellationToken cancellationToken) {
+		ArgumentNullException.ThrowIfNull(options); ArgumentNullException.ThrowIfNull(accepted); ArgumentNullException.ThrowIfNull(writeRequest);
+		var snapshot = options.Capture();
+		lock (gate) {
+			ThrowIfDisposed(); cancellationToken.ThrowIfCancellationRequested(); ValidateTarget(snapshot.Target);
+			if (Interlocked.CompareExchange(ref shutdownActive, 1, 0) != 0) throw new InvalidOperationException("A shutdown operation is already in progress.");
+		}
+		try {
+			accepted();
+			return ShutdownCoreAsync(snapshot.Request, snapshot.GracePeriod, snapshot.ForceTermination, snapshot.TerminationTimeout, snapshot.Target, cancellationToken, writeRequest);
+		} catch { Interlocked.Exchange(ref shutdownActive, 0); throw; }
+	}
+	private async Task<PtyShutdownResult> ShutdownCoreAsync(byte[] request, TimeSpan gracePeriod, bool forceTermination, TimeSpan terminationTimeout, PtyProcessTarget target, CancellationToken cancellationToken, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? writeRequest = null) {
+		try { return await ShutdownCoordinator.RunAsync(backend, request, gracePeriod, forceTermination, terminationTimeout, cancellationToken, target, writeRequest).ConfigureAwait(false); }
 		finally { Interlocked.Exchange(ref shutdownActive, 0); }
 	}
 	/// <summary>Forcibly terminates a live primary child; repeated calls after exit have no effect.</summary>

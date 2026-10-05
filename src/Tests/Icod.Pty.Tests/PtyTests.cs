@@ -20,6 +20,13 @@ public sealed class PtyTests {
 	[Fact]
 	public void Nul_argument_is_rejected_before_launch() { PtyStartInfo info = Child("a\0b"); Assert.Throws<ArgumentException>(() => PtyProcess.Start(info)); }
 	[Fact]
+	public void Startup_probe_json_ignores_interleaved_terminal_title_sequences() {
+		string value = "{\"Terminal\":true,\u001b]0;first title\u0007\"ControllingTerminal\":\u001b]2;second title\u001b\\true}";
+		using JsonDocument json = ParseReady(StripAnsi(value));
+		Assert.True(json.RootElement.GetProperty("Terminal").GetBoolean());
+		Assert.True(json.RootElement.GetProperty("ControllingTerminal").GetBoolean());
+	}
+	[Fact]
 	public async Task Child_has_terminal_arguments_environment_and_directory() {
 		string[] args = ["", "space argument", "a\"b", "ends\\", "snow-雪", "$(literal)"];
 		PtyStartInfo info = Child(args);
@@ -197,5 +204,6 @@ public sealed class PtyTests {
 		}
 		throw new IOException("Output limit exceeded.");
 	}
-	private static string StripAnsi(string text) => System.Text.RegularExpressions.Regex.Replace(text, "\u001b\\[[0-?]*[ -/]*[@-~]", "");
+	private static string StripAnsi(string text) => System.Text.RegularExpressions.Regex.Replace(text,
+		"\u001b(?:\\[[0-?]*[ -/]*[@-~]|\\][^\u0007\u001b]*(?:\u0007|\u001b\\\\))", "");
 }
