@@ -65,4 +65,41 @@ public sealed class PtySessionCompletionTests {
 		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait); await session.WriteAsync("alive"u8.ToArray());
 		Assert.Equal(0, backend.DisposeCount); Assert.Equal(0, backend.TerminateCount);
 	}
+	[Fact]
+	public async Task Input_failure_discovered_while_draining_starts_release_immediately() {
+		IOException failure = new("late input failure");
+		using GateReadStream input = new() { IgnoreCancellation = true, Failure = failure };
+		using GateReadStream output = new() { IgnoreCancellation = true }; using MemoryStream destination = new();
+		ControlledBackend backend = new() { Output = output }; PtySession session = await SessionTestSupport.Start(backend, destination, input, TimeSpan.FromMinutes(1));
+		try {
+			await Task.WhenAll(input.Entered.Task, output.Entered.Task).WaitAsync(TimeSpan.FromSeconds(5));
+			backend.Completion.SetResult(37); await SessionTestSupport.Until(() => session.GetDiagnostics().Phase == PtySessionPhase.Draining);
+			input.Release.SetResult(); await SessionTestSupport.Until(() => backend.DisposeCount == 1);
+			output.Release.SetResult(); PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+			Assert.Equal(PtySessionEndReason.PrimaryExited, result.Reason); Assert.Equal(PtySessionOutputStatus.Stopped, result.OutputStatus);
+			Assert.Contains(result.Failures, item => item.Stage == PtySessionFailureStage.Input && ReferenceEquals(item.Exception, failure));
+		} finally {
+			input.Release.TrySetResult(); output.Release.TrySetResult();
+			try { await session.DisposeAsync(); } catch (AggregateException) { }
+		}
+	}
+	[Fact]
+	public async Task Unrelated_cancellation_during_release_is_preserved_as_output_failure() {
+		using CancellationTokenSource unrelated = new(); unrelated.Cancel();
+		OperationCanceledException failure = new(unrelated.Token);
+		using GateWriteStream destination = new() { IgnoreCancellation = true, Failure = failure };
+		ControlledBackend backend = new() { Output = new MemoryStream(new byte[1]) }; PtySession session = await SessionTestSupport.Start(backend, destination);
+		try {
+			await destination.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5)); Task dispose = session.DisposeAsync().AsTask();
+			await SessionTestSupport.Until(() => session.GetDiagnostics().Phase == PtySessionPhase.Releasing); destination.Release.SetResult();
+			await Assert.ThrowsAsync<AggregateException>(() => dispose);
+			PtySessionResult result = await session.Completion;
+			Assert.Equal(PtySessionOutputStatus.Faulted, result.OutputStatus);
+			PtySessionFailure retained = Assert.Single(result.Failures, item => item.Stage == PtySessionFailureStage.Output);
+			Assert.Same(failure, retained.Exception); Assert.Equal(unrelated.Token, ((OperationCanceledException)retained.Exception).CancellationToken);
+		} finally {
+			destination.Release.TrySetResult();
+			try { await session.DisposeAsync(); } catch (AggregateException) { }
+		}
+	}
 }

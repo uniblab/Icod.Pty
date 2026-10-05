@@ -39,6 +39,30 @@ public sealed class PtySessionShutdownTests {
 		} finally { input.Release.TrySetResult(); await session.DisposeAsync(); }
 	}
 	[Fact]
+	public async Task Accepted_shutdown_cancels_the_optional_input_source() {
+		using GateReadStream source = new(); using MemoryStream destination = new(); ControlledBackend backend = new();
+		PtySession session = await SessionTestSupport.Start(backend, destination, source);
+		try {
+			await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+			PtyShutdownResult result = await session.ShutdownAsync(new() { GracePeriod = TimeSpan.FromMilliseconds(20) });
+			Assert.Equal(PtyShutdownStatus.TimedOut, result.Status);
+			await source.Finished.Task.WaitAsync(TimeSpan.FromSeconds(1));
+			Assert.False(session.Completion.IsCompleted);
+		} finally { source.Release.TrySetResult(); await session.DisposeAsync(); }
+	}
+	[Fact]
+	public async Task Primary_exit_while_shutdown_request_is_blocked_returns_exit_result() {
+		using MemoryStream destination = new(); using GateWriteStream input = new(); ControlledBackend backend = new() { Input = input };
+		PtySession session = await SessionTestSupport.Start(backend, destination);
+		try {
+			Task<PtyShutdownResult> shutdown = session.ShutdownAsync(new() { Request = "quit"u8.ToArray(), GracePeriod = TimeSpan.FromMinutes(1) });
+			await input.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5)); backend.Completion.SetResult(12);
+			PtyShutdownResult result = await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
+			Assert.Equal(PtyShutdownStatus.Exited, result.Status); Assert.Equal(12, result.ExitCode);
+			Assert.Equal(result, (await session.Completion).LastShutdownResult);
+		} finally { input.Release.TrySetResult(); await session.DisposeAsync(); }
+	}
+	[Fact]
 	public async Task Shutdown_result_survives_primary_exit_and_joined_disposal() {
 		using MemoryStream destination = new(); ControlledBackend backend = new();
 		PtySession session = await SessionTestSupport.Start(backend, destination);
