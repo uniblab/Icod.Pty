@@ -6,9 +6,10 @@ namespace Icod.Pty.Tests;
 public sealed class PtySessionDiagnosticsTests {
 	[Fact]
 	public async Task Lifecycle_snapshot_is_ordered_detached_and_available_after_disposal() {
-		using MemoryStream destination = new(); ControlledBackend backend = new() { Output = new MemoryStream("done"u8.ToArray()) };
-		PtySession session = await SessionTestSupport.Start(backend, destination); PtySessionDiagnostics before = session.GetDiagnostics();
-		backend.Completion.SetResult(7); await session.Completion; await session.DisposeAsync(); PtySessionDiagnostics after = session.GetDiagnostics();
+		using MemoryStream destination = new(); using GateReadStream output = new(); ControlledBackend backend = new() { Output = output };
+		PtySession session = await SessionTestSupport.Start(backend, destination); await output.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+		PtySessionDiagnostics before = session.GetDiagnostics(); backend.Completion.SetResult(7); output.Release.SetResult();
+		await session.Completion; await session.DisposeAsync(); PtySessionDiagnostics after = session.GetDiagnostics();
 		Assert.Single(before.Events); Assert.Equal(PtySessionEventKind.Started, before.Events[0].Kind);
 		Assert.Contains(after.Events, item => item.Kind == PtySessionEventKind.PrimaryExited);
 		Assert.Contains(after.Events, item => item.Kind == PtySessionEventKind.OutputEnded);
