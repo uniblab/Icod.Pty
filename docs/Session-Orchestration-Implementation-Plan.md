@@ -1,8 +1,7 @@
 # Session Orchestration Implementation Plan
 
-> **For agentic workers:** use `superpowers:executing-plans` to implement this plan task by task.
-> Steps use checkboxes. The feature selection is approved; this proposed design and development roadmap
-> are submitted for review before implementation. Recommend native execution with one final independent review.
+> **Acceptance:** implementation and review are complete on the feature branch. Six-platform CI evidence is
+> recorded below; Windows laptop observations remain a separate manual acceptance item.
 
 **Goal:** Add an optional session owner coordinating PTY I/O, shutdown, output draining, cleanup, and focused diagnostics.
 
@@ -41,15 +40,15 @@ The established implementation has 138 test cases per framework; the exact new t
 
 | Tranche | Deliverable | Dependency | State |
 | --- | --- | --- | --- |
-| SS01 | Public contracts, startup capture, ownership handoff | Approved design/plan | Complete (local) |
-| SS02 | Serialized input and input sealing | SS01 | Complete (local) |
-| SS03 | Stream forwarding and independent output completion | SS01-SS02 | Complete (local) |
-| SS04 | Shutdown integration and cancellation boundaries | SS02-SS03 | Complete (local) |
-| SS05 | Finalization, drain deadlines, and truthful results | SS03-SS04 | Complete (local) |
-| SS06 | Bounded lifecycle diagnostics | SS01-SS05 | Complete (local) |
-| SS07 | Native integration and interactive sample adoption | SS01-SS06 | Complete (local) |
-| SS08 | Packaged examples and consumer documentation | SS07 | Implemented; CI pending |
-| SS09 | Six-platform acceptance and completion review | SS01-SS08 | Planned |
+| SS01 | Public contracts, startup capture, ownership handoff | Approved design/plan | Complete |
+| SS02 | Serialized input and input sealing | SS01 | Complete |
+| SS03 | Stream forwarding and independent output completion | SS01-SS02 | Complete |
+| SS04 | Shutdown integration and cancellation boundaries | SS02-SS03 | Complete |
+| SS05 | Finalization, drain deadlines, and truthful results | SS03-SS04 | Complete |
+| SS06 | Bounded lifecycle diagnostics | SS01-SS05 | Complete |
+| SS07 | Native integration and interactive sample adoption | SS01-SS06 | Complete |
+| SS08 | Packaged examples and consumer documentation | SS07 | Complete |
+| SS09 | Six-platform acceptance and completion review | SS01-SS08 | Complete |
 
 Execute sequentially. Each implementation tranche has a failing test, a focused green check, the existing
 regression suite, and a commit. No behavior is accepted from controlled tests alone where native behavior matters.
@@ -193,7 +192,7 @@ It awaits session completion and host pump settlement before HostConsole disposa
 - [x] Write native cases: final marker survives cooperative exit; explicit ETX and request bytes remain ordered; quiet surviving descendant causes drain expiry then owned disposal; independently observe the known descendant exit. Default ownership does not acquire a scope implicitly.
 - [x] Add native teardown/backpressure and primary-exit races on both ownership policies. Keep fixture cleanup bounded and independently tracked; do not signal a cached unrelated PID to clean up a failed test.
 - [x] Add/adapt interactive tests for immediate keys, resize, Ctrl+C, input/output EOF behavior, launch failure, and restoration after pump failure. Keep --line behavior and the existing ConPTY exclusion unchanged.
-- [ ] Run RED cases, implement sample adoption and missing native fixture support, then run all session and interactive tests on six platform jobs for net8.0/net9.0/net10.0. Expected: no new skips hiding session failures; record platform-specific observations.
+- [x] Run RED cases, implement sample adoption and missing native fixture support, then run all session and interactive tests on six platform jobs for net8.0/net9.0/net10.0. Expected: no new skips hiding session failures; record platform-specific observations.
 - [x] Commit `feat: host interactive sessions through reusable coordination`.
 
 ### SS08: examples, XML docs, and actual package consumers
@@ -207,18 +206,18 @@ README, samples README, and XML comments for every new public member.
 - [x] Implement both checks with C# fixtures under src. The scope case independently observes descendant exit following automatic session finalization, rather than trusting Requested/TargetUnavailable.
 - [x] Extend both verifier mode lists for fresh consumers on all TFMs and published net10.0. Expected: all seven smoke modes pass using the packaged DLL/helper, no project-reference substitute.
 - [x] Document low-level versus session ownership, sealed input/retry behavior, cancellation/partial writes, source EOF, bounded drain requests versus hard deadlines, output completion, scope limits, failure handling, and metadata privacy. Document host stream cancellation requirements and provide CMD/SH/PowerShell 5.1 commands.
-- [ ] Run smoke tests and package verification on all six jobs; Windows x64 runs actual PowerShell 5.1. Compile public XML docs and check sample commands against the built artifact.
+- [x] Run smoke tests and package verification on all six jobs; Windows x64 runs actual PowerShell 5.1. Compile public XML docs and check sample commands against the built artifact.
 - [x] Commit `docs: demonstrate and verify coordinated PTY sessions`.
 
 ### SS09: completion review and acceptance record
 
 **Files:** update this plan, its design status, and ROADMAP with actual evidence. Preserve all six workflows.
 
-- [ ] Run complete Release build/test/pack and existing six-platform CI, with all three TFMs and fresh/published package consumers. Record commit SHA, commands, test counts, failures/fixes, and links below.
-- [ ] Conduct one independent whole-branch review against the spec and Review Focus; resolve important findings with failing regression tests followed by green suites. Record consciously deferred findings and implementation decisions.
-- [ ] Verify low-level API compatibility, AnyCPU/package layout, unchanged helper/runtime contract, absence of C/Python and new runtime dependencies, and no accidental version/publication changes.
-- [ ] Record laptop observations only when supplied: both session smoke modes, CMD and Windows PowerShell 5.1 interactive behavior, cooperative exit, Ctrl+C, resize, and restored host editing/history. Keep them separate from CI and earlier milestone checks.
-- [ ] Mark only evidenced tranches complete and report PR readiness. Commit `docs: record session orchestration acceptance`.
+- [x] Run complete Release build/test/pack and existing six-platform CI, with all three TFMs and fresh/published package consumers. Record commit SHA, commands, test counts, failures/fixes, and links below.
+- [x] Conduct one independent whole-branch review against the spec and Review Focus; resolve important findings with failing regression tests followed by green suites. Record consciously deferred findings and implementation decisions.
+- [x] Verify low-level API compatibility, AnyCPU/package layout, unchanged helper/runtime contract, absence of C/Python and new runtime dependencies, and no accidental version/publication changes.
+- [x] Record laptop observations only when supplied: no new session-orchestration laptop observations were supplied. Both session smoke modes and host-interaction checks remain pending and separate from CI.
+- [x] Mark only evidenced tranches complete and report PR readiness. Commit `docs: record session orchestration acceptance`.
 
 ## Final verification commands
 
@@ -239,15 +238,16 @@ From PowerShell (Windows PowerShell 5.1 on the Windows acceptance host):
 ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
 ```
 
-Expected completion: all existing/new tests and consumer modes pass across six platforms/three frameworks;
-review findings are resolved or explicitly reported; laptop evidence is neither inferred nor copied from
-an earlier milestone. The local commands are implementation acceptance gates; six-platform workflow evidence remains pending.
+Expected completion is met: existing/new tests and consumer modes pass across six platforms/three frameworks,
+review findings are resolved, and laptop evidence is neither inferred nor copied from an earlier milestone.
 
 ## Implementation evidence and open acceptance
 
 - User selected option 3 plus focused option 4 and approved implementation on 2026-10-04.
 - SS01-SS08 implement the approved public surface, serialized input, optional input forwarding, output forwarding, shutdown integration, bounded draining, deterministic cleanup, diagnostics, native tests, sample adoption, and seven packaged smoke modes.
-- Local Release validation uses the repository's existing reflection runner because this container blocks the normal test-host transport. The same xUnit assemblies run under normal `dotnet test` in CI.
-- Native Linux tests cover final-output draining, ordered ETX input, and platform-scope descendant cleanup after drain expiry. Windows and macOS native behavior remains an SS09 CI gate.
-- Package verification, the independent whole-branch review, six-platform workflow evidence, and the two new Windows laptop smoke observations remain pending.
-- Local exact-package verification passed for all seven modes on net8.0, net9.0, net10.0 and the published net10.0 directory; PowerShell 5.1 and other operating systems remain CI gates.
+- Before the resumed review, local Release validation used the repository's existing reflection runner because its then-current container blocked normal test-host transport: 176/176 passed per TFM, the solution built with zero warnings/errors, and exact-package verification passed 28/28 modes. The resumed runtime did not contain a .NET SDK, so the final review fixes were freshly compiled and exercised by normal `dotnet test` in CI.
+- Whole-branch review reproduced four lifecycle races in [run 38](https://github.com/uniblab/Icod.Pty/actions/runs/37299542369): accepted shutdown did not cancel the optional source read; primary exit could surface writer-stop cancellation instead of its exit result; a secondary input failure did not interrupt primary-exit draining; and unrelated pump cancellation could be suppressed. Regression tests failed for all four before the implementation fixes.
+- Follow-up CI exposed and fixed preservation of a real output fault over a synthetic stop, atomic descendant-readiness publication, Windows linked-token normalization at the console-adapter boundary, and platform-correct Linux timeout versus Windows/macOS EOF expectations. [Run 41](https://github.com/uniblab/Icod.Pty/actions/runs/37302086646) then passed five platforms and exposed only a load-sensitive five-second stress-test budget on Windows x64; that native final-output test now uses the existing 15-second stress budget without changing product defaults.
+- Final implementation commit `e704f86b8a5a7fb58bdf5deaa07352796a02cff6` passed [six-platform CI run 42](https://github.com/uniblab/Icod.Pty/actions/runs/37302728188). Linux and macOS passed 180/180 tests per TFM. Windows passed 178 tests with the one documented ConPTY fragmented-query test skipped (179 total) per TFM. Every job built with zero warnings and ran all 28 package smoke invocations: seven modes on fresh net8.0/net9.0/net10.0 consumers plus published net10.0 output. Windows x64 used Windows PowerShell 5.1 for artifact and consumer verification.
+- Compatibility review found the low-level public API unchanged and the new surface additive. The library remains AnyCPU, net8.0/net9.0/net10.0, version `0.1.0-alpha.1`; the exact package retains all three DLL/XML targets and the managed Unix helper. No C/Python source, runtime package dependency, tag, publication, or version change was introduced. No review finding is consciously deferred.
+- No new Windows laptop observation was supplied. `--session-smoke`, `--session-scope-smoke`, CMD/Windows PowerShell 5.1 interaction, Ctrl+C, resize, and restored host editing/history remain pending manual evidence and do not block the hosted CI acceptance recorded here.

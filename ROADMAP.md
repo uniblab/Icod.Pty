@@ -63,8 +63,10 @@ ownership, glibc requirements, retained identity, and native permission limitati
 **Decision, 2026-10-04:** the user selected **option 3 plus a focused subset of option 4** and requested a
 new planning PR, an updated full option menu, and a proper development roadmap.
 
-**Status:** selection approved; proposed design and implementation plan prepared for review. Implementation
-has not started. No version bump or publication is part of this planning PR; the package remains 0.1.0-alpha.1.
+**Status:** implemented and reviewed on PR #4. The final implementation passed
+[six-platform CI run 42](https://github.com/uniblab/Icod.Pty/actions/runs/37302728188) on all three target
+frameworks and all package-consumer modes. No version bump or publication is part of this PR; the package
+remains 0.1.0-alpha.1. Windows laptop observations remain separate and pending.
 
 Add an optional session owner above PtyProcess to coordinate ordered input, output forwarding, application
 shutdown, drain deadlines, and cleanup. Preserve the low-level API and existing backend/scope semantics.
@@ -82,10 +84,10 @@ failures. No terminal-content recording or callbacks/exporters are introduced in
 **Acceptance goal:** a consumer can run and shut down a PTY session without reconstructing competing pump
 and teardown loops, and can inspect what completed or failed without confusing request acceptance with exit.
 
-Read the [proposed design](docs/Session-Orchestration-Design.md) and
-[development roadmap](docs/Session-Orchestration-Implementation-Plan.md), tranches SS01-SS09.
-Important proposed contracts, including input sealing and the requirement for cancellation-cooperative streams,
-remain visible for design review before implementation.
+Read the [accepted design](docs/Session-Orchestration-Design.md) and
+[development roadmap and evidence](docs/Session-Orchestration-Implementation-Plan.md), tranches SS01-SS09.
+The recorded contracts include permanent input sealing after accepted shutdown and the requirement for
+cancellation-cooperative streams.
 
 ## Full current menu
 
@@ -95,8 +97,8 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | --- | --- | --- | --- |
 | 1 | Process ownership and descendant cleanup | Completed in PR #3 | Windows job / Unix initial-group ownership, explicit cleanup and shutdown integration. Broader containment needs a separate design. |
 | 2 | Broader signals and foreground-job control | Remaining work deferred; medium-large | Named initial-group/primary signals are complete. Revisit additional signals, suspend/resume, or foreground retargeting when a consumer requires their identity and platform rules. |
-| 3 | Reusable session orchestration | Selected; medium | Coordinate ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. Broadest immediate consumer benefit. |
-| 4 | Diagnostics and capability discovery | Focused lifecycle subset selected; small-medium | Add bounded session lifecycle history, counters/snapshots and completion failure stages. Ownership capabilities/native control outcomes already exist. Defer native startup-stage tracing, general metrics/exporters, callback subscriptions and transcripts. |
+| 3 | Reusable session orchestration | Implemented on PR #4 | Coordinates ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. |
+| 4 | Diagnostics and capability discovery | Focused lifecycle subset implemented on PR #4 | Adds bounded session lifecycle history, counters/snapshots and completion failure stages. Native startup-stage tracing, general metrics/exporters, callback subscriptions and transcripts remain deferred. |
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Deferred; medium-large | Validate or extend trimming, NativeAOT, single-file/self-contained consumers and wider Unix environments. Strong alternative when standalone distribution becomes the immediate priority. |
 | 7 | Terminal configuration controls | Deferred; medium-large | Explicit echo, canonical/raw input and control-character settings with truthful platform-specific capabilities. Return when application control of modes is required. |

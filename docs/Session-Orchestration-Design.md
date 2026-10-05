@@ -1,6 +1,6 @@
 # Reusable Session Orchestration and Lifecycle Diagnostics
 
-**Status:** approved contracts implemented on feature branch; six-platform acceptance pending.
+**Status:** implemented and accepted on all six CI platforms; Windows laptop observations remain pending.
 **Selection:** roadmap option 3 plus a focused subset of option 4.
 **Companion:** [development roadmap](Session-Orchestration-Implementation-Plan.md).
 
