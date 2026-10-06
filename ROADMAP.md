@@ -146,6 +146,16 @@ does not establish runtime support. Retain all existing six-platform, three-fram
 evidence; unresolved cells carry a reproducible limitation or remain explicitly unverified. Preserve
 the current package and public contracts while recording Windows laptop results separately from hosted CI.
 
+## Selected next milestone: focused recording and replay
+
+**Decision, 2026-10-06:** after PR #6 merged, the user selected **option 8 as a focused next milestone** and requested this planning PR and a proper development roadmap. The [proposed design](docs/Recording-Replay-Design.md) and [development roadmap](docs/Recording-Replay-Implementation-Plan.md), tranches RR01–RR08, define the implementation and acceptance gates. This is a selected plan, not an implemented feature or release commitment.
+
+**Goal:** an opt-in `PtySession` recorder writes a bounded, versioned binary record of output bytes accepted by the consumer's output destination and successful terminal resizes. A streaming reader validates and replays the ordered byte and resize events without launching a process. The first increment has finite file and reader limits, explicit complete/truncated/stopped/faulted recording results, and no change to session behavior when recording is disabled.
+
+The plan keeps terminal content out of diagnostics and error messages, distinguishes recorder failure from live session output failure, and verifies format, corruption handling, resource ownership and cross-platform package consumers. Timing is captured as metadata; replay is deterministic in event order without wall-clock pacing. Input capture, bounded output matching, scripting, terminal emulation, generic observer/exporter hooks, and timed playback remain deferred.
+
+**Acceptance goal:** a consumer can capture a bounded session output/resize transcript, detect truncation or failure without ambiguity, and read/replay its valid prefix on another supported platform; the existing package and session contracts remain intact. Merge, version selection, and publication remain separate decisions.
+
 ## Full current menu
 
 Effort is relative, not a schedule. Deferred options remain available and are not release commitments.
@@ -159,7 +169,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
-| 8 | Recording, replay, and automation | Deferred; medium | Timestamped output/resize records, replay and bounded output matching. Benefits from session orchestration first; input capture must be opt-in and screen-aware matching needs a terminal model. |
+| 8 | Recording, replay, and automation | Focused recording/replay selected; planning PR | Opt-in bounded, timestamped output/resize records and validated event-order replay are the next milestone. Input capture, output matching, scripting, timed playback, and screen-aware automation remain deferred. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
@@ -167,7 +177,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 13 | Release stabilization and compatibility hardening | Focused API/stress/support-matrix portion completed in PR #6 | The PR #5 public surface is pinned, published lifecycle regressions run in the deployment matrix, and the support matrix records prerequisites and limitations. Broader release work follows a chosen release target. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
-Interactive hosting, scoped process ownership, reusable session orchestration, and launch-time terminal configuration are completed history. The remaining portions of options 4, 7, and 13 stay available after this focused milestone.
+Interactive hosting, scoped process ownership, reusable session orchestration, and launch-time terminal configuration are completed history. The remaining portions of options 4, 7, 8, and 13 stay available after this focused milestone.
 
 ## Completion policy
 
