@@ -10,7 +10,7 @@
 
 **Spec:** [Deployment portability design](Deployment-Portability-Design.md). Read the [main roadmap](../ROADMAP.md) and the existing [terminal configuration plan](Terminal-Configuration-Implementation-Plan.md) for the PR #5 baseline.
 
-**Status:** planning only. No deployment form beyond the already evidenced ordinary package consumer is promoted to supported by this document.
+**Status:** approved for native inline implementation on 2026-10-06. DP01-DP09 are in progress. No deployment form beyond the already evidenced ordinary package consumer is promoted to supported without the gates below.
 
 ## Global constraints
 
