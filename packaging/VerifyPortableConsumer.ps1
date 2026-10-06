@@ -61,23 +61,31 @@ function Assert-HelperLayout {
 
 function Invoke-PublishedMode {
 	param([string]$Executable, [string]$SmokeMode, [string]$WorkingDirectory, [int]$Timeout)
-	$token = [Guid]::NewGuid().ToString('N')
-	$stdout = Join-Path $WorkingDirectory "$token.out"
-	$stderr = Join-Path $WorkingDirectory "$token.err"
-	$process = Start-Process -FilePath $Executable -ArgumentList @($SmokeMode) -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+	$start = New-Object System.Diagnostics.ProcessStartInfo
+	$start.FileName = $Executable
+	$start.Arguments = $SmokeMode
+	$start.WorkingDirectory = $WorkingDirectory
+	$start.UseShellExecute = $false
+	$start.RedirectStandardOutput = $true
+	$start.RedirectStandardError = $true
+	$process = New-Object System.Diagnostics.Process
+	$process.StartInfo = $start
+	if (-not $process.Start()) { throw "Unable to start published consumer mode $SmokeMode." }
+	$outputTask = $process.StandardOutput.ReadToEndAsync()
+	$errorTask = $process.StandardError.ReadToEndAsync()
 	try {
 		if (-not $process.WaitForExit($Timeout * 1000)) {
 			try { $process.Kill() } catch { }
 			throw "Published consumer timed out in mode $SmokeMode after $Timeout seconds."
 		}
 		$process.WaitForExit()
-		$outputText = if (Test-Path -LiteralPath $stdout) { [System.IO.File]::ReadAllText($stdout) } else { '' }
-		$errorText = if (Test-Path -LiteralPath $stderr) { [System.IO.File]::ReadAllText($stderr) } else { '' }
-		if ($process.ExitCode -ne 0) { throw "Published consumer mode $SmokeMode exited $($process.ExitCode): $errorText$outputText" }
+		$outputText = $outputTask.GetAwaiter().GetResult()
+		$errorText = $errorTask.GetAwaiter().GetResult()
+		$exitCode = $process.ExitCode
+		if ($exitCode -ne 0) { throw "Published consumer mode $SmokeMode exited ${exitCode}: $errorText$outputText" }
 		if ($outputText.IndexOf('passed.', [System.StringComparison]::Ordinal) -lt 0) { throw "Published consumer mode $SmokeMode did not report success: $outputText$errorText" }
 	} finally {
 		$process.Dispose()
-		Remove-Item -LiteralPath $stdout, $stderr -Force -ErrorAction SilentlyContinue
 	}
 }
 
