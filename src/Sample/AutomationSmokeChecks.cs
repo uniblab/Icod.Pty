@@ -21,7 +21,7 @@ internal static class AutomationSmokeChecks {
 			PtyScriptStep.Expect("ABSENT"u8.ToArray(), TimeSpan.FromMilliseconds(25))
 		], deadline.Token);
 		Require(first == new PtyScriptResult(PtyScriptStatus.ExpectationFailed, 4, 4, PtyExpectStatus.TimedOut),
-			"Automation timeout did not identify the expected script step.");
+			$"Automation timeout result was {first.Status} after {first.CompletedStepCount} steps at {first.FailedStepIndex} with {first.ExpectStatus}.");
 
 		PtyScriptResult retry = await PtyScriptRunner.RunAsync(session, [
 			PtyScriptStep.Expect("TWO"u8.ToArray(), TimeSpan.FromSeconds(5)),
