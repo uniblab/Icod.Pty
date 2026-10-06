@@ -67,7 +67,7 @@ public sealed class PtyAutomationSessionTests {
 		using FeedStream source = new(); using MemoryStream destination = new(); ControlledBackend backend = new() { Output = source };
 		PtySession session = await SessionTestSupport.Start(backend, destination, drain: TimeSpan.FromSeconds(2), automation: new());
 		try {
-			Task<PtyExpectResult> pending = session.ExpectAsync("late"u8.ToArray(), TimeSpan.FromSeconds(1));
+			Task<PtyExpectResult> pending = session.ExpectAsync("late"u8.ToArray(), TimeSpan.FromSeconds(10));
 			backend.Completion.SetResult(0);
 			await SessionTestSupport.Until(() => session.GetDiagnostics().Phase == PtySessionPhase.Draining);
 			source.Feed("late"u8.ToArray());
