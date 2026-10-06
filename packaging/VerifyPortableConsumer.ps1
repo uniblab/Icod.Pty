@@ -10,6 +10,9 @@ param(
 	[ValidateSet('', 'FrameworkDependent', 'SelfContained', 'SingleFile', 'Trimmed')]
 	[string]$Mode = '',
 
+	[ValidateSet('Full', 'Relocated', 'MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')]
+	[string]$Scenario = 'Full',
+
 	[int]$TimeoutSeconds = 60,
 
 	[switch]$SelfTest
@@ -59,8 +62,31 @@ function Assert-HelperLayout {
 	}
 }
 
+function New-PortableExecutionLayout {
+	param([string]$PublishDirectory, [string]$Scenario)
+	if ($Scenario -eq 'Full') { return [pscustomobject]@{ Directory = $PublishDirectory; MissingAsset = '' } }
+	$parent = Split-Path -Parent $PublishDirectory
+	$executionDirectory = Join-Path $parent ('execute-' + $Scenario.ToLowerInvariant())
+	if (Test-Path -LiteralPath $executionDirectory) { Remove-Item -LiteralPath $executionDirectory -Recurse -Force }
+	New-Item -ItemType Directory -Path $executionDirectory -Force | Out-Null
+	foreach ($item in @(Get-ChildItem -LiteralPath $PublishDirectory -Force)) {
+		Copy-Item -LiteralPath $item.FullName -Destination $executionDirectory -Recurse -Force
+	}
+	Remove-Item -LiteralPath $PublishDirectory -Recurse -Force
+	$missingAsset = switch ($Scenario) {
+		'MissingHelperDll' { 'Icod.Pty.Host.dll' }
+		'MissingHelperDeps' { 'Icod.Pty.Host.deps.json' }
+		'MissingHelperRuntimeConfig' { 'Icod.Pty.Host.runtimeconfig.json' }
+		default { '' }
+	}
+	if ($missingAsset.Length -ne 0) {
+		Remove-Item -LiteralPath (Join-Path $executionDirectory (Join-Path 'Icod.Pty.Host' $missingAsset)) -Force
+	}
+	return [pscustomobject]@{ Directory = $executionDirectory; MissingAsset = $missingAsset }
+}
+
 function Invoke-PublishedMode {
-	param([string]$Executable, [string]$SmokeMode, [string]$WorkingDirectory, [int]$Timeout)
+	param([string]$Executable, [string]$SmokeMode, [string]$WorkingDirectory, [int]$Timeout, [switch]$ExpectFailure)
 	$start = New-Object System.Diagnostics.ProcessStartInfo
 	$start.FileName = $Executable
 	$start.Arguments = $SmokeMode
@@ -82,6 +108,11 @@ function Invoke-PublishedMode {
 		$outputText = $outputTask.GetAwaiter().GetResult()
 		$errorText = $errorTask.GetAwaiter().GetResult()
 		$exitCode = $process.ExitCode
+		if ($ExpectFailure) {
+			if ($exitCode -eq 0) { throw "Published consumer mode $SmokeMode unexpectedly succeeded with an incomplete helper layout." }
+			if ([string]::IsNullOrWhiteSpace($outputText + $errorText)) { throw "Published consumer mode $SmokeMode failed without an identifiable diagnostic." }
+			return
+		}
 		if ($exitCode -ne 0) { throw "Published consumer mode $SmokeMode exited ${exitCode}: $errorText$outputText" }
 		if ($outputText.IndexOf('passed.', [System.StringComparison]::Ordinal) -lt 0) { throw "Published consumer mode $SmokeMode did not report success: $outputText$errorText" }
 	} finally {
@@ -180,8 +211,10 @@ $restoredHash = (Get-FileHash -LiteralPath $restoredPackage -Algorithm SHA256).H
 if ($artifactHash -ne $restoredHash) { throw 'Restored Icod.Pty package does not match the requested artifact.' }
 Invoke-DotNet -Arguments (Get-PublishArguments $project $Framework $RuntimeIdentifier $Mode $publishRoot)
 Assert-HelperLayout $publishRoot
-$executable = Get-PublishedExecutable $publishRoot $RuntimeIdentifier
-$smokeModes = @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke')
-foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $publishRoot $TimeoutSeconds }
-$result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; executable = $executable; smokeModes = $smokeModes.Count }
+$layout = New-PortableExecutionLayout -PublishDirectory $publishRoot -Scenario $Scenario
+$executable = Get-PublishedExecutable $layout.Directory $RuntimeIdentifier
+$expectFailure = $layout.MissingAsset.Length -ne 0 -and -not $RuntimeIdentifier.StartsWith('win-', [System.StringComparison]::Ordinal)
+$smokeModes = if ($layout.MissingAsset.Length -ne 0) { @('--smoke') } else { @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke') }
+foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $layout.Directory $TimeoutSeconds -ExpectFailure:$expectFailure }
+$result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; scenario = $Scenario; executable = $executable; helperLayout = if ($layout.MissingAsset.Length -eq 0) { 'Complete' } else { "Missing:$($layout.MissingAsset)" }; expectedFailure = $expectFailure; smokeModes = $smokeModes.Count }
 Write-Host ('PORTABILITY-RESULT ' + ($result | ConvertTo-Json -Compress))

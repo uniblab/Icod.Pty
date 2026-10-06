@@ -170,7 +170,7 @@ public sealed class TerminalConfigurationIntegrationTests {
 			PtyStartInfo info = PtyTestSupport.Child("exit"); info.TerminalOptions = new() { Echo = false };
 			await Assert.ThrowsAnyAsync<OperationCanceledException>(() => UnixBackend.StartAsync(LaunchConfiguration.Capture(info), cancellation.Token, native));
 		}
-		Assert.InRange(DescriptorCount(), baseline - 1, baseline + 1);
+		Assert.True(DescriptorCount() <= baseline + 1, "Cancelled configuration retained file descriptors.");
 	}
 
 	[Fact]

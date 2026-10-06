@@ -61,7 +61,7 @@ jobs:
           - os: macos-latest
             name: macOS ARM64
             rid: osx-arm64
-    timeout-minutes: 15
+    timeout-minutes: 45
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -142,3 +142,23 @@ jobs:
           -Framework net10.0
           -RuntimeIdentifier '${{ matrix.rid }}'
           -Mode FrameworkDependent
+      - name: Verify relocated and incomplete helper layouts
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario Relocated
+          }
+          foreach ($scenario in @('MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario $scenario
+          }
+      - name: Verify relocated and incomplete layouts with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario Relocated
+          }
+          foreach ($scenario in @('MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario $scenario
+          }
