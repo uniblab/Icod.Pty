@@ -4,9 +4,10 @@ using System.Text;
 namespace Icod.Pty.Sample;
 
 internal static class AutomationSmokeChecks {
-	// ConPTY transcodes each child write as UTF-8. Cross a write boundary only after
-	// a complete code point; matcher unit tests cover arbitrary byte boundaries.
-	private static readonly byte[] BinaryMarker = [0xe2, 0x82, 0xac, (byte)'|'];
+	// Windows console output applies its configured code page before ConPTY emits
+	// terminal data. Use the portable single-byte range here; matcher unit tests
+	// cover NUL, invalid UTF-8, and arbitrary byte boundaries without a console.
+	private static readonly byte[] BinaryMarker = [(byte)'A', (byte)'B', (byte)'C', (byte)'|'];
 
 	internal static async Task<int> RunAsync() {
 		using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(30));
@@ -45,10 +46,10 @@ internal static class AutomationSmokeChecks {
 		await output.FlushAsync();
 		Require(await Console.In.ReadLineAsync() == "go", "Automation child expected go.");
 
-		await output.WriteAsync(BinaryMarker.AsMemory(0, 3));
+		await output.WriteAsync(BinaryMarker.AsMemory(0, 2));
 		await output.FlushAsync();
 		await Task.Delay(25);
-		await output.WriteAsync(BinaryMarker.AsMemory(3));
+		await output.WriteAsync(BinaryMarker.AsMemory(2));
 		await output.WriteAsync("ONE:TWO:RETRY"u8.ToArray());
 		await output.FlushAsync();
 		Require(await Console.In.ReadLineAsync() == "quit", "Automation child expected quit.");
