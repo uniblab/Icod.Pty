@@ -45,16 +45,22 @@ jobs:
         include:
           - os: windows-latest
             name: Windows x64
+            rid: win-x64
           - os: windows-11-arm
             name: Windows ARM64
+            rid: win-arm64
           - os: ubuntu-latest
             name: Linux x64
+            rid: linux-x64
           - os: ubuntu-24.04-arm
             name: Linux ARM64
+            rid: linux-arm64
           - os: macos-26-intel
             name: macOS x64
+            rid: osx-x64
           - os: macos-latest
             name: macOS ARM64
+            rid: osx-arm64
     timeout-minutes: 15
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -118,3 +124,21 @@ jobs:
         run: |
           ./packaging/VerifyPackageArtifact.ps1 -ArtifactDirectory artifacts -Configuration Staging
           ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
+      - name: Verify portable framework-dependent consumer
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode FrameworkDependent
+      - name: Verify portable consumer with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode FrameworkDependent
