@@ -180,3 +180,21 @@ jobs:
           }
           ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario Relocated
           ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario MissingHelperDll
+      - name: Verify single-file consumers
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario MissingHelperDll
+      - name: Verify single-file consumers with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario MissingHelperDll
