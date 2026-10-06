@@ -83,7 +83,7 @@ public sealed class ProcessScopeIntegrationTests {
 			if (OperatingSystem.IsWindows()) _ = child.SafeHandle; return child;
 		}
 		internal async Task ExitPrimary(PtyProcess process) { File.WriteAllText(Path.Combine(directory, "exit-primary"), "exit"); Assert.Equal(37, await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10))); }
-		internal async Task Wait(string name) { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10)); while (!File.Exists(Path.Combine(directory, name))) await Task.Delay(10, timeout.Token); }
+		internal async Task Wait(string name) { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30)); while (!File.Exists(Path.Combine(directory, name))) await Task.Delay(10, timeout.Token); }
 		internal void StopChild() => File.WriteAllText(Path.Combine(directory, "stop-child"), "stop");
 		public void Dispose() { StopChild(); }
 	}

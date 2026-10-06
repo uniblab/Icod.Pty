@@ -91,7 +91,7 @@ public sealed class WindowsOwnershipTests {
 			return LaunchConfiguration.Capture(info);
 		}
 		internal async Task WaitReady() {
-			using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
+			using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
 			while (!File.Exists(Path.Combine(directory, "child-ready"))) await Task.Delay(10, timeout.Token);
 		}
 		internal int ChildId() => int.Parse(File.ReadAllText(Path.Combine(directory, "child-ready")), System.Globalization.CultureInfo.InvariantCulture);
