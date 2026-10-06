@@ -10,221 +10,221 @@
   ctor Icod.Pty.PtySize(System.Int32 columns,System.Int32 rows)
   ctor Icod.Pty.PtyStartInfo(System.String fileName)
   ctor Icod.Pty.PtyTerminalOptions()
-  field Icod.Pty.PtyControlStatus DispatchUnconfirmed = 2
-  field Icod.Pty.PtyControlStatus Requested = 0
-  field Icod.Pty.PtyControlStatus TargetUnavailable = 1
-  field Icod.Pty.PtyProcessCapabilities None = 0
-  field Icod.Pty.PtyProcessCapabilities SignalOwnedScope = 4
-  field Icod.Pty.PtyProcessCapabilities SignalPrimaryProcess = 2
-  field Icod.Pty.PtyProcessCapabilities TerminateOwnedScope = 1
-  field Icod.Pty.PtyProcessOwnership PlatformScope = 1
-  field Icod.Pty.PtyProcessOwnership PrimaryProcess = 0
-  field Icod.Pty.PtyProcessTarget OwnedScope = 1
-  field Icod.Pty.PtyProcessTarget PrimaryProcess = 0
-  field Icod.Pty.PtySessionEndReason Disposed = 1
-  field Icod.Pty.PtySessionEndReason InputFailed = 2
-  field Icod.Pty.PtySessionEndReason OutputFailed = 3
-  field Icod.Pty.PtySessionEndReason PrimaryExited = 0
-  field Icod.Pty.PtySessionEndReason ProcessFailed = 4
-  field Icod.Pty.PtySessionEventKind CleanupFailed = 14
-  field Icod.Pty.PtySessionEventKind Completed = 15
-  field Icod.Pty.PtySessionEventKind DrainTimedOut = 9
-  field Icod.Pty.PtySessionEventKind InputEnded = 1
-  field Icod.Pty.PtySessionEventKind InputFailed = 10
-  field Icod.Pty.PtySessionEventKind InputSealed = 2
-  field Icod.Pty.PtySessionEventKind OutputEnded = 8
-  field Icod.Pty.PtySessionEventKind OutputFailed = 11
-  field Icod.Pty.PtySessionEventKind PrimaryExited = 7
-  field Icod.Pty.PtySessionEventKind ProcessFailed = 12
-  field Icod.Pty.PtySessionEventKind ReleaseStarted = 13
-  field Icod.Pty.PtySessionEventKind ShutdownCancelled = 5
-  field Icod.Pty.PtySessionEventKind ShutdownCompleted = 4
-  field Icod.Pty.PtySessionEventKind ShutdownFailed = 6
-  field Icod.Pty.PtySessionEventKind ShutdownStarted = 3
-  field Icod.Pty.PtySessionEventKind Started = 0
-  field Icod.Pty.PtySessionFailureStage Cleanup = 3
-  field Icod.Pty.PtySessionFailureStage Input = 0
-  field Icod.Pty.PtySessionFailureStage Output = 1
-  field Icod.Pty.PtySessionFailureStage Process = 2
-  field Icod.Pty.PtySessionOutputStatus EndOfStream = 0
-  field Icod.Pty.PtySessionOutputStatus Faulted = 3
-  field Icod.Pty.PtySessionOutputStatus Stopped = 2
-  field Icod.Pty.PtySessionOutputStatus TimedOut = 1
-  field Icod.Pty.PtySessionPhase Completed = 3
-  field Icod.Pty.PtySessionPhase Draining = 1
-  field Icod.Pty.PtySessionPhase Releasing = 2
-  field Icod.Pty.PtySessionPhase Running = 0
-  field Icod.Pty.PtyShutdownStatus Exited = 0
-  field Icod.Pty.PtyShutdownStatus TimedOut = 1
-  field Icod.Pty.PtySignal Hangup = 0
-  field Icod.Pty.PtySignal Interrupt = 1
-  field Icod.Pty.PtySignal Kill = 3
-  field Icod.Pty.PtySignal Terminate = 2
-  field Icod.Pty.PtyTerminalCapabilities CanonicalInput = 4
-  field Icod.Pty.PtyTerminalCapabilities ControlCharacters = 16
-  field Icod.Pty.PtyTerminalCapabilities Echo = 2
-  field Icod.Pty.PtyTerminalCapabilities None = 0
-  field Icod.Pty.PtyTerminalCapabilities RawProfile = 1
-  field Icod.Pty.PtyTerminalCapabilities ReadTiming = 32
-  field Icod.Pty.PtyTerminalCapabilities SignalProcessing = 8
-  field Icod.Pty.PtyTerminalProfile Preserve = 0
-  field Icod.Pty.PtyTerminalProfile Raw = 1
-  field System.Int32 DisabledCharacter = -1
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  field System.Int32 value__
-  method Icod.Pty.PtyControlResult RequestTermination(Icod.Pty.PtyProcessTarget target)
-  method Icod.Pty.PtyControlResult RequestTermination(Icod.Pty.PtyProcessTarget target)
-  method Icod.Pty.PtyControlResult SendSignal(Icod.Pty.PtySignal signal,Icod.Pty.PtyProcessTarget target)
-  method Icod.Pty.PtyControlResult SendSignal(Icod.Pty.PtySignal signal,Icod.Pty.PtyProcessTarget target)
-  method Icod.Pty.PtyProcess Start(Icod.Pty.PtyStartInfo startInfo)
-  method Icod.Pty.PtySessionDiagnostics <Clone>$()
-  method Icod.Pty.PtySessionDiagnostics GetDiagnostics()
-  method Icod.Pty.PtySessionEvent <Clone>$()
-  method Icod.Pty.PtySessionFailure <Clone>$()
-  method Icod.Pty.PtySessionResult <Clone>$()
-  method Icod.Pty.PtyTerminalCapabilities GetTerminalCapabilities()
-  method System.Boolean Equals(Icod.Pty.PtyControlResult other)
-  method System.Boolean Equals(Icod.Pty.PtySessionDiagnostics other)
-  method System.Boolean Equals(Icod.Pty.PtySessionEvent other)
-  method System.Boolean Equals(Icod.Pty.PtySessionFailure other)
-  method System.Boolean Equals(Icod.Pty.PtySessionResult other)
-  method System.Boolean Equals(Icod.Pty.PtyShutdownResult other)
-  method System.Boolean Equals(Icod.Pty.PtySize other)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean Equals(System.Object obj)
-  method System.Boolean op_Equality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right)
-  method System.Boolean op_Equality(Icod.Pty.PtySessionDiagnostics left,Icod.Pty.PtySessionDiagnostics right)
-  method System.Boolean op_Equality(Icod.Pty.PtySessionEvent left,Icod.Pty.PtySessionEvent right)
-  method System.Boolean op_Equality(Icod.Pty.PtySessionFailure left,Icod.Pty.PtySessionFailure right)
-  method System.Boolean op_Equality(Icod.Pty.PtySessionResult left,Icod.Pty.PtySessionResult right)
-  method System.Boolean op_Equality(Icod.Pty.PtyShutdownResult left,Icod.Pty.PtyShutdownResult right)
-  method System.Boolean op_Equality(Icod.Pty.PtySize left,Icod.Pty.PtySize right)
-  method System.Boolean op_Inequality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right)
-  method System.Boolean op_Inequality(Icod.Pty.PtySessionDiagnostics left,Icod.Pty.PtySessionDiagnostics right)
-  method System.Boolean op_Inequality(Icod.Pty.PtySessionEvent left,Icod.Pty.PtySessionEvent right)
-  method System.Boolean op_Inequality(Icod.Pty.PtySessionFailure left,Icod.Pty.PtySessionFailure right)
-  method System.Boolean op_Inequality(Icod.Pty.PtySessionResult left,Icod.Pty.PtySessionResult right)
-  method System.Boolean op_Inequality(Icod.Pty.PtyShutdownResult left,Icod.Pty.PtyShutdownResult right)
-  method System.Boolean op_Inequality(Icod.Pty.PtySize left,Icod.Pty.PtySize right)
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.Int32 GetHashCode()
-  method System.String ToString()
-  method System.String ToString()
-  method System.String ToString()
-  method System.String ToString()
-  method System.String ToString()
-  method System.String ToString()
-  method System.String ToString()
-  method System.Threading.Tasks.Task<Icod.Pty.PtyProcess> StartAsync(Icod.Pty.PtyStartInfo startInfo,System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.Task<Icod.Pty.PtySession> StartAsync(Icod.Pty.PtyStartInfo startInfo,Icod.Pty.PtySessionOptions options,System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.Task<Icod.Pty.PtyShutdownResult> ShutdownAsync(Icod.Pty.PtyShutdownOptions options,System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.Task<Icod.Pty.PtyShutdownResult> ShutdownAsync(Icod.Pty.PtyShutdownOptions options,System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.Task<System.Int32> WaitForExitAsync(System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.ValueTask DisposeAsync()
-  method System.Threading.Tasks.ValueTask DisposeAsync()
-  method System.Threading.Tasks.ValueTask SendInterruptAsync(System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.ValueTask SendInterruptAsync(System.Threading.CancellationToken cancellationToken=null)
-  method System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.Byte> bytes,System.Threading.CancellationToken cancellationToken=null)
-  method System.Void Deconstruct(out Icod.Pty.PtyProcessTarget Target,out Icod.Pty.PtyControlStatus Status)
-  method System.Void Deconstruct(out Icod.Pty.PtySessionEndReason Reason,out System.Nullable<System.Int32> ExitCode,out Icod.Pty.PtySessionOutputStatus OutputStatus,out System.Nullable<Icod.Pty.PtyShutdownResult> LastShutdownResult,out System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionFailure> Failures)
-  method System.Void Deconstruct(out Icod.Pty.PtySessionFailureStage Stage,out System.Exception Exception)
-  method System.Void Deconstruct(out Icod.Pty.PtySessionPhase Phase,out System.Boolean InputSealed,out System.Int64 BytesWrittenToPty,out System.Int64 BytesReadFromPty,out System.Int64 BytesWrittenToOutput,out System.Int64 DroppedEvents,out System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events)
-  method System.Void Deconstruct(out Icod.Pty.PtyShutdownStatus Status,out System.Nullable<System.Int32> ExitCode,out System.Boolean ForcedTerminationRequested)
-  method System.Void Deconstruct(out System.Int64 Sequence,out System.TimeSpan Elapsed,out Icod.Pty.PtySessionEventKind Kind)
-  method System.Void Dispose()
-  method System.Void Dispose()
-  method System.Void Resize(Icod.Pty.PtySize newSize)
-  method System.Void Resize(Icod.Pty.PtySize size)
-  method System.Void Terminate()
-  property Icod.Pty.PtyControlStatus Status { get;set; }
-  property Icod.Pty.PtyProcessCapabilities Capabilities { get; }
-  property Icod.Pty.PtyProcessCapabilities Capabilities { get; }
-  property Icod.Pty.PtyProcessOwnership Ownership { get; }
-  property Icod.Pty.PtyProcessOwnership Ownership { get; }
-  property Icod.Pty.PtyProcessOwnership Ownership { get;set; }
-  property Icod.Pty.PtyProcessTarget Target { get;set; }
-  property Icod.Pty.PtyProcessTarget TerminationTarget { get;set; }
-  property Icod.Pty.PtySessionEndReason Reason { get;set; }
-  property Icod.Pty.PtySessionEventKind Kind { get;set; }
-  property Icod.Pty.PtySessionFailureStage Stage { get;set; }
-  property Icod.Pty.PtySessionOutputStatus OutputStatus { get;set; }
-  property Icod.Pty.PtySessionPhase Phase { get;set; }
-  property Icod.Pty.PtyShutdownStatus Status { get;set; }
-  property Icod.Pty.PtySize Size { get; }
-  property Icod.Pty.PtySize Size { get; }
-  property Icod.Pty.PtySize Size { get;set; }
-  property Icod.Pty.PtyTerminalOptions TerminalOptions { get;set; }
-  property Icod.Pty.PtyTerminalProfile Profile { get;set; }
-  property System.Boolean ForceTermination { get;set; }
-  property System.Boolean ForcedTerminationRequested { get;set; }
-  property System.Boolean HasExited { get; }
-  property System.Boolean HasExited { get; }
-  property System.Boolean InputSealed { get;set; }
-  property System.Boolean LeaveInputOpen { get;set; }
-  property System.Boolean LeaveOutputOpen { get;set; }
-  property System.Collections.Generic.IDictionary<System.String,System.String> Environment { get; }
-  property System.Collections.Generic.IList<System.String> ArgumentList { get; }
-  property System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events { get;set; }
-  property System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionFailure> Failures { get;set; }
-  property System.Exception Exception { get;set; }
-  property System.IO.Stream Input { get; }
-  property System.IO.Stream Input { get;set; }
-  property System.IO.Stream Output { get; }
-  property System.IO.Stream Output { get; }
-  property System.Int32 Columns { get; }
-  property System.Int32 ExitCode { get; }
-  property System.Int32 ProcessId { get; }
-  property System.Int32 ProcessId { get; }
-  property System.Int32 Rows { get; }
-  property System.Int64 BytesReadFromPty { get;set; }
-  property System.Int64 BytesWrittenToOutput { get;set; }
-  property System.Int64 BytesWrittenToPty { get;set; }
-  property System.Int64 DroppedEvents { get;set; }
-  property System.Int64 Sequence { get;set; }
-  property System.Nullable<Icod.Pty.PtyControlResult> TerminationResult { get;set; }
-  property System.Nullable<Icod.Pty.PtyShutdownResult> LastShutdownResult { get;set; }
-  property System.Nullable<System.Boolean> CanonicalInput { get;set; }
-  property System.Nullable<System.Boolean> Echo { get;set; }
-  property System.Nullable<System.Boolean> SignalProcessing { get;set; }
-  property System.Nullable<System.Int32> EndOfFileCharacter { get;set; }
-  property System.Nullable<System.Int32> EraseCharacter { get;set; }
-  property System.Nullable<System.Int32> ExitCode { get;set; }
-  property System.Nullable<System.Int32> ExitCode { get;set; }
-  property System.Nullable<System.Int32> InterruptCharacter { get;set; }
-  property System.Nullable<System.Int32> MinimumReadBytes { get;set; }
-  property System.Nullable<System.Int32> ReadTimeoutDeciseconds { get;set; }
-  property System.ReadOnlyMemory<System.Byte> Request { get;set; }
-  property System.String DotNetHostPath { get;set; }
-  property System.String FileName { get; }
-  property System.String WorkingDirectory { get;set; }
-  property System.Threading.Tasks.Task<Icod.Pty.PtySessionOutputStatus> OutputCompletion { get; }
-  property System.Threading.Tasks.Task<Icod.Pty.PtySessionResult> Completion { get; }
-  property System.TimeSpan DrainTimeout { get;set; }
-  property System.TimeSpan Elapsed { get;set; }
-  property System.TimeSpan GracePeriod { get;set; }
-  property System.TimeSpan StartTimeout { get;set; }
-  property System.TimeSpan TerminationTimeout { get;set; }
+  field Icod.Pty.PtyControlStatus::DispatchUnconfirmed Icod.Pty.PtyControlStatus = 2
+  field Icod.Pty.PtyControlStatus::Requested Icod.Pty.PtyControlStatus = 0
+  field Icod.Pty.PtyControlStatus::TargetUnavailable Icod.Pty.PtyControlStatus = 1
+  field Icod.Pty.PtyControlStatus::value__ System.Int32
+  field Icod.Pty.PtyProcessCapabilities::None Icod.Pty.PtyProcessCapabilities = 0
+  field Icod.Pty.PtyProcessCapabilities::SignalOwnedScope Icod.Pty.PtyProcessCapabilities = 4
+  field Icod.Pty.PtyProcessCapabilities::SignalPrimaryProcess Icod.Pty.PtyProcessCapabilities = 2
+  field Icod.Pty.PtyProcessCapabilities::TerminateOwnedScope Icod.Pty.PtyProcessCapabilities = 1
+  field Icod.Pty.PtyProcessCapabilities::value__ System.Int32
+  field Icod.Pty.PtyProcessOwnership::PlatformScope Icod.Pty.PtyProcessOwnership = 1
+  field Icod.Pty.PtyProcessOwnership::PrimaryProcess Icod.Pty.PtyProcessOwnership = 0
+  field Icod.Pty.PtyProcessOwnership::value__ System.Int32
+  field Icod.Pty.PtyProcessTarget::OwnedScope Icod.Pty.PtyProcessTarget = 1
+  field Icod.Pty.PtyProcessTarget::PrimaryProcess Icod.Pty.PtyProcessTarget = 0
+  field Icod.Pty.PtyProcessTarget::value__ System.Int32
+  field Icod.Pty.PtySessionEndReason::Disposed Icod.Pty.PtySessionEndReason = 1
+  field Icod.Pty.PtySessionEndReason::InputFailed Icod.Pty.PtySessionEndReason = 2
+  field Icod.Pty.PtySessionEndReason::OutputFailed Icod.Pty.PtySessionEndReason = 3
+  field Icod.Pty.PtySessionEndReason::PrimaryExited Icod.Pty.PtySessionEndReason = 0
+  field Icod.Pty.PtySessionEndReason::ProcessFailed Icod.Pty.PtySessionEndReason = 4
+  field Icod.Pty.PtySessionEndReason::value__ System.Int32
+  field Icod.Pty.PtySessionEventKind::CleanupFailed Icod.Pty.PtySessionEventKind = 14
+  field Icod.Pty.PtySessionEventKind::Completed Icod.Pty.PtySessionEventKind = 15
+  field Icod.Pty.PtySessionEventKind::DrainTimedOut Icod.Pty.PtySessionEventKind = 9
+  field Icod.Pty.PtySessionEventKind::InputEnded Icod.Pty.PtySessionEventKind = 1
+  field Icod.Pty.PtySessionEventKind::InputFailed Icod.Pty.PtySessionEventKind = 10
+  field Icod.Pty.PtySessionEventKind::InputSealed Icod.Pty.PtySessionEventKind = 2
+  field Icod.Pty.PtySessionEventKind::OutputEnded Icod.Pty.PtySessionEventKind = 8
+  field Icod.Pty.PtySessionEventKind::OutputFailed Icod.Pty.PtySessionEventKind = 11
+  field Icod.Pty.PtySessionEventKind::PrimaryExited Icod.Pty.PtySessionEventKind = 7
+  field Icod.Pty.PtySessionEventKind::ProcessFailed Icod.Pty.PtySessionEventKind = 12
+  field Icod.Pty.PtySessionEventKind::ReleaseStarted Icod.Pty.PtySessionEventKind = 13
+  field Icod.Pty.PtySessionEventKind::ShutdownCancelled Icod.Pty.PtySessionEventKind = 5
+  field Icod.Pty.PtySessionEventKind::ShutdownCompleted Icod.Pty.PtySessionEventKind = 4
+  field Icod.Pty.PtySessionEventKind::ShutdownFailed Icod.Pty.PtySessionEventKind = 6
+  field Icod.Pty.PtySessionEventKind::ShutdownStarted Icod.Pty.PtySessionEventKind = 3
+  field Icod.Pty.PtySessionEventKind::Started Icod.Pty.PtySessionEventKind = 0
+  field Icod.Pty.PtySessionEventKind::value__ System.Int32
+  field Icod.Pty.PtySessionFailureStage::Cleanup Icod.Pty.PtySessionFailureStage = 3
+  field Icod.Pty.PtySessionFailureStage::Input Icod.Pty.PtySessionFailureStage = 0
+  field Icod.Pty.PtySessionFailureStage::Output Icod.Pty.PtySessionFailureStage = 1
+  field Icod.Pty.PtySessionFailureStage::Process Icod.Pty.PtySessionFailureStage = 2
+  field Icod.Pty.PtySessionFailureStage::value__ System.Int32
+  field Icod.Pty.PtySessionOutputStatus::EndOfStream Icod.Pty.PtySessionOutputStatus = 0
+  field Icod.Pty.PtySessionOutputStatus::Faulted Icod.Pty.PtySessionOutputStatus = 3
+  field Icod.Pty.PtySessionOutputStatus::Stopped Icod.Pty.PtySessionOutputStatus = 2
+  field Icod.Pty.PtySessionOutputStatus::TimedOut Icod.Pty.PtySessionOutputStatus = 1
+  field Icod.Pty.PtySessionOutputStatus::value__ System.Int32
+  field Icod.Pty.PtySessionPhase::Completed Icod.Pty.PtySessionPhase = 3
+  field Icod.Pty.PtySessionPhase::Draining Icod.Pty.PtySessionPhase = 1
+  field Icod.Pty.PtySessionPhase::Releasing Icod.Pty.PtySessionPhase = 2
+  field Icod.Pty.PtySessionPhase::Running Icod.Pty.PtySessionPhase = 0
+  field Icod.Pty.PtySessionPhase::value__ System.Int32
+  field Icod.Pty.PtyShutdownStatus::Exited Icod.Pty.PtyShutdownStatus = 0
+  field Icod.Pty.PtyShutdownStatus::TimedOut Icod.Pty.PtyShutdownStatus = 1
+  field Icod.Pty.PtyShutdownStatus::value__ System.Int32
+  field Icod.Pty.PtySignal::Hangup Icod.Pty.PtySignal = 0
+  field Icod.Pty.PtySignal::Interrupt Icod.Pty.PtySignal = 1
+  field Icod.Pty.PtySignal::Kill Icod.Pty.PtySignal = 3
+  field Icod.Pty.PtySignal::Terminate Icod.Pty.PtySignal = 2
+  field Icod.Pty.PtySignal::value__ System.Int32
+  field Icod.Pty.PtyTerminalCapabilities::CanonicalInput Icod.Pty.PtyTerminalCapabilities = 4
+  field Icod.Pty.PtyTerminalCapabilities::ControlCharacters Icod.Pty.PtyTerminalCapabilities = 16
+  field Icod.Pty.PtyTerminalCapabilities::Echo Icod.Pty.PtyTerminalCapabilities = 2
+  field Icod.Pty.PtyTerminalCapabilities::None Icod.Pty.PtyTerminalCapabilities = 0
+  field Icod.Pty.PtyTerminalCapabilities::RawProfile Icod.Pty.PtyTerminalCapabilities = 1
+  field Icod.Pty.PtyTerminalCapabilities::ReadTiming Icod.Pty.PtyTerminalCapabilities = 32
+  field Icod.Pty.PtyTerminalCapabilities::SignalProcessing Icod.Pty.PtyTerminalCapabilities = 8
+  field Icod.Pty.PtyTerminalCapabilities::value__ System.Int32
+  field Icod.Pty.PtyTerminalOptions::DisabledCharacter System.Int32 = -1
+  field Icod.Pty.PtyTerminalProfile::Preserve Icod.Pty.PtyTerminalProfile = 0
+  field Icod.Pty.PtyTerminalProfile::Raw Icod.Pty.PtyTerminalProfile = 1
+  field Icod.Pty.PtyTerminalProfile::value__ System.Int32
+  method Icod.Pty.PtyControlResult::Deconstruct(out Icod.Pty.PtyProcessTarget Target,out Icod.Pty.PtyControlStatus Status) System.Void
+  method Icod.Pty.PtyControlResult::Equals(Icod.Pty.PtyControlResult other) System.Boolean
+  method Icod.Pty.PtyControlResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyControlResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyControlResult::ToString() System.String
+  method Icod.Pty.PtyControlResult::op_Equality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right) System.Boolean
+  method Icod.Pty.PtyControlResult::op_Inequality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right) System.Boolean
+  method Icod.Pty.PtyProcess::Dispose() System.Void
+  method Icod.Pty.PtyProcess::DisposeAsync() System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtyProcess::GetTerminalCapabilities() Icod.Pty.PtyTerminalCapabilities
+  method Icod.Pty.PtyProcess::RequestTermination(Icod.Pty.PtyProcessTarget target) Icod.Pty.PtyControlResult
+  method Icod.Pty.PtyProcess::Resize(Icod.Pty.PtySize newSize) System.Void
+  method Icod.Pty.PtyProcess::SendInterruptAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtyProcess::SendSignal(Icod.Pty.PtySignal signal,Icod.Pty.PtyProcessTarget target) Icod.Pty.PtyControlResult
+  method Icod.Pty.PtyProcess::ShutdownAsync(Icod.Pty.PtyShutdownOptions options,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyShutdownResult>
+  method Icod.Pty.PtyProcess::Start(Icod.Pty.PtyStartInfo startInfo) Icod.Pty.PtyProcess
+  method Icod.Pty.PtyProcess::StartAsync(Icod.Pty.PtyStartInfo startInfo,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyProcess>
+  method Icod.Pty.PtyProcess::Terminate() System.Void
+  method Icod.Pty.PtyProcess::WaitForExitAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<System.Int32>
+  method Icod.Pty.PtySession::Dispose() System.Void
+  method Icod.Pty.PtySession::DisposeAsync() System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtySession::GetDiagnostics() Icod.Pty.PtySessionDiagnostics
+  method Icod.Pty.PtySession::RequestTermination(Icod.Pty.PtyProcessTarget target) Icod.Pty.PtyControlResult
+  method Icod.Pty.PtySession::Resize(Icod.Pty.PtySize size) System.Void
+  method Icod.Pty.PtySession::SendInterruptAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtySession::SendSignal(Icod.Pty.PtySignal signal,Icod.Pty.PtyProcessTarget target) Icod.Pty.PtyControlResult
+  method Icod.Pty.PtySession::ShutdownAsync(Icod.Pty.PtyShutdownOptions options,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyShutdownResult>
+  method Icod.Pty.PtySession::StartAsync(Icod.Pty.PtyStartInfo startInfo,Icod.Pty.PtySessionOptions options,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtySession>
+  method Icod.Pty.PtySession::WriteAsync(System.ReadOnlyMemory<System.Byte> bytes,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtySessionDiagnostics::<Clone>$() Icod.Pty.PtySessionDiagnostics
+  method Icod.Pty.PtySessionDiagnostics::Deconstruct(out Icod.Pty.PtySessionPhase Phase,out System.Boolean InputSealed,out System.Int64 BytesWrittenToPty,out System.Int64 BytesReadFromPty,out System.Int64 BytesWrittenToOutput,out System.Int64 DroppedEvents,out System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events) System.Void
+  method Icod.Pty.PtySessionDiagnostics::Equals(Icod.Pty.PtySessionDiagnostics other) System.Boolean
+  method Icod.Pty.PtySessionDiagnostics::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtySessionDiagnostics::GetHashCode() System.Int32
+  method Icod.Pty.PtySessionDiagnostics::ToString() System.String
+  method Icod.Pty.PtySessionDiagnostics::op_Equality(Icod.Pty.PtySessionDiagnostics left,Icod.Pty.PtySessionDiagnostics right) System.Boolean
+  method Icod.Pty.PtySessionDiagnostics::op_Inequality(Icod.Pty.PtySessionDiagnostics left,Icod.Pty.PtySessionDiagnostics right) System.Boolean
+  method Icod.Pty.PtySessionEvent::<Clone>$() Icod.Pty.PtySessionEvent
+  method Icod.Pty.PtySessionEvent::Deconstruct(out System.Int64 Sequence,out System.TimeSpan Elapsed,out Icod.Pty.PtySessionEventKind Kind) System.Void
+  method Icod.Pty.PtySessionEvent::Equals(Icod.Pty.PtySessionEvent other) System.Boolean
+  method Icod.Pty.PtySessionEvent::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtySessionEvent::GetHashCode() System.Int32
+  method Icod.Pty.PtySessionEvent::ToString() System.String
+  method Icod.Pty.PtySessionEvent::op_Equality(Icod.Pty.PtySessionEvent left,Icod.Pty.PtySessionEvent right) System.Boolean
+  method Icod.Pty.PtySessionEvent::op_Inequality(Icod.Pty.PtySessionEvent left,Icod.Pty.PtySessionEvent right) System.Boolean
+  method Icod.Pty.PtySessionFailure::<Clone>$() Icod.Pty.PtySessionFailure
+  method Icod.Pty.PtySessionFailure::Deconstruct(out Icod.Pty.PtySessionFailureStage Stage,out System.Exception Exception) System.Void
+  method Icod.Pty.PtySessionFailure::Equals(Icod.Pty.PtySessionFailure other) System.Boolean
+  method Icod.Pty.PtySessionFailure::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtySessionFailure::GetHashCode() System.Int32
+  method Icod.Pty.PtySessionFailure::ToString() System.String
+  method Icod.Pty.PtySessionFailure::op_Equality(Icod.Pty.PtySessionFailure left,Icod.Pty.PtySessionFailure right) System.Boolean
+  method Icod.Pty.PtySessionFailure::op_Inequality(Icod.Pty.PtySessionFailure left,Icod.Pty.PtySessionFailure right) System.Boolean
+  method Icod.Pty.PtySessionResult::<Clone>$() Icod.Pty.PtySessionResult
+  method Icod.Pty.PtySessionResult::Deconstruct(out Icod.Pty.PtySessionEndReason Reason,out System.Nullable<System.Int32> ExitCode,out Icod.Pty.PtySessionOutputStatus OutputStatus,out System.Nullable<Icod.Pty.PtyShutdownResult> LastShutdownResult,out System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionFailure> Failures) System.Void
+  method Icod.Pty.PtySessionResult::Equals(Icod.Pty.PtySessionResult other) System.Boolean
+  method Icod.Pty.PtySessionResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtySessionResult::GetHashCode() System.Int32
+  method Icod.Pty.PtySessionResult::ToString() System.String
+  method Icod.Pty.PtySessionResult::op_Equality(Icod.Pty.PtySessionResult left,Icod.Pty.PtySessionResult right) System.Boolean
+  method Icod.Pty.PtySessionResult::op_Inequality(Icod.Pty.PtySessionResult left,Icod.Pty.PtySessionResult right) System.Boolean
+  method Icod.Pty.PtyShutdownResult::Deconstruct(out Icod.Pty.PtyShutdownStatus Status,out System.Nullable<System.Int32> ExitCode,out System.Boolean ForcedTerminationRequested) System.Void
+  method Icod.Pty.PtyShutdownResult::Equals(Icod.Pty.PtyShutdownResult other) System.Boolean
+  method Icod.Pty.PtyShutdownResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyShutdownResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyShutdownResult::ToString() System.String
+  method Icod.Pty.PtyShutdownResult::op_Equality(Icod.Pty.PtyShutdownResult left,Icod.Pty.PtyShutdownResult right) System.Boolean
+  method Icod.Pty.PtyShutdownResult::op_Inequality(Icod.Pty.PtyShutdownResult left,Icod.Pty.PtyShutdownResult right) System.Boolean
+  method Icod.Pty.PtySize::Equals(Icod.Pty.PtySize other) System.Boolean
+  method Icod.Pty.PtySize::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtySize::GetHashCode() System.Int32
+  method Icod.Pty.PtySize::ToString() System.String
+  method Icod.Pty.PtySize::op_Equality(Icod.Pty.PtySize left,Icod.Pty.PtySize right) System.Boolean
+  method Icod.Pty.PtySize::op_Inequality(Icod.Pty.PtySize left,Icod.Pty.PtySize right) System.Boolean
+  property Icod.Pty.PtyControlResult::Status Icod.Pty.PtyControlStatus { get;set; }
+  property Icod.Pty.PtyControlResult::Target Icod.Pty.PtyProcessTarget { get;set; }
+  property Icod.Pty.PtyProcess::Capabilities Icod.Pty.PtyProcessCapabilities { get; }
+  property Icod.Pty.PtyProcess::ExitCode System.Int32 { get; }
+  property Icod.Pty.PtyProcess::HasExited System.Boolean { get; }
+  property Icod.Pty.PtyProcess::Input System.IO.Stream { get; }
+  property Icod.Pty.PtyProcess::Output System.IO.Stream { get; }
+  property Icod.Pty.PtyProcess::Ownership Icod.Pty.PtyProcessOwnership { get; }
+  property Icod.Pty.PtyProcess::ProcessId System.Int32 { get; }
+  property Icod.Pty.PtyProcess::Size Icod.Pty.PtySize { get; }
+  property Icod.Pty.PtySession::Capabilities Icod.Pty.PtyProcessCapabilities { get; }
+  property Icod.Pty.PtySession::Completion System.Threading.Tasks.Task<Icod.Pty.PtySessionResult> { get; }
+  property Icod.Pty.PtySession::HasExited System.Boolean { get; }
+  property Icod.Pty.PtySession::OutputCompletion System.Threading.Tasks.Task<Icod.Pty.PtySessionOutputStatus> { get; }
+  property Icod.Pty.PtySession::Ownership Icod.Pty.PtyProcessOwnership { get; }
+  property Icod.Pty.PtySession::ProcessId System.Int32 { get; }
+  property Icod.Pty.PtySession::Size Icod.Pty.PtySize { get; }
+  property Icod.Pty.PtySessionDiagnostics::BytesReadFromPty System.Int64 { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::BytesWrittenToOutput System.Int64 { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::BytesWrittenToPty System.Int64 { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::DroppedEvents System.Int64 { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::Events System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::InputSealed System.Boolean { get;set; }
+  property Icod.Pty.PtySessionDiagnostics::Phase Icod.Pty.PtySessionPhase { get;set; }
+  property Icod.Pty.PtySessionEvent::Elapsed System.TimeSpan { get;set; }
+  property Icod.Pty.PtySessionEvent::Kind Icod.Pty.PtySessionEventKind { get;set; }
+  property Icod.Pty.PtySessionEvent::Sequence System.Int64 { get;set; }
+  property Icod.Pty.PtySessionFailure::Exception System.Exception { get;set; }
+  property Icod.Pty.PtySessionFailure::Stage Icod.Pty.PtySessionFailureStage { get;set; }
+  property Icod.Pty.PtySessionOptions::DrainTimeout System.TimeSpan { get;set; }
+  property Icod.Pty.PtySessionOptions::Input System.IO.Stream { get;set; }
+  property Icod.Pty.PtySessionOptions::LeaveInputOpen System.Boolean { get;set; }
+  property Icod.Pty.PtySessionOptions::LeaveOutputOpen System.Boolean { get;set; }
+  property Icod.Pty.PtySessionOptions::Output System.IO.Stream { get; }
+  property Icod.Pty.PtySessionResult::ExitCode System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtySessionResult::Failures System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionFailure> { get;set; }
+  property Icod.Pty.PtySessionResult::LastShutdownResult System.Nullable<Icod.Pty.PtyShutdownResult> { get;set; }
+  property Icod.Pty.PtySessionResult::OutputStatus Icod.Pty.PtySessionOutputStatus { get;set; }
+  property Icod.Pty.PtySessionResult::Reason Icod.Pty.PtySessionEndReason { get;set; }
+  property Icod.Pty.PtyShutdownOptions::ForceTermination System.Boolean { get;set; }
+  property Icod.Pty.PtyShutdownOptions::GracePeriod System.TimeSpan { get;set; }
+  property Icod.Pty.PtyShutdownOptions::Request System.ReadOnlyMemory<System.Byte> { get;set; }
+  property Icod.Pty.PtyShutdownOptions::TerminationTarget Icod.Pty.PtyProcessTarget { get;set; }
+  property Icod.Pty.PtyShutdownOptions::TerminationTimeout System.TimeSpan { get;set; }
+  property Icod.Pty.PtyShutdownResult::ExitCode System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyShutdownResult::ForcedTerminationRequested System.Boolean { get;set; }
+  property Icod.Pty.PtyShutdownResult::Status Icod.Pty.PtyShutdownStatus { get;set; }
+  property Icod.Pty.PtyShutdownResult::TerminationResult System.Nullable<Icod.Pty.PtyControlResult> { get;set; }
+  property Icod.Pty.PtySize::Columns System.Int32 { get; }
+  property Icod.Pty.PtySize::Rows System.Int32 { get; }
+  property Icod.Pty.PtyStartInfo::ArgumentList System.Collections.Generic.IList<System.String> { get; }
+  property Icod.Pty.PtyStartInfo::DotNetHostPath System.String { get;set; }
+  property Icod.Pty.PtyStartInfo::Environment System.Collections.Generic.IDictionary<System.String,System.String> { get; }
+  property Icod.Pty.PtyStartInfo::FileName System.String { get; }
+  property Icod.Pty.PtyStartInfo::Ownership Icod.Pty.PtyProcessOwnership { get;set; }
+  property Icod.Pty.PtyStartInfo::Size Icod.Pty.PtySize { get;set; }
+  property Icod.Pty.PtyStartInfo::StartTimeout System.TimeSpan { get;set; }
+  property Icod.Pty.PtyStartInfo::TerminalOptions Icod.Pty.PtyTerminalOptions { get;set; }
+  property Icod.Pty.PtyStartInfo::WorkingDirectory System.String { get;set; }
+  property Icod.Pty.PtyTerminalOptions::CanonicalInput System.Nullable<System.Boolean> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::Echo System.Nullable<System.Boolean> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::EndOfFileCharacter System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::EraseCharacter System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::InterruptCharacter System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::MinimumReadBytes System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::Profile Icod.Pty.PtyTerminalProfile { get;set; }
+  property Icod.Pty.PtyTerminalOptions::ReadTimeoutDeciseconds System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyTerminalOptions::SignalProcessing System.Nullable<System.Boolean> { get;set; }
 type enum Icod.Pty.PtyControlStatus
 type enum Icod.Pty.PtyProcessCapabilities
 type enum Icod.Pty.PtyProcessOwnership
