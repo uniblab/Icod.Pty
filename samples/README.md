@@ -146,3 +146,8 @@ dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build --
 ```
 
 Expected output is `PTY recording smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. This noninteractive check does not capture input or mutate the host console. Record Windows laptop results separately from hosted CI.
+
+**Reported 2026-10-06:** the user ran the CMD command above without `--no-build`, in Release/net10.0
+on the previously identified Windows x64 laptop (Windows 10.0.26200.9457), and reported
+`PTY recording smoke check passed.` The checked-out commit was not shown. Manual net8.0/net9.0
+runs remain unreported; this noninteractive result does not establish interactive host restoration.

@@ -154,8 +154,8 @@ the current package and public contracts while recording Windows laptop results 
 three-framework, exact-package and published-consumer matrix in
 [run 100, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37504691344). The final additive boundary and
 lifecycle-test head passed the same matrix in [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777).
-No version, tag, merge, or publication is selected. Manual Windows laptop execution of `--recording-smoke`
-remains separately pending.
+No version, tag, merge, or publication is selected. The user reported successful Windows x64 laptop Release/net10.0 `--recording-smoke`
+execution on 2026-10-06: `PTY recording smoke check passed.` Other-framework manual checks remain unreported.
 
 **Goal:** an opt-in `PtySession` recorder writes a bounded, versioned binary record of output bytes accepted by the consumer's output destination and successful terminal resizes. A streaming reader validates and replays the ordered byte and resize events without launching a process. The first increment has finite file and reader limits, explicit complete/truncated/stopped/faulted recording results, and no change to session behavior when recording is disabled.
 

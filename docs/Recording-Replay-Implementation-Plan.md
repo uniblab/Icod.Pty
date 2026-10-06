@@ -51,7 +51,20 @@ Each tranche is a reviewable commit. In an execution PR, append an evidence tabl
 | Baseline | `69fcffac1c4c8de9ed263e9983dd1d1cb551fdfc` | `dotnet test Icod.Pty.sln -c Staging -f net10.0` | Linux x64: 233 passed, 0 failed before implementation. |
 | RR01–RR05 | `ba67bf869cafed3b18e9ce4e8b131c1f59030a06` | Focused recording contracts, golden/malformed codec cases, cap/fault/ordering/lifecycle tests on net8.0/net9.0/net10.0 | RED/GREEN implementation completed. Terminal-marker failure and replay source/destination alias findings gained regressions before their fixes. |
 | RR06 | `0474caea8e47e9d38c784b76a5952721771a34d5` through runtime head `a25687550dd976a8f2a2e3b2ec8c7319afbfc3a3` | Native `--recording-smoke`; exact package and all published consumer modes | Linux x64 native smoke passed locally. All six hosted jobs passed [run 100, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37504691344). Windows x64 attempt 1 hit two established native-test timeouts; its isolated full-job retry passed without a code change. |
-| RR07–RR08 | `2fc9293516ff1c5111e43bc803e3f38d4af46b4c` | Release build, 20-session output/resize stress, complete tests, exact package and published consumers, documentation/self-review | Linux x64 Release build: 0 warnings/errors; focused recording suite: 40 per TFM; full suite: 274 per TFM. All six hosted jobs and three TFMs passed [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777), with only the established Windows ConPTY fragmented-query skip. Manual Windows laptop acceptance remains separate and pending. |
+| RR07–RR08 | `2fc9293516ff1c5111e43bc803e3f38d4af46b4c` | Release build, 20-session output/resize stress, complete tests, exact package and published consumers, documentation/self-review | Linux x64 Release build: 0 warnings/errors; focused recording suite: 40 per TFM; full suite: 274 per TFM. All six hosted jobs and three TFMs passed [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777), with only the established Windows ConPTY fragmented-query skip. Windows x64 laptop Release/net10.0 `--recording-smoke` was reported successful by the user on 2026-10-06; see manual acceptance below. |
+
+### Manual Windows acceptance
+
+**Reported 2026-10-06:** on the previously identified Windows x64 laptop (Windows 10.0.26200.9457),
+the user ran the following from CMD and reported `PTY recording smoke check passed.`:
+
+```bat
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 -- --recording-smoke
+```
+
+This records the noninteractive recording/replay smoke result separately from hosted CI.
+The pasted result does not identify the checked-out commit; net8.0/net9.0 manual runs and
+interactive host-console restoration are not established by this check.
 
 ### RR01: freeze the public contract and format (Gate A)
 
