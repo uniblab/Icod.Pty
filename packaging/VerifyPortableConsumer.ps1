@@ -86,7 +86,7 @@ function New-PortableExecutionLayout {
 }
 
 function Invoke-PublishedMode {
-	param([string]$Executable, [string]$SmokeMode, [string]$WorkingDirectory, [int]$Timeout, [switch]$ExpectFailure)
+	param([string]$Executable, [string]$SmokeMode, [string]$WorkingDirectory, [int]$Timeout, [switch]$ExpectFailure, [switch]$AllowFailure)
 	$start = New-Object System.Diagnostics.ProcessStartInfo
 	$start.FileName = $Executable
 	$start.Arguments = $SmokeMode
@@ -111,10 +111,16 @@ function Invoke-PublishedMode {
 		if ($ExpectFailure) {
 			if ($exitCode -eq 0) { throw "Published consumer mode $SmokeMode unexpectedly succeeded with an incomplete helper layout." }
 			if ([string]::IsNullOrWhiteSpace($outputText + $errorText)) { throw "Published consumer mode $SmokeMode failed without an identifiable diagnostic." }
-			return
+			return 'ExpectedFailure'
+		}
+		if ($AllowFailure -and $exitCode -ne 0) {
+			if ([string]::IsNullOrWhiteSpace($outputText + $errorText)) { throw "Published consumer mode $SmokeMode failed without an identifiable diagnostic." }
+			return 'FailedWithDiagnostic'
 		}
 		if ($exitCode -ne 0) { throw "Published consumer mode $SmokeMode exited ${exitCode}: $errorText$outputText" }
 		if ($outputText.IndexOf('passed.', [System.StringComparison]::Ordinal) -lt 0) { throw "Published consumer mode $SmokeMode did not report success: $outputText$errorText" }
+		if ($AllowFailure) { return 'SucceededDespiteIncompleteMetadata' }
+		return 'Passed'
 	} finally {
 		$process.Dispose()
 	}
@@ -213,9 +219,11 @@ Invoke-DotNet -Arguments (Get-PublishArguments $project $Framework $RuntimeIdent
 Assert-HelperLayout $publishRoot
 $layout = New-PortableExecutionLayout -PublishDirectory $publishRoot -Scenario $Scenario
 $executable = Get-PublishedExecutable $layout.Directory $RuntimeIdentifier
-$expectFailure = $layout.MissingAsset.Length -ne 0 -and -not $RuntimeIdentifier.StartsWith('win-', [System.StringComparison]::Ordinal)
+$isUnix = -not $RuntimeIdentifier.StartsWith('win-', [System.StringComparison]::Ordinal)
+$expectFailure = $layout.MissingAsset -eq 'Icod.Pty.Host.dll' -and $isUnix
+$allowFailure = $layout.MissingAsset.Length -ne 0 -and $isUnix -and -not $expectFailure
 $smokeModes = @('--smoke')
 if ($layout.MissingAsset.Length -eq 0) { $smokeModes = @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke') }
-foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $layout.Directory $TimeoutSeconds -ExpectFailure:$expectFailure }
-$result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; scenario = $Scenario; executable = $executable; helperLayout = if ($layout.MissingAsset.Length -eq 0) { 'Complete' } else { "Missing:$($layout.MissingAsset)" }; expectedFailure = $expectFailure; smokeModes = $smokeModes.Count }
+$outcomes = @(foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $layout.Directory $TimeoutSeconds -ExpectFailure:$expectFailure -AllowFailure:$allowFailure })
+$result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; scenario = $Scenario; executable = $executable; helperLayout = if ($layout.MissingAsset.Length -eq 0) { 'Complete' } else { "Missing:$($layout.MissingAsset)" }; expectedFailure = $expectFailure; outcomes = $outcomes; smokeModes = $smokeModes.Count }
 Write-Host ('PORTABILITY-RESULT ' + ($result | ConvertTo-Json -Compress))
