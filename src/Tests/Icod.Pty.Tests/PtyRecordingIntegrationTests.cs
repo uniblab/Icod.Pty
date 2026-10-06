@@ -22,7 +22,7 @@ public sealed class PtyRecordingIntegrationTests {
 
 	[Fact]
 	public async Task Recorder_failure_does_not_replace_live_output_result() {
-		using MemoryStream output = new(); IOException failure = new("recording sink"); using FailingRecordingStream recording = new(failure, 2);
+		using MemoryStream output = new(); IOException failure = new("recording sink"); using AsyncFailRecordingStream recording = new(failure);
 		ControlledBackend backend = new() { Output = new MemoryStream("OK"u8.ToArray()) };
 		PtySession session = await SessionTestSupport.Start(backend, output, recording: new(recording)); backend.Completion.SetResult(0);
 		PtySessionResult sessionResult = await session.Completion.WaitAsync(TimeSpan.FromSeconds(5));

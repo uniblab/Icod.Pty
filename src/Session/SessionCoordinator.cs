@@ -3,6 +3,7 @@ namespace Icod.Pty.Session;
 using Icod.Pty.Recording;
 
 internal sealed class SessionCoordinator {
+	private static readonly Task<PtyRecordingResult> DisabledRecording = Task.FromResult(PtyRecordingResult.Disabled);
 	private readonly object gate = new();
 	private readonly SessionConfiguration configuration;
 	private readonly CancellationTokenSource inputStop = new(), outputStop = new(), releaseNow = new();
@@ -23,7 +24,7 @@ internal sealed class SessionCoordinator {
 	internal Stream Output { get; }
 	internal Task<PtySessionResult> Completion => completion.Task;
 	internal Task<PtySessionOutputStatus> OutputCompletion => outputCompletion.Task;
-	internal Task<PtyRecordingResult> RecordingCompletion => recorder?.Completion ?? Task.FromResult(PtyRecordingResult.Disabled);
+	internal Task<PtyRecordingResult> RecordingCompletion => recorder?.Completion ?? DisabledRecording;
 	internal PtySessionDiagnostics Diagnostics => journal.Snapshot();
 	internal SessionCoordinator(PtyProcess process, SessionConfiguration configuration) {
 		Process = process; this.configuration = configuration;

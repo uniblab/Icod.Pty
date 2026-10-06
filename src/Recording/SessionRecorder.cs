@@ -51,7 +51,10 @@ internal sealed class SessionRecorder {
 	private async Task FinishCoreAsync(PtyRecordingStatus requested) {
 		await gate.WaitAsync().ConfigureAwait(false);
 		try {
-			if (failure == null && !terminalWritten) await WriteTerminalAsync(requested, CancellationToken.None).ConfigureAwait(false);
+			if (failure == null && !terminalWritten) {
+				try { await WriteTerminalAsync(requested, CancellationToken.None).ConfigureAwait(false); }
+				catch (Exception error) { Fail(error); }
+			}
 			if (failure == null) {
 				try { await configuration.Destination.FlushAsync().ConfigureAwait(false); }
 				catch (Exception error) { Fail(error); }
@@ -60,9 +63,11 @@ internal sealed class SessionRecorder {
 				try { await configuration.Destination.DisposeAsync().ConfigureAwait(false); }
 				catch (Exception error) { failure ??= error; }
 			}
+		} catch (Exception error) { Fail(error); }
+		finally {
 			PtyRecordingStatus final = failure != null ? PtyRecordingStatus.Faulted : terminalStatus;
-			completion.TrySetResult(new(final, bytesWritten, eventCount, failure));
-		} finally { gate.Release(); }
+			completion.TrySetResult(new(final, bytesWritten, eventCount, failure)); gate.Release();
+		}
 	}
 	private PtyRecordingStatus terminalStatus;
 	private bool CanRecord(int size) => failure == null && !terminalWritten && size <= configuration.MaxBytes - bytesWritten - RecordingFormat.TerminalSize;

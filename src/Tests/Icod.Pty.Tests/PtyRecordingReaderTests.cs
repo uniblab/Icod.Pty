@@ -91,4 +91,10 @@ public sealed class PtyRecordingReaderTests {
 			new PtyRecordingReaderOptions { LeaveOpen = false })) { while (await reader.ReadAsync() != null) { } }
 		Assert.False(source.CanRead);
 	}
+
+	[Fact]
+	public async Task Replay_rejects_the_recording_source_as_destination() {
+		using MemoryStream source = new(Golden); await using PtyRecordingReader reader = await PtyRecordingReader.OpenAsync(source);
+		await Assert.ThrowsAsync<ArgumentException>(() => reader.ReplayAsync(source));
+	}
 }

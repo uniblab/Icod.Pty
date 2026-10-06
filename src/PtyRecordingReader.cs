@@ -10,7 +10,8 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 	private readonly long maxBytes;
 	private readonly int maxFrameBytes;
 	private long consumed = RecordingFormat.HeaderSize, previousTicks;
-	private bool reading, ended, disposed;
+	private int reading;
+	private bool ended, disposed;
 	private PtyRecordingReader(Stream source, bool leaveOpen, long maxBytes, int maxFrameBytes, PtySize initialSize) {
 		this.source = source; this.leaveOpen = leaveOpen; this.maxBytes = maxBytes; this.maxFrameBytes = maxFrameBytes; InitialSize = initialSize;
 	}
@@ -22,7 +23,7 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 	public static async Task<PtyRecordingReader> OpenAsync(Stream source, PtyRecordingReaderOptions? options = null,
 		CancellationToken cancellationToken = default) {
 		ArgumentNullException.ThrowIfNull(source); if (!source.CanRead) throw new ArgumentException("The recording source must be readable.", nameof(source));
-		options ??= new(); long maxBytes = options.MaxBytes; int maxFrame = options.MaxFrameBytes;
+		options ??= new(); long maxBytes = options.MaxBytes; int maxFrame = options.MaxFrameBytes; bool leaveOpen = options.LeaveOpen;
 		if (maxBytes < PtyRecordingOptions.MinimumBytes) throw new ArgumentOutOfRangeException(nameof(options), $"MaxBytes must be at least {PtyRecordingOptions.MinimumBytes}.");
 		if (maxFrame < 1) throw new ArgumentOutOfRangeException(nameof(options), "MaxFrameBytes must be positive.");
 		byte[] header = new byte[RecordingFormat.HeaderSize];
@@ -32,13 +33,13 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 		if (BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(10)) != RecordingFormat.HeaderSize) throw Format("Recording header size is invalid.");
 		try {
 			PtySize size = new(BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(12)), BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(14)));
-			return new(source, options.LeaveOpen, maxBytes, maxFrame, size);
+			return new(source, leaveOpen, maxBytes, maxFrame, size);
 		} catch (ArgumentOutOfRangeException) { throw Format("Recording initial size is invalid."); }
 	}
 	/// <summary>Reads the next owned event, or null after a validated terminal marker.</summary>
 	public async ValueTask<PtyRecordingEvent?> ReadAsync(CancellationToken cancellationToken = default) {
 		ObjectDisposedException.ThrowIf(disposed, this); if (ended) return null;
-		if (reading) throw new InvalidOperationException("A recording read is already in progress."); reading = true;
+		if (Interlocked.Exchange(ref reading, 1) != 0) throw new InvalidOperationException("A recording read is already in progress.");
 		try {
 			byte[] header = new byte[RecordingFormat.FrameHeaderSize];
 			await ReadExactAsync(source, header, cancellationToken, "Recording ended without a terminal marker.").ConfigureAwait(false);
@@ -65,11 +66,12 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 				case RecordingFormat.Stopped: return await FinishAsync(PtyRecordingStatus.Stopped, length, cancellationToken).ConfigureAwait(false);
 				default: throw Format("Recording frame kind is unsupported.");
 			}
-		} finally { reading = false; }
+		} finally { Volatile.Write(ref reading, 0); }
 	}
 	/// <summary>Copies output event bytes in recorded order and returns the validated terminal outcome.</summary>
 	public async Task<PtyRecordingReplayResult> ReplayAsync(Stream destination, CancellationToken cancellationToken = default) {
 		ArgumentNullException.ThrowIfNull(destination); if (!destination.CanWrite) throw new ArgumentException("The replay destination must be writable.", nameof(destination));
+		if (ReferenceEquals(destination, source)) throw new ArgumentException("The replay destination must be distinct from the recording source.", nameof(destination));
 		long bytes = 0, events = 0; PtyRecordingEvent? item;
 		while ((item = await ReadAsync(cancellationToken).ConfigureAwait(false)) != null) {
 			events++; if (item.Kind == PtyRecordingEventKind.Output) { await destination.WriteAsync(item.Output, cancellationToken).ConfigureAwait(false); bytes += item.Output.Length; }

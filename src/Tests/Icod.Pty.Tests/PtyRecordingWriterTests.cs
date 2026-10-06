@@ -35,12 +35,20 @@ public sealed class PtyRecordingWriterTests {
 
 	[Fact]
 	public async Task Sink_failure_is_reported_without_terminal_content() {
-		IOException failure = new("sink failed"); using FailingRecordingStream stream = new(failure, 2);
+		IOException failure = new("sink failed"); using AsyncFailRecordingStream stream = new(failure);
 		SessionRecorder writer = new(new(stream, true, 4096), new PtySize(80, 24), () => 1);
 		await writer.RecordOutputAsync("SECRET"u8.ToArray(), default);
 		PtyRecordingResult result = await writer.FinishAsync(PtyRecordingStatus.Complete);
 		Assert.Equal(PtyRecordingStatus.Faulted, result.Status); Assert.Same(failure, result.Exception);
 		Assert.DoesNotContain("SECRET", result.Exception!.Message, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public async Task Terminal_marker_failure_still_settles_completion() {
+		IOException failure = new("terminal"); using AsyncFailRecordingStream stream = new(failure);
+		SessionRecorder writer = new(new(stream, true, 4096), new PtySize(80, 24), () => 1);
+		PtyRecordingResult result = await writer.FinishAsync(PtyRecordingStatus.Complete).WaitAsync(TimeSpan.FromSeconds(2));
+		Assert.Equal(PtyRecordingStatus.Faulted, result.Status); Assert.Same(failure, result.Exception);
 	}
 
 	[Fact]
@@ -60,17 +68,12 @@ public sealed class PtyRecordingWriterTests {
 	}
 }
 
-internal sealed class FailingRecordingStream(Exception failure, int failOnCall) : MemoryStream {
-	private int calls;
-	public override void Write(byte[] buffer, int offset, int count) { if (++calls == failOnCall) throw failure; base.Write(buffer, offset, count); }
-	public override void Write(ReadOnlySpan<byte> buffer) { if (++calls == failOnCall) throw failure; base.Write(buffer); }
-	public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default) {
-		if (++calls == failOnCall) return ValueTask.FromException(failure); base.Write(buffer.Span); return ValueTask.CompletedTask;
-	}
-}
-
 internal sealed class CancelRecordingStream(CancellationTokenSource stop) : MemoryStream {
 	public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default) {
 		stop.Cancel(); return ValueTask.FromCanceled(token);
 	}
+}
+
+internal sealed class AsyncFailRecordingStream(Exception failure) : MemoryStream {
+	public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default) => ValueTask.FromException(failure);
 }
