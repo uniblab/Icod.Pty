@@ -37,6 +37,8 @@ public sealed class PtySession : IDisposable, IAsyncDisposable {
 	public Task<PtySessionResult> Completion => coordinator.Completion;
 	/// <summary>Gets output EOF, timeout, stop, or failure independently of primary exit.</summary>
 	public Task<PtySessionOutputStatus> OutputCompletion => coordinator.OutputCompletion;
+	/// <summary>Gets the independent result of optional output/resize recording.</summary>
+	public Task<PtyRecordingResult> RecordingCompletion => coordinator.RecordingCompletion;
 	/// <summary>Writes one ordered input operation. Keep the memory unchanged until completion.</summary>
 	public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default) => coordinator.WriteAsync(bytes, cancellationToken);
 	/// <summary>Writes one ordered ETX byte. Terminal modes determine its effect.</summary>
@@ -48,7 +50,7 @@ public sealed class PtySession : IDisposable, IAsyncDisposable {
 	public Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, CancellationToken cancellationToken = default) =>
 		coordinator.ShutdownAsync(options, cancellationToken);
 	/// <summary>Changes the terminal's character-cell dimensions.</summary>
-	public void Resize(PtySize size) => coordinator.Process.Resize(size);
+	public void Resize(PtySize size) => coordinator.Resize(size);
 	/// <summary>Requests termination of the selected process target.</summary>
 	public PtyControlResult RequestTermination(PtyProcessTarget target) => coordinator.Process.RequestTermination(target);
 	/// <summary>Sends a Unix signal to the selected process target.</summary>

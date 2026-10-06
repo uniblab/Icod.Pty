@@ -4,8 +4,8 @@ namespace Icod.Pty.Tests;
 
 internal static class SessionTestSupport {
 	internal static Task<PtySession> Start(ControlledBackend backend, Stream output, Stream? input = null, TimeSpan? drain = null,
-		bool leaveOpen = true) => PtySession.StartCoreAsync(ControlledBackend.Launch(), SessionConfiguration.Capture(new(output) {
-			Input = input, DrainTimeout = drain ?? TimeSpan.FromSeconds(5), LeaveInputOpen = leaveOpen, LeaveOutputOpen = leaveOpen
+		bool leaveOpen = true, PtyRecordingOptions? recording = null) => PtySession.StartCoreAsync(ControlledBackend.Launch(), SessionConfiguration.Capture(new(output) {
+			Input = input, DrainTimeout = drain ?? TimeSpan.FromSeconds(5), LeaveInputOpen = leaveOpen, LeaveOutputOpen = leaveOpen, Recording = recording
 		}), default, (_, token) => backend.Start(token));
 	internal static async Task Until(Func<bool> condition) {
 		using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(5));
