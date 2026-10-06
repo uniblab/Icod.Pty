@@ -41,6 +41,9 @@ public sealed class PtySession : IDisposable, IAsyncDisposable {
 	public Task<PtyRecordingResult> RecordingCompletion => coordinator.RecordingCompletion;
 	/// <summary>Writes one ordered input operation. Keep the memory unchanged until completion.</summary>
 	public ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default) => coordinator.WriteAsync(bytes, cancellationToken);
+	/// <summary>Waits for the first occurrence of a raw byte pattern in accepted session output.</summary>
+	public Task<PtyExpectResult> ExpectAsync(ReadOnlyMemory<byte> pattern, TimeSpan timeout, CancellationToken cancellationToken = default) =>
+		coordinator.ExpectAsync(pattern, timeout, cancellationToken);
 	/// <summary>Writes one ordered ETX byte. Terminal modes determine its effect.</summary>
 	public ValueTask SendInterruptAsync(CancellationToken cancellationToken = default) {
 		if (HasExited) throw new InvalidOperationException("The child has exited.");

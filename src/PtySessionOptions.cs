@@ -11,6 +11,8 @@ public sealed class PtySessionOptions {
 	public Stream? Input { get; set; }
 	/// <summary>Gets or sets optional bounded output and resize recording.</summary>
 	public PtyRecordingOptions? Recording { get; set; }
+	/// <summary>Gets or sets optional bounded live output matching.</summary>
+	public PtyAutomationOptions? Automation { get; set; }
 	/// <summary>Gets or sets whether finalization leaves the source open. Defaults to true.</summary>
 	public bool LeaveInputOpen { get; set; } = true;
 	/// <summary>Gets or sets whether finalization leaves the destination open. Defaults to true.</summary>

@@ -1,10 +1,13 @@
-# PR #7 focused recording/replay additive API baseline (runtime head a25687550dd976a8f2a2e3b2ec8c7319afbfc3a3).
+# PR #8 focused automation additive API baseline (FA01 contract).
+  ctor Icod.Pty.PtyAutomationOptions()
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
+  ctor Icod.Pty.PtyExpectResult(Icod.Pty.PtyExpectStatus Status,System.Int64 ConsumedBytes)
   ctor Icod.Pty.PtyRecordingFormatException(System.String message)
   ctor Icod.Pty.PtyRecordingOptions(System.IO.Stream destination)
   ctor Icod.Pty.PtyRecordingReaderOptions()
   ctor Icod.Pty.PtyRecordingReplayResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 OutputBytes,System.Int64 EventCount)
   ctor Icod.Pty.PtyRecordingResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 BytesWritten,System.Int64 EventCount,System.Exception Exception)
+  ctor Icod.Pty.PtyScriptResult(Icod.Pty.PtyScriptStatus Status,System.Int32 CompletedStepCount,System.Nullable<System.Int32> FailedStepIndex,System.Nullable<Icod.Pty.PtyExpectStatus> ExpectStatus)
   ctor Icod.Pty.PtySessionDiagnostics(Icod.Pty.PtySessionPhase Phase,System.Boolean InputSealed,System.Int64 BytesWrittenToPty,System.Int64 BytesReadFromPty,System.Int64 BytesWrittenToOutput,System.Int64 DroppedEvents,System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events)
   ctor Icod.Pty.PtySessionEvent(System.Int64 Sequence,System.TimeSpan Elapsed,Icod.Pty.PtySessionEventKind Kind)
   ctor Icod.Pty.PtySessionFailure(Icod.Pty.PtySessionFailureStage Stage,System.Exception Exception)
@@ -15,10 +18,20 @@
   ctor Icod.Pty.PtySize(System.Int32 columns,System.Int32 rows)
   ctor Icod.Pty.PtyStartInfo(System.String fileName)
   ctor Icod.Pty.PtyTerminalOptions()
+  field Icod.Pty.PtyAutomationOptions::MaximumBufferedOutputBytes System.Int32 = 1048576
+  field Icod.Pty.PtyAutomationOptions::MinimumBufferedOutputBytes System.Int32 = 1
   field Icod.Pty.PtyControlStatus::DispatchUnconfirmed Icod.Pty.PtyControlStatus = 2
   field Icod.Pty.PtyControlStatus::Requested Icod.Pty.PtyControlStatus = 0
   field Icod.Pty.PtyControlStatus::TargetUnavailable Icod.Pty.PtyControlStatus = 1
   field Icod.Pty.PtyControlStatus::value__ System.Int32
+  field Icod.Pty.PtyExpectStatus::BufferLimitExceeded Icod.Pty.PtyExpectStatus = 6
+  field Icod.Pty.PtyExpectStatus::Matched Icod.Pty.PtyExpectStatus = 0
+  field Icod.Pty.PtyExpectStatus::OutputEnded Icod.Pty.PtyExpectStatus = 2
+  field Icod.Pty.PtyExpectStatus::OutputFaulted Icod.Pty.PtyExpectStatus = 5
+  field Icod.Pty.PtyExpectStatus::OutputStopped Icod.Pty.PtyExpectStatus = 3
+  field Icod.Pty.PtyExpectStatus::OutputTimedOut Icod.Pty.PtyExpectStatus = 4
+  field Icod.Pty.PtyExpectStatus::TimedOut Icod.Pty.PtyExpectStatus = 1
+  field Icod.Pty.PtyExpectStatus::value__ System.Int32
   field Icod.Pty.PtyProcessCapabilities::None Icod.Pty.PtyProcessCapabilities = 0
   field Icod.Pty.PtyProcessCapabilities::SignalOwnedScope Icod.Pty.PtyProcessCapabilities = 4
   field Icod.Pty.PtyProcessCapabilities::SignalPrimaryProcess Icod.Pty.PtyProcessCapabilities = 2
@@ -40,6 +53,12 @@
   field Icod.Pty.PtyRecordingStatus::Stopped Icod.Pty.PtyRecordingStatus = 3
   field Icod.Pty.PtyRecordingStatus::Truncated Icod.Pty.PtyRecordingStatus = 2
   field Icod.Pty.PtyRecordingStatus::value__ System.Int32
+  field Icod.Pty.PtyScriptStatus::Completed Icod.Pty.PtyScriptStatus = 0
+  field Icod.Pty.PtyScriptStatus::ExpectationFailed Icod.Pty.PtyScriptStatus = 1
+  field Icod.Pty.PtyScriptStatus::value__ System.Int32
+  field Icod.Pty.PtyScriptStepKind::Expect Icod.Pty.PtyScriptStepKind = 1
+  field Icod.Pty.PtyScriptStepKind::Send Icod.Pty.PtyScriptStepKind = 0
+  field Icod.Pty.PtyScriptStepKind::value__ System.Int32
   field Icod.Pty.PtySessionEndReason::Disposed Icod.Pty.PtySessionEndReason = 1
   field Icod.Pty.PtySessionEndReason::InputFailed Icod.Pty.PtySessionEndReason = 2
   field Icod.Pty.PtySessionEndReason::OutputFailed Icod.Pty.PtySessionEndReason = 3
@@ -105,6 +124,14 @@
   method Icod.Pty.PtyControlResult::ToString() System.String
   method Icod.Pty.PtyControlResult::op_Equality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right) System.Boolean
   method Icod.Pty.PtyControlResult::op_Inequality(Icod.Pty.PtyControlResult left,Icod.Pty.PtyControlResult right) System.Boolean
+  method Icod.Pty.PtyExpectResult::<Clone>$() Icod.Pty.PtyExpectResult
+  method Icod.Pty.PtyExpectResult::Deconstruct(out Icod.Pty.PtyExpectStatus Status,out System.Int64 ConsumedBytes) System.Void
+  method Icod.Pty.PtyExpectResult::Equals(Icod.Pty.PtyExpectResult other) System.Boolean
+  method Icod.Pty.PtyExpectResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyExpectResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyExpectResult::ToString() System.String
+  method Icod.Pty.PtyExpectResult::op_Equality(Icod.Pty.PtyExpectResult left,Icod.Pty.PtyExpectResult right) System.Boolean
+  method Icod.Pty.PtyExpectResult::op_Inequality(Icod.Pty.PtyExpectResult left,Icod.Pty.PtyExpectResult right) System.Boolean
   method Icod.Pty.PtyProcess::Dispose() System.Void
   method Icod.Pty.PtyProcess::DisposeAsync() System.Threading.Tasks.ValueTask
   method Icod.Pty.PtyProcess::GetTerminalCapabilities() Icod.Pty.PtyTerminalCapabilities
@@ -138,8 +165,20 @@
   method Icod.Pty.PtyRecordingResult::ToString() System.String
   method Icod.Pty.PtyRecordingResult::op_Equality(Icod.Pty.PtyRecordingResult left,Icod.Pty.PtyRecordingResult right) System.Boolean
   method Icod.Pty.PtyRecordingResult::op_Inequality(Icod.Pty.PtyRecordingResult left,Icod.Pty.PtyRecordingResult right) System.Boolean
+  method Icod.Pty.PtyScriptResult::<Clone>$() Icod.Pty.PtyScriptResult
+  method Icod.Pty.PtyScriptResult::Deconstruct(out Icod.Pty.PtyScriptStatus Status,out System.Int32 CompletedStepCount,out System.Nullable<System.Int32> FailedStepIndex,out System.Nullable<Icod.Pty.PtyExpectStatus> ExpectStatus) System.Void
+  method Icod.Pty.PtyScriptResult::Equals(Icod.Pty.PtyScriptResult other) System.Boolean
+  method Icod.Pty.PtyScriptResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyScriptResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyScriptResult::ToString() System.String
+  method Icod.Pty.PtyScriptResult::op_Equality(Icod.Pty.PtyScriptResult left,Icod.Pty.PtyScriptResult right) System.Boolean
+  method Icod.Pty.PtyScriptResult::op_Inequality(Icod.Pty.PtyScriptResult left,Icod.Pty.PtyScriptResult right) System.Boolean
+  method Icod.Pty.PtyScriptRunner::RunAsync(Icod.Pty.PtySession session,System.Collections.Generic.IReadOnlyList<Icod.Pty.PtyScriptStep> steps,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyScriptResult>
+  method Icod.Pty.PtyScriptStep::Expect(System.ReadOnlyMemory<System.Byte> pattern,System.TimeSpan timeout) Icod.Pty.PtyScriptStep
+  method Icod.Pty.PtyScriptStep::Send(System.ReadOnlyMemory<System.Byte> bytes) Icod.Pty.PtyScriptStep
   method Icod.Pty.PtySession::Dispose() System.Void
   method Icod.Pty.PtySession::DisposeAsync() System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtySession::ExpectAsync(System.ReadOnlyMemory<System.Byte> pattern,System.TimeSpan timeout,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyExpectResult>
   method Icod.Pty.PtySession::GetDiagnostics() Icod.Pty.PtySessionDiagnostics
   method Icod.Pty.PtySession::RequestTermination(Icod.Pty.PtyProcessTarget target) Icod.Pty.PtyControlResult
   method Icod.Pty.PtySession::Resize(Icod.Pty.PtySize size) System.Void
@@ -193,8 +232,11 @@
   method Icod.Pty.PtySize::ToString() System.String
   method Icod.Pty.PtySize::op_Equality(Icod.Pty.PtySize left,Icod.Pty.PtySize right) System.Boolean
   method Icod.Pty.PtySize::op_Inequality(Icod.Pty.PtySize left,Icod.Pty.PtySize right) System.Boolean
+  property Icod.Pty.PtyAutomationOptions::MaxBufferedOutputBytes System.Int32 { get;set; }
   property Icod.Pty.PtyControlResult::Status Icod.Pty.PtyControlStatus { get;set; }
   property Icod.Pty.PtyControlResult::Target Icod.Pty.PtyProcessTarget { get;set; }
+  property Icod.Pty.PtyExpectResult::ConsumedBytes System.Int64 { get;set; }
+  property Icod.Pty.PtyExpectResult::Status Icod.Pty.PtyExpectStatus { get;set; }
   property Icod.Pty.PtyProcess::Capabilities Icod.Pty.PtyProcessCapabilities { get; }
   property Icod.Pty.PtyProcess::ExitCode System.Int32 { get; }
   property Icod.Pty.PtyProcess::HasExited System.Boolean { get; }
@@ -223,6 +265,13 @@
   property Icod.Pty.PtyRecordingResult::EventCount System.Int64 { get;set; }
   property Icod.Pty.PtyRecordingResult::Exception System.Exception { get;set; }
   property Icod.Pty.PtyRecordingResult::Status Icod.Pty.PtyRecordingStatus { get;set; }
+  property Icod.Pty.PtyScriptResult::CompletedStepCount System.Int32 { get;set; }
+  property Icod.Pty.PtyScriptResult::ExpectStatus System.Nullable<Icod.Pty.PtyExpectStatus> { get;set; }
+  property Icod.Pty.PtyScriptResult::FailedStepIndex System.Nullable<System.Int32> { get;set; }
+  property Icod.Pty.PtyScriptResult::Status Icod.Pty.PtyScriptStatus { get;set; }
+  property Icod.Pty.PtyScriptStep::Bytes System.ReadOnlyMemory<System.Byte> { get; }
+  property Icod.Pty.PtyScriptStep::Kind Icod.Pty.PtyScriptStepKind { get; }
+  property Icod.Pty.PtyScriptStep::Timeout System.TimeSpan { get; }
   property Icod.Pty.PtySession::Capabilities Icod.Pty.PtyProcessCapabilities { get; }
   property Icod.Pty.PtySession::Completion System.Threading.Tasks.Task<Icod.Pty.PtySessionResult> { get; }
   property Icod.Pty.PtySession::HasExited System.Boolean { get; }
@@ -243,6 +292,7 @@
   property Icod.Pty.PtySessionEvent::Sequence System.Int64 { get;set; }
   property Icod.Pty.PtySessionFailure::Exception System.Exception { get;set; }
   property Icod.Pty.PtySessionFailure::Stage Icod.Pty.PtySessionFailureStage { get;set; }
+  property Icod.Pty.PtySessionOptions::Automation Icod.Pty.PtyAutomationOptions { get;set; }
   property Icod.Pty.PtySessionOptions::DrainTimeout System.TimeSpan { get;set; }
   property Icod.Pty.PtySessionOptions::Input System.IO.Stream { get;set; }
   property Icod.Pty.PtySessionOptions::LeaveInputOpen System.Boolean { get;set; }
@@ -284,11 +334,14 @@
   property Icod.Pty.PtyTerminalOptions::ReadTimeoutDeciseconds System.Nullable<System.Int32> { get;set; }
   property Icod.Pty.PtyTerminalOptions::SignalProcessing System.Nullable<System.Boolean> { get;set; }
 type enum Icod.Pty.PtyControlStatus
+type enum Icod.Pty.PtyExpectStatus
 type enum Icod.Pty.PtyProcessCapabilities
 type enum Icod.Pty.PtyProcessOwnership
 type enum Icod.Pty.PtyProcessTarget
 type enum Icod.Pty.PtyRecordingEventKind
 type enum Icod.Pty.PtyRecordingStatus
+type enum Icod.Pty.PtyScriptStatus
+type enum Icod.Pty.PtyScriptStepKind
 type enum Icod.Pty.PtySessionEndReason
 type enum Icod.Pty.PtySessionEventKind
 type enum Icod.Pty.PtySessionFailureStage
@@ -298,6 +351,8 @@ type enum Icod.Pty.PtyShutdownStatus
 type enum Icod.Pty.PtySignal
 type enum Icod.Pty.PtyTerminalCapabilities
 type enum Icod.Pty.PtyTerminalProfile
+type sealed-class Icod.Pty.PtyAutomationOptions
+type sealed-class Icod.Pty.PtyExpectResult
 type sealed-class Icod.Pty.PtyProcess
 type sealed-class Icod.Pty.PtyRecordingEvent
 type sealed-class Icod.Pty.PtyRecordingFormatException
@@ -306,6 +361,8 @@ type sealed-class Icod.Pty.PtyRecordingReader
 type sealed-class Icod.Pty.PtyRecordingReaderOptions
 type sealed-class Icod.Pty.PtyRecordingReplayResult
 type sealed-class Icod.Pty.PtyRecordingResult
+type sealed-class Icod.Pty.PtyScriptResult
+type sealed-class Icod.Pty.PtyScriptStep
 type sealed-class Icod.Pty.PtySession
 type sealed-class Icod.Pty.PtySessionDiagnostics
 type sealed-class Icod.Pty.PtySessionEvent
@@ -315,6 +372,7 @@ type sealed-class Icod.Pty.PtySessionResult
 type sealed-class Icod.Pty.PtyShutdownOptions
 type sealed-class Icod.Pty.PtyStartInfo
 type sealed-class Icod.Pty.PtyTerminalOptions
+type static-class Icod.Pty.PtyScriptRunner
 type struct Icod.Pty.PtyControlResult
 type struct Icod.Pty.PtyShutdownResult
 type struct Icod.Pty.PtySize

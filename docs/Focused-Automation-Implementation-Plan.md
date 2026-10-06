@@ -54,58 +54,58 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 | Baseline | Pending | Full existing tests and package smoke on base commit | Pending. |
 | FA01–FA07 | Pending | Targeted and final gates below | Pending. |
 
-### FA01: contract and capture (Gate A)
+### Task 1: FA01 contract and capture (Gate A)
 
 **Files:** `src/PtyAutomationOptions.cs`, `src/PtyExpectResult.cs`, `src/PtyScriptStep.cs`, `src/PtyScriptResult.cs`, `src/PtySessionOptions.cs`, `src/Session/SessionConfiguration.cs`, `src/Tests/Icod.Pty.Tests/PtyAutomationContractTests.cs`, `packaging/PublicApiBaseline.txt`.
 
 **Interfaces:** `PtySessionOptions.Automation` is nullable; `PtyAutomationOptions.MaxBufferedOutputBytes` defaults to 65,536 and accepts 1–1,048,576. `PtySession.ExpectAsync(ReadOnlyMemory<byte>, TimeSpan, CancellationToken)` returns `Task<PtyExpectResult>` with status `PtyExpectStatus`. `PtyScriptStep.Send` and `.Expect` copy bytes. Freeze final additive signatures before production matcher work.
 
-- [ ] Add contract tests asserting cap bounds, required automation opt-in, rejected `Input`, empty/oversize pattern, invalid timeout, early capture of mutable options, copied step bytes, and unchanged disabled defaults.
-- [ ] Run focused `dotnet test src/Tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Staging -f net8.0 --filter FullyQualifiedName~PtyAutomationContractTests`; record actual RED failures.
-- [ ] Implement captured options and public types, minimally satisfying the tests while retaining startup failure ownership of caller streams.
-- [ ] Run focused tests on net8.0/net9.0/net10.0 and review the exact intentional API baseline additions; commit `test: define focused automation contract`.
+- [x] Add contract tests asserting cap bounds, required automation opt-in, rejected `Input`, empty/oversize pattern, invalid timeout, early capture of mutable options, copied step bytes, and unchanged disabled defaults.
+- [x] Run focused `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Staging -f net8.0 --filter FullyQualifiedName~PtyAutomationContractTests`; record actual RED failures.
+- [x] Implement captured options and public types, minimally satisfying the tests while retaining startup failure ownership of caller streams.
+- [x] Run focused tests on net8.0/net9.0/net10.0 and review the exact intentional API baseline additions; commit `test: define focused automation contract`.
 
-### FA02: bounded streaming match (Gate B)
+### Task 2: FA02 bounded streaming match (Gate B)
 
 **Files:** `src/Session/SessionAutomation.cs`, `src/Tests/Icod.Pty.Tests/PtyAutomationMatcherTests.cs`.
 
 **Interfaces:** internal automation instance accepts successful output chunks, holds at most `MaxBufferedOutputBytes` unconsumed bytes, and serves one cursor. `ExpectAsync` consumes through the first occurrence, leaving suffix bytes. A second pending expect is rejected.
 
-- [ ] Add matcher tests for binary NUL/invalid UTF-8, overlapping patterns, one-byte chunk splits, leading junk plus two consecutive matches, early output, timeout/cancellation preserving cursor, and two concurrent expectations.
-- [ ] Run focused matcher tests on net10.0 and record RED; implement bounded streaming search with a linear-time prefix algorithm or equivalent, copying caller pattern before awaiting.
-- [ ] Run matcher tests on all three TFMs; commit `feat: add bounded byte matcher`.
+- [x] Add matcher tests for binary NUL/invalid UTF-8, overlapping patterns, one-byte chunk splits, leading junk plus two consecutive matches, early output, timeout/cancellation preserving cursor, and two concurrent expectations.
+- [x] Run focused matcher tests on net10.0 and record RED; implement bounded streaming search with a linear-time prefix algorithm or equivalent, copying caller pattern before awaiting.
+- [x] Run matcher tests on all three TFMs; commit `feat: add bounded byte matcher`.
 
-### FA03: limit and terminal outcomes (Gate B)
+### Task 3: FA03 limit and terminal outcomes (Gate B)
 
 **Files:** `src/Session/SessionAutomation.cs`, `src/Tests/Icod.Pty.Tests/PtyAutomationMatcherTests.cs`.
 
 **Interfaces:** immutable `PtyExpectResult` reports `Matched`, `TimedOut`, `OutputEnded`, `OutputStopped`, `OutputTimedOut`, `OutputFaulted`, or `BufferLimitExceeded`; no terminal content appears in errors. Monotonic deadline applies to matching; output completion settles active and future waits after searching retained accepted bytes.
 
-- [ ] Add tests for exact cap, cap+1 after repeated mismatches, repeated output after overrun, buffered match before EOF, output EOF/stop/drain timeout/fault before and during wait, primary exit with descendant-held output, cancellation/deadline races, disposed automation, and released waiter/timer resources.
-- [ ] Run focused tests net10.0 to record RED, implement finite buffering and terminal state transitions without throwing into the output pump.
-- [ ] Rerun focused tests on all TFMs and commit `feat: settle automation limits and completion`.
+- [x] Add matcher-level tests for exact cap, cap+1 after repeated mismatches, repeated output after overrun, buffered match before EOF, output EOF/stop/drain timeout/fault before and during wait, cancellation/deadline races, disposed automation, and released waiter/timer resources.
+- [x] Run focused tests net10.0 to record RED, implement finite buffering and terminal state transitions without throwing into the output pump.
+- [x] Rerun focused tests on all TFMs and commit `feat: settle automation limits and completion`.
 
-### FA04: session integration (Gate B)
+### Task 4: FA04 session integration (Gate B)
 
 **Files:** `src/PtySession.cs`, `src/Session/SessionCoordinator.cs`, `src/Session/SessionPumps.cs`, `src/Tests/Icod.Pty.Tests/PtyAutomationSessionTests.cs`.
 
 **Interfaces:** `PtySession.ExpectAsync` delegates to session automation; accepted output is observed after destination write and before the next chunk. Output fault/EOF completes matching independently of `Completion` and `RecordingCompletion`.
 
-- [ ] Add controlled-stream tests for startup prompt, successful destination write, partial-write failure, recorder sink fault, overrun while live output continues, output drain/stop, dispose race, and disabled-session regression.
-- [ ] Run focused session tests net10.0 to record RED; wire the existing output pump to automation with no work in the disabled path and no caller callbacks while coordinator locks are held.
-- [ ] Rerun new and existing session/recording tests on all TFMs; commit `feat: observe live session output for expectations`.
+- [x] Add controlled-stream tests for startup prompt, successful destination write, partial-write failure, recorder sink fault, overrun while live output continues, primary exit with descendant-held output, output drain/stop, dispose race, and disabled-session regression.
+- [x] Run focused session tests net10.0 to record RED; wire the existing output pump to automation with no work in the disabled path and no caller callbacks while coordinator locks are held.
+- [x] Rerun new and existing session/recording tests on all TFMs; commit `feat: observe live session output for expectations`.
 
-### FA05: script composition (Gate B)
+### Task 5: FA05 script composition (Gate B)
 
 **Files:** `src/PtyScriptRunner.cs`, `src/PtyScriptStep.cs`, `src/PtyScriptResult.cs`, `src/Tests/Icod.Pty.Tests/PtyScriptRunnerTests.cs`.
 
 **Interfaces:** `PtyScriptRunner.RunAsync(PtySession, IReadOnlyList<PtyScriptStep>, CancellationToken)` executes copied Send/Expect steps serially and returns completed step count plus failed index/status. The caller retains ownership; one runner per session; direct concurrent operations have no ordering guarantee.
 
-- [ ] Add script tests for early prompt, send then immediate response, multiple expects sharing retained suffix, empty send, timeout at a specific index, cancellation during send/expect, write fault, concurrent runner rejection, and caller-owned session surviving script failure.
-- [ ] Run focused runner tests net10.0 to record RED; implement only sequential orchestration and a per-session runner gate.
-- [ ] Rerun runner/session suites on all TFMs and commit `feat: add ordered send expect runner`.
+- [x] Add script tests for early prompt, send then immediate response, multiple expects sharing retained suffix, empty send, timeout at a specific index, cancellation during send/expect, write fault, concurrent runner rejection, and caller-owned session surviving script failure.
+- [x] Run focused runner tests net10.0 to record RED; implement only sequential orchestration and a per-session runner gate.
+- [x] Rerun runner/session suites on all TFMs and commit `feat: add ordered send expect runner`.
 
-### FA06: native and packaged consumer (Gate C)
+### Task 6: FA06 native and packaged consumer (Gate C)
 
 **Files:** `src/Sample/AutomationSmokeChecks.cs`, `src/Sample/Program.cs`, package verification scripts, native tests.
 
@@ -115,7 +115,7 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 - [ ] Wire the exact packed NuGet consumer and every existing published form to run the smoke while retaining PR #6/#7 checks.
 - [ ] Run the complete six-platform/three-framework PR workflow and record each job, package mode, expected ConPTY skip, and SHA. Fix demonstrated defects with failing regressions and rerun; commit `test: qualify packaged automation`.
 
-### FA07: compatibility, docs, and acceptance (Gate D)
+### Task 7: FA07 compatibility, docs, and acceptance (Gate D)
 
 **Files:** API baseline, `README.md`, `samples/README.md`, `ROADMAP.md`, this plan and design; production files only for reproduced defects.
 
