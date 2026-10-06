@@ -121,7 +121,7 @@ unsupported requests without guessing, while old callers retain their defaults a
 ## Selected milestone: deployment portability and focused compatibility hardening
 
 **Decision, 2026-10-06:** the user selected **option 6 plus a focused portion of option 13** after PR #5
-merged. This planning PR records the design and development roadmap. Read the
+merged. [PR #6](https://github.com/uniblab/Icod.Pty/pull/6) records the design and development roadmap. Read the
 [deployment design](docs/Deployment-Portability-Design.md) and
 [implementation plan](docs/Deployment-Portability-Implementation-Plan.md), tranches DP01-DP09.
 Implementation and any support expansion await qualification evidence; no version, tag, or publication is selected.
