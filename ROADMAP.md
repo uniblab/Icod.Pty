@@ -150,7 +150,12 @@ the current package and public contracts while recording Windows laptop results 
 
 **Decision, 2026-10-06:** after PR #6 merged, the user selected **option 8 as a focused next milestone** and approved implementation in [PR #7](https://github.com/uniblab/Icod.Pty/pull/7). The [accepted design](docs/Recording-Replay-Design.md) and [development roadmap](docs/Recording-Replay-Implementation-Plan.md), tranches RR01–RR08, define the implementation and acceptance gates.
 
-**Status:** implementation is present on PR #7. Local Linux x64 checks cover all three target frameworks, the native package smoke path, and a warning-free Release build. Final-head six-platform package qualification remains the completion gate; no version, tag, merge, or publication is selected.
+**Status:** implemented and qualified in PR #7. The runtime and stress head passed the complete six-platform,
+three-framework, exact-package and published-consumer matrix in
+[run 100, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37504691344). The final additive boundary and
+lifecycle-test head passed the same matrix in [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777).
+No version, tag, merge, or publication is selected. Manual Windows laptop execution of `--recording-smoke`
+remains separately pending.
 
 **Goal:** an opt-in `PtySession` recorder writes a bounded, versioned binary record of output bytes accepted by the consumer's output destination and successful terminal resizes. A streaming reader validates and replays the ordered byte and resize events without launching a process. The first increment has finite file and reader limits, explicit complete/truncated/stopped/faulted recording results, and no change to session behavior when recording is disabled.
 
@@ -171,7 +176,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
-| 8 | Recording, replay, and automation | Focused recording/replay implemented in PR #7; qualification in progress | Opt-in bounded, timestamped output/resize records and validated event-order replay. Input capture, output matching, scripting, timed playback, and screen-aware automation remain deferred. |
+| 8 | Recording, replay, and automation | Focused recording/replay implemented and qualified in PR #7 | Opt-in bounded, timestamped output/resize records and validated event-order replay. Input capture, output matching, scripting, timed playback, and screen-aware automation remain deferred. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |

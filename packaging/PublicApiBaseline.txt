@@ -1,4 +1,4 @@
-# PR #7 focused recording/replay additive API baseline (implementation head pending).
+# PR #7 focused recording/replay additive API baseline (runtime head a25687550dd976a8f2a2e3b2ec8c7319afbfc3a3).
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
   ctor Icod.Pty.PtyRecordingFormatException(System.String message)
   ctor Icod.Pty.PtyRecordingOptions(System.IO.Stream destination)

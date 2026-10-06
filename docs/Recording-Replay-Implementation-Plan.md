@@ -1,6 +1,9 @@
 # Recording and replay development roadmap
 
-**Status:** implementation in progress in [PR #7](https://github.com/uniblab/Icod.Pty/pull/7). RR01–RR06 have local Linux x64 evidence; final six-platform package qualification and final-head evidence remain open. Read the [design](Recording-Replay-Design.md) and [main roadmap](../ROADMAP.md) first.
+**Status:** RR01–RR08 are implemented and qualified in [PR #7](https://github.com/uniblab/Icod.Pty/pull/7).
+The runtime/stress head passed [six-platform run 100, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37504691344),
+and the final additive boundary and lifecycle-test head passed [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777).
+Read the [design](Recording-Replay-Design.md) and [main roadmap](../ROADMAP.md) first.
 
 ## Constraints and baseline
 
@@ -25,7 +28,7 @@
 | `src/PtySession.cs`, `src/Session/SessionCoordinator.cs`, `src/Session/SessionPumps.cs` | Integrate successful output and resize observations; independent result/finalization without changing old paths. |
 | `src/PtyRecordingOptions.cs`, `src/PtyRecordingResult.cs`, `src/PtyRecordingEvent.cs` (new) | Small public configuration, outcome, and event contracts. Final signature names are frozen in RR01. |
 | `src/Recording/RecordingFormat.cs`, `src/Recording/SessionRecorder.cs`, `src/PtyRecordingReader.cs` (new) | Portable bounded format, serialized writer, validating streaming reader/replay. |
-| `src/Tests/Icod.Pty.Tests/PtyRecordingTests.cs`, `PtyRecordingReaderTests.cs`, `PtyRecordingIntegrationTests.cs` (new) | Contract, malformed input, fault/limit/lifecycle and native round-trip tests. |
+| `src/Tests/Icod.Pty.Tests/PtyRecordingContractTests.cs`, `PtyRecordingWriterTests.cs`, `PtyRecordingReaderTests.cs`, `PtyRecordingIntegrationTests.cs` (new) | Contract, malformed input, fault/limit/lifecycle, stress, and native round-trip tests. |
 | `packaging/PublicApiBaseline.txt`, `.github/workflows/pull-request.yaml` | Review intentional additive API; retain six jobs/three TFMs and run package-consumer round-trip. |
 | `src/Sample/Program.cs`, `src/Sample/RecordingSmokeChecks.cs` (new), `packaging/VerifyPackageConsumer.ps1` | Small opt-in smoke mode run by a consumer installed from the exact packed package; avoid repository-only integration evidence. |
 | `README.md`, `samples/README.md`, `ROADMAP.md`, these documents | Usage, format/security/limits, completion semantics, supported matrix, and tranche evidence. |
@@ -46,74 +49,74 @@ Each tranche is a reviewable commit. In an execution PR, append an evidence tabl
 | Tranche | Evidence head | Command/gate | Outcome |
 | --- | --- | --- | --- |
 | Baseline | `69fcffac1c4c8de9ed263e9983dd1d1cb551fdfc` | `dotnet test Icod.Pty.sln -c Staging -f net10.0` | Linux x64: 233 passed, 0 failed before implementation. |
-| RR01–RR05 | `10b5a1f` plus pending documentation head | Focused recording contracts, golden/malformed codec cases, cap/fault/ordering/lifecycle tests on net8.0/net9.0/net10.0 | Linux x64: 30 per TFM passed before final self-review additions; 32 net10.0 tests passed after terminal-failure and replay-alias regressions. Full final run remains below. |
-| RR06 | `551efde` plus pending self-review head | `dotnet run --project samples/Icod.Pty.Sample -c Staging -f net10.0 -- --recording-smoke` | Linux x64 native PTY recording, replay, truncation, and malformed-prefix smoke passed. Exact-package six-platform execution remains the CI gate. |
-| RR07–RR08 | pending | Release build, full tests, exact package and published consumers, final documentation/self-review | Local Release build passed with 0 warnings and 0 errors; final-head matrix pending. |
+| RR01–RR05 | `ba67bf869cafed3b18e9ce4e8b131c1f59030a06` | Focused recording contracts, golden/malformed codec cases, cap/fault/ordering/lifecycle tests on net8.0/net9.0/net10.0 | RED/GREEN implementation completed. Terminal-marker failure and replay source/destination alias findings gained regressions before their fixes. |
+| RR06 | `0474caea8e47e9d38c784b76a5952721771a34d5` through runtime head `a25687550dd976a8f2a2e3b2ec8c7319afbfc3a3` | Native `--recording-smoke`; exact package and all published consumer modes | Linux x64 native smoke passed locally. All six hosted jobs passed [run 100, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37504691344). Windows x64 attempt 1 hit two established native-test timeouts; its isolated full-job retry passed without a code change. |
+| RR07–RR08 | `2fc9293516ff1c5111e43bc803e3f38d4af46b4c` | Release build, 20-session output/resize stress, complete tests, exact package and published consumers, documentation/self-review | Linux x64 Release build: 0 warnings/errors; focused recording suite: 40 per TFM; full suite: 274 per TFM. All six hosted jobs and three TFMs passed [run 102](https://github.com/uniblab/Icod.Pty/actions/runs/37507494777), with only the established Windows ConPTY fragmented-query skip. Manual Windows laptop acceptance remains separate and pending. |
 
 ### RR01: freeze the public contract and format (Gate A)
 
 **Files:** this design/plan, proposed public type skeletons and format fixture/test sources; API baseline only when additive signatures are settled.
 
-- [ ] Inspect merged `PtySession` output/resize/finalization, stream ownership, public API baseline, and sample/package-consumer paths. Confirm the exact format field widths, header initial size, terminal markers, cap minimum/default, timestamp source and overflow behavior, reader limits, exception types, and public method signatures. Document them in the design before production writer code.
-- [ ] Create hand-authored golden bytes for empty output plus one output and resize frame, and format tests that decode them. Assert endian, bounds and version handling. A fixture test against the absent reader should be RED; implement only enough reader surface for the next tranche.
-- [ ] Add validation tests for null/nonwritable/aliased recording stream, minimum cap, captured option mutation, and failed-start ownership. Run RED against existing code, then add captured options and public result shape; run GREEN.
-- [ ] Record the baseline public signature diff as intentional additions only; commit `test: define bounded recording contract`.
+- [x] Inspect merged `PtySession` output/resize/finalization, stream ownership, public API baseline, and sample/package-consumer paths. Confirm the exact format field widths, header initial size, terminal markers, cap minimum/default, timestamp source and overflow behavior, reader limits, exception types, and public method signatures. Document them in the design before production writer code.
+- [x] Create hand-authored golden bytes for empty output plus one output and resize frame, and format tests that decode them. Assert endian, bounds and version handling. A fixture test against the absent reader should be RED; implement only enough reader surface for the next tranche.
+- [x] Add validation tests for null/nonwritable/aliased recording stream, minimum cap, captured option mutation, and failed-start ownership. Run RED against existing code, then add captured options and public result shape; run GREEN.
+- [x] Record the baseline public signature diff as intentional additions only; commit `test: define bounded recording contract`.
 
 ### RR02: streaming codec and hostile-input validation (Gates A–B)
 
 **Files:** `src/Recording/RecordingFormat.cs`, `src/PtyRecordingReader.cs`, `src/PtyRecordingEvent.cs`, reader tests.
 
-- [ ] Add fixtures for NUL/invalid UTF-8, empty frames, a 16 KiB boundary, multiple resizes, a valid truncated prefix, and complete EOF. Add malformed fixtures for magic/version/kind, size/length, timestamp regression, missing marker, and trailing bytes; verify each RED independently.
-- [ ] Implement exact byte layout and incremental reads with fixed independent frame and total-input quotas. Reject lengths before allocating; make returned payload ownership explicit; distinguish valid truncation from damaged EOF.
-- [ ] Add replay-to-`Stream` tests for exact byte order, cancellation, leave-open defaults, and resize visibility through event iteration. Run targeted tests on net8.0/net9.0/net10.0 and commit `feat: add validated recording reader`.
+- [x] Add fixtures for NUL/invalid UTF-8, empty frames, a 16 KiB boundary, multiple resizes, a valid truncated prefix, and complete EOF. Add malformed fixtures for magic/version/kind, size/length, timestamp regression, missing marker, and trailing bytes; verify each RED independently.
+- [x] Implement exact byte layout and incremental reads with fixed independent frame and total-input quotas. Reject lengths before allocating; make returned payload ownership explicit; distinguish valid truncation from damaged EOF.
+- [x] Add replay-to-`Stream` tests for exact byte order, cancellation, leave-open defaults, and resize visibility through event iteration. Run targeted tests on net8.0/net9.0/net10.0 and commit `feat: add validated recording reader`.
 
 ### RR03: bounded session recorder (Gate B)
 
 **Files:** `src/Recording/SessionRecorder.cs`, `src/PtyRecordingOptions.cs`, `src/PtyRecordingResult.cs`, writer/fault tests.
 
-- [ ] Test header/initial size, output split at 16 KiB, byte/count accounting, monotonic timestamps, serialized concurrent output/resize admission, and a complete terminal marker. Test exact-cap boundaries and sustained output/resize after truncation; verify RED before implementing.
-- [ ] Implement direct bounded writes to a supplied stream with a gate separate from the session coordinator. Reserve terminal-marker bytes, stop at the cap, and keep the live session path functioning. A sink exception records a fault and disables capture without reclassifying a successful destination write.
-- [ ] Test write, flush, and owned-stream disposal failures separately; settle one result and protect the original session failure. Rerun codec fixtures and commit `feat: add bounded session recorder`.
+- [x] Test header/initial size, output split at 16 KiB, byte/count accounting, monotonic timestamps, serialized concurrent output/resize admission, and a complete terminal marker. Test exact-cap boundaries and sustained output/resize after truncation; verify RED before implementing.
+- [x] Implement direct bounded writes to a supplied stream with a gate separate from the session coordinator. Reserve terminal-marker bytes, stop at the cap, and keep the live session path functioning. A sink exception records a fault and disables capture without reclassifying a successful destination write.
+- [x] Test write, flush, and owned-stream disposal failures separately; settle one result and protect the original session failure. Rerun codec fixtures and commit `feat: add bounded session recorder`.
 
 ### RR04: output and resize integration (Gate B)
 
 **Files:** `src/PtySession.cs`, `src/Session/SessionCoordinator.cs`, `src/Session/SessionPumps.cs`, integration unit tests.
 
-- [ ] Test that output is recorded after destination write success, failed/partially-written chunks are not claimed, native resize failures are omitted, and concurrent resize/output records preserve admitted order. Verify RED before integration.
-- [ ] Wire the recorder into the sole output pump and successful `PtySession.Resize` path. Keep `PtyProcess` raw streams and disabled-session hot path unchanged; do not hold coordinator locks while calling user streams.
-- [ ] Compare session result/output status/diagnostics for recording disabled, successful capture, and recorder fault. Run focused session pump/resize tests on three TFMs; commit `feat: integrate session recording`.
+- [x] Test that output is recorded after destination write success, failed/partially-written chunks are not claimed, native resize failures are omitted, and concurrent resize/output records preserve admitted order. Verify RED before integration.
+- [x] Wire the recorder into the sole output pump and successful `PtySession.Resize` path. Keep `PtyProcess` raw streams and disabled-session hot path unchanged; do not hold coordinator locks while calling user streams.
+- [x] Compare session result/output status/diagnostics for recording disabled, successful capture, and recorder fault. Run focused session pump/resize tests on three TFMs; commit `feat: integrate session recording`.
 
 ### RR05: shutdown, ownership, and completion (Gate B)
 
 **Files:** coordinator/configuration/options and lifecycle tests.
 
-- [ ] Add cases for startup failure before ownership transfer, ordinary EOF, explicit shutdown, output destination failure, sink failure, primary exit with descendant-held output, drain timeout, startup cancellation, and repeated/concurrent disposal. Check all three completion tasks and stream leave-open behavior; verify relevant cases RED.
-- [ ] Finalize one complete/truncated/stopped/faulted marker/result under each path, flush and dispose an owned stream once, and keep recorder faults independent of session failure staging. Document how slow/uncooperative caller streams affect drain/disposal.
-- [ ] Run existing session ownership, input, completion, and shutdown suites with the new cases; commit `test: cover recording lifecycle and ownership` (or `fix:` for a reproduced defect).
+- [x] Add cases for startup failure before ownership transfer, ordinary EOF, explicit shutdown, output destination failure, sink failure, primary exit with descendant-held output, drain timeout, startup cancellation, and repeated/concurrent disposal. Check all three completion tasks and stream leave-open behavior; verify relevant cases RED.
+- [x] Finalize one complete/truncated/stopped/faulted marker/result under each path, flush and dispose an owned stream once, and keep recorder faults independent of session failure staging. Document how slow/uncooperative caller streams affect drain/disposal.
+- [x] Run existing session ownership, input, completion, and shutdown suites with the new cases; commit `test: cover recording lifecycle and ownership` (or `fix:` for a reproduced defect).
 
 ### RR06: portable replay and package consumer (Gate C)
 
 **Files:** `src/Sample/RecordingSmokeChecks.cs`, sample dispatcher, exact-package verifier, native tests.
 
-- [ ] Add an opt-in `--recording-smoke` that starts a session from the installed package, writes binary output and resizes, reads the resulting record, and compares output/event order and final status. Do not print captured content. Include a valid capped-prefix and malformed-file negative check.
-- [ ] Execute the sample and native integration tests across all six CI jobs and three TFMs. Retain published deployment modes and external Unix helper prerequisites from PR #6. Record observed failures as RED, fix narrowly, then rerun GREEN; do not infer support from unit tests alone.
-- [ ] Commit fixture/harness wiring and native evidence; no fabricated platform skips.
+- [x] Add an opt-in `--recording-smoke` that starts a session from the installed package, writes binary output and resizes, reads the resulting record, and compares output/event order and final status. Do not print captured content. Include a valid capped-prefix and malformed-file negative check.
+- [x] Execute the sample and native integration tests across all six CI jobs and three TFMs. Retain published deployment modes and external Unix helper prerequisites from PR #6. Record observed failures as RED, fix narrowly, then rerun GREEN; do not infer support from unit tests alone.
+- [x] Commit fixture/harness wiring and native evidence; no fabricated platform skips.
 
 ### RR07: compatibility and stress (Gates C–D)
 
 **Files:** public API baseline, CI if needed, test fixtures; product code only for a demonstrated failure.
 
-- [ ] Review exact additive API diff on all three TFMs. Run bounded repeated sessions with continuous output, resize storms, cap exhaustion, sink faults, cancellation, and disposal using watchdogs. Check file cap, no retained payload growth, and no leaked process/helper handles.
-- [ ] Run full library tests, package artifact verifier, fresh package consumers and PR #6 published-consumer modes in six-platform CI. Preserve existing expected ConPTY fragmented-query skip only; separate platform flakiness from product defects.
-- [ ] Resolve important findings with a failing regression before a fix, rerun the affected matrix and record head/command/results. Commit `test: verify recording compatibility and stress`.
+- [x] Review exact additive API diff on all three TFMs. Run bounded repeated sessions with continuous output, resize storms, cap exhaustion, sink faults, cancellation, and disposal using watchdogs. Check file cap, no retained payload growth, and no leaked process/helper handles.
+- [x] Run full library tests, package artifact verifier, fresh package consumers and PR #6 published-consumer modes in six-platform CI. Preserve existing expected ConPTY fragmented-query skip only; separate platform flakiness from product defects.
+- [x] Resolve important findings with a failing regression before a fix, rerun the affected matrix and record head/command/results. Commit `test: verify recording compatibility and stress`.
 
 ### RR08: documentation, self-review, and acceptance (Gate D)
 
 **Files:** `README.md`, `samples/README.md`, `ROADMAP.md`, design and this plan.
 
-- [ ] Document opt-in usage, supplied-stream ownership, binary format/version, max bytes and reader limits, timestamp/order semantics, fault/truncation interpretation, sensitive output, and the absence of input capture or terminal interpretation. Show package-consumer commands compatible with the existing tooling.
-- [ ] Self-review the five Review Focus cases and the API/format diff; inspect thread safety, resource release, cancellation, native resize failure, and error text. Update evidence and any necessary tests/code in reviewable commits.
-- [ ] At the final implementation head run the complete six-platform/three-framework Staging matrix, exact NuGet package and published-consumer checks. Record SHA, workflow URLs, expected skips/warnings and any separate Windows laptop observations. Mark RR01–RR08 complete only with evidence; leave merge, versioning and publication for a separate user decision.
+- [x] Document opt-in usage, supplied-stream ownership, binary format/version, max bytes and reader limits, timestamp/order semantics, fault/truncation interpretation, sensitive output, and the absence of input capture or terminal interpretation. Show package-consumer commands compatible with the existing tooling.
+- [x] Self-review the five Review Focus cases and the API/format diff; inspect thread safety, resource release, cancellation, native resize failure, and error text. Update evidence and any necessary tests/code in reviewable commits.
+- [x] At the final implementation head run the complete six-platform/three-framework Staging matrix, exact NuGet package and published-consumer checks. Record SHA, workflow URLs, expected skips/warnings and any separate Windows laptop observations. Mark RR01–RR08 complete only with evidence; leave merge, versioning and publication for a separate user decision.
 
 ## Completion condition
 
