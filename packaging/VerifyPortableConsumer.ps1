@@ -214,7 +214,8 @@ Assert-HelperLayout $publishRoot
 $layout = New-PortableExecutionLayout -PublishDirectory $publishRoot -Scenario $Scenario
 $executable = Get-PublishedExecutable $layout.Directory $RuntimeIdentifier
 $expectFailure = $layout.MissingAsset.Length -ne 0 -and -not $RuntimeIdentifier.StartsWith('win-', [System.StringComparison]::Ordinal)
-$smokeModes = if ($layout.MissingAsset.Length -ne 0) { @('--smoke') } else { @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke') }
+$smokeModes = @('--smoke')
+if ($layout.MissingAsset.Length -eq 0) { $smokeModes = @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke') }
 foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $layout.Directory $TimeoutSeconds -ExpectFailure:$expectFailure }
 $result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; scenario = $Scenario; executable = $executable; helperLayout = if ($layout.MissingAsset.Length -eq 0) { 'Complete' } else { "Missing:$($layout.MissingAsset)" }; expectedFailure = $expectFailure; smokeModes = $smokeModes.Count }
 Write-Host ('PORTABILITY-RESULT ' + ($result | ConvertTo-Json -Compress))
