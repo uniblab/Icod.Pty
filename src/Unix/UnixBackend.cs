@@ -37,7 +37,10 @@ internal sealed class UnixBackend : IPtyBackend {
 		Stream output = new UnixPtyStream(master, true, retainedSlave, () => Exit.IsCompletedSuccessfully);
 		Output = retainedSlave == null ? output : new BufferedPtyOutputStream(output);
 	}
-	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) {
+	internal static Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken) =>
+		StartAsync(launch, cancellationToken, UnixTerminalNative.Instance);
+	internal static async Task<IPtyBackend> StartAsync(LaunchConfiguration launch, CancellationToken cancellationToken,
+		IUnixTerminalOperations terminalOperations, Action? beforeLaunch = null) {
 		cancellationToken.ThrowIfCancellationRequested();
 		UnixNative.WindowSize size = new() { Columns = (ushort)launch.Columns, Rows = (ushort)launch.Rows };
 		byte[] name = new byte[1024];
@@ -50,6 +53,11 @@ internal sealed class UnixBackend : IPtyBackend {
 			UnixNative.Check(UnixNative.fcntl(slaveFd, 2, 1), "FD_CLOEXEC slave");
 			int flags = UnixNative.fcntl(masterFd, 3, 0); UnixNative.Check(flags, "F_GETFL");
 			UnixNative.Check(UnixNative.fcntl(masterFd, 4, flags | UnixNative.NonBlocking), "F_SETFL");
+			cancellationToken.ThrowIfCancellationRequested();
+			UnixTerminalConfiguration.Apply(slaveFd, launch.TerminalConfiguration, terminalOperations);
+			cancellationToken.ThrowIfCancellationRequested();
+			beforeLaunch?.Invoke();
+			cancellationToken.ThrowIfCancellationRequested();
 			launch.SlaveName = Encoding.UTF8.GetString(name, 0, Array.IndexOf(name, (byte)0));
 			if (launch.Ownership == PtyProcessOwnership.PlatformScope) {
 				child = await UnixSpawn.StartAsync(launch, cancellationToken, master.Dispose).ConfigureAwait(false);

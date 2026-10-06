@@ -58,19 +58,19 @@ Other laptop observations remain separately recorded in the
 The [design](docs/Process-Group-Cleanup-Design.md) records initial-group coverage, exclusive Unix child-wait
 ownership, glibc requirements, retained identity, and native permission limitations.
 
-## Selected milestone: reusable session orchestration and focused lifecycle diagnostics
+### Reusable session orchestration and focused lifecycle diagnostics
 
 **Decision, 2026-10-04:** the user selected **option 3 plus a focused subset of option 4** and requested a
 new planning PR, an updated full option menu, and a proper development roadmap.
 
-**Status:** implemented and reviewed on PR #4. The test-corrected implementation passed
-[six-platform CI run 49](https://github.com/uniblab/Icod.Pty/actions/runs/37329904247) on all three target
+**Status:** [PR #4](https://github.com/uniblab/Icod.Pty/pull/4) merged on 2026-10-05. Its final head passed
+[six-platform CI run 51](https://github.com/uniblab/Icod.Pty/actions/runs/37342768776) on all three target
 frameworks and all package-consumer modes. On 2026-10-05, Release net10.0 `--session-smoke` and
 `--session-scope-smoke` also passed on the identified Windows x64 laptop. Interactive CMD/Windows PowerShell 5.1
-checks for Ctrl+C, resize, and host restoration remain separately pending. No version bump or publication is part
-of this PR; the package remains 0.1.0-alpha.1.
+checks for Ctrl+C, resize, and host restoration remain separately pending. That milestone introduced no version
+bump or publication; the package remains 0.1.0-alpha.1.
 
-Add an optional session owner above PtyProcess to coordinate ordered input, output forwarding, application
+Added an optional session owner above PtyProcess to coordinate ordered input, output forwarding, application
 shutdown, drain deadlines, and cleanup. Preserve the low-level API and existing backend/scope semantics.
 The session owns newly launched processes; supplied-stream ownership and cancellation requirements are explicit.
 Focused diagnostics consist of bounded lifecycle history, counters, coherent snapshots, and staged completion
@@ -91,6 +91,32 @@ Read the [accepted design](docs/Session-Orchestration-Design.md) and
 The recorded contracts include permanent input sealing after accepted shutdown and the requirement for
 cancellation-cooperative streams.
 
+## Selected milestone: terminal configuration and focused capability discovery
+
+**Decision, 2026-10-05:** the user selected **option 7 plus a focused portion of option 4**, requested a new
+planning PR, preservation of the full option menu, and a proper development roadmap.
+
+**Status:** implementation and hosted acceptance complete in [PR #5](https://github.com/uniblab/Icod.Pty/pull/5); awaiting review and merge. Read the
+[approved design](docs/Terminal-Configuration-Design.md) and
+[development roadmap and evidence](docs/Terminal-Configuration-Implementation-Plan.md), tranches TC01-TC09.
+No version, tag, or publication is selected.
+
+The proposed first increment configures the child terminal at launch: echo, canonical/noncanonical input,
+terminal-generated signals, control characters, read timing, and an explicit Raw preset. A side-effect-free
+capability query lets consumers discover supported controls before launch. Null/default requests preserve
+today's behavior. Both PtyProcess and PtySession use the same capture and validation path.
+
+- Gate production work on a pure-C# native feasibility matrix across Linux/macOS x64 and ARM64.
+- Configure and read back the newly allocated Unix slave before either helper launch path starts a child.
+- Report unsupported controls honestly on Windows; reject explicit requests before launch, without emulation
+  or mutation of the parent console. Verify default launch remains unchanged on both Windows architectures.
+- Separate initial configuration from the child's later state; live read/update/restoration is deferred within option 7.
+- Limit option 4 to prelaunch capabilities, unsupported-setting validation, and native configuration-failure context.
+- Verify failure cleanup, cancellation, both ownership policies, all three target frameworks, and actual package consumers.
+
+**Acceptance goal:** a consumer can deliberately choose supported initial terminal behavior and determine
+unsupported requests without guessing, while old callers retain their defaults and lifecycle contracts.
+
 ## Full current menu
 
 Effort is relative, not a schedule. Deferred options remain available and are not release commitments.
@@ -99,11 +125,11 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | --- | --- | --- | --- |
 | 1 | Process ownership and descendant cleanup | Completed in PR #3 | Windows job / Unix initial-group ownership, explicit cleanup and shutdown integration. Broader containment needs a separate design. |
 | 2 | Broader signals and foreground-job control | Remaining work deferred; medium-large | Named initial-group/primary signals are complete. Revisit additional signals, suspend/resume, or foreground retargeting when a consumer requires their identity and platform rules. |
-| 3 | Reusable session orchestration | Implemented on PR #4 | Coordinates ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. |
-| 4 | Diagnostics and capability discovery | Focused lifecycle subset implemented on PR #4 | Adds bounded session lifecycle history, counters/snapshots and completion failure stages. Native startup-stage tracing, general metrics/exporters, callback subscriptions and transcripts remain deferred. |
+| 3 | Reusable session orchestration | Completed in PR #4 | Coordinates ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. |
+| 4 | Diagnostics and capability discovery | Lifecycle subset completed in PR #4; terminal-configuration subset complete in PR #5 | Adds prelaunch terminal capabilities and configuration-failure context. General startup tracing, metrics/exporters, callbacks and transcripts remain deferred. |
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Deferred; medium-large | Validate or extend trimming, NativeAOT, single-file/self-contained consumers and wider Unix environments. Strong alternative when standalone distribution becomes the immediate priority. |
-| 7 | Terminal configuration controls | Deferred; medium-large | Explicit echo, canonical/raw input and control-character settings with truthful platform-specific capabilities. Return when application control of modes is required. |
+| 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
 | 8 | Recording, replay, and automation | Deferred; medium | Timestamped output/resize records, replay and bounded output matching. Benefits from session orchestration first; input capture must be opt-in and screen-aware matching needs a terminal model. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
@@ -112,7 +138,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 13 | Release stabilization and compatibility hardening | Deferred as a dedicated milestone; small-medium | API compatibility checks, targeted lifecycle stress, support matrix and release documentation. Ordinary regression/package checks remain required now; broader release hardening follows when the release target is chosen. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
-Interactive hosting and scoped process ownership are completed history. Option 13 records the additional
+Interactive hosting, scoped process ownership, and reusable session orchestration are completed history. Option 13 records the additional
 release-stabilization alternative considered alongside the remaining feature menu.
 
 ## Completion policy

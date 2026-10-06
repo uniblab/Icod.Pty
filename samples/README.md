@@ -94,3 +94,27 @@ dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build --
 The expected messages are `PTY session smoke check passed.` and `PTY session scope smoke check passed.` The first check exercises owned output forwarding, primary exit, EOF/flush, and the final result. The second opts into platform-scope ownership, lets a descendant retain the terminal after primary exit 37, and verifies that session finalization stops the descendant. Linux observes drain expiry because the descendant retains the terminal; Windows ConPTY and macOS terminal revocation report EOF at primary exit. Repeat from CMD and Windows PowerShell 5.1 on the minimum supported Windows build and record host restoration separately.
 
 **Reported 2026-10-05:** both commands passed in a Release net10.0 run on the identified Windows x64 laptop. Interactive CMD/Windows PowerShell 5.1 checks for Ctrl+C, resize, and restored host editing/history remain separate pending observations.
+
+## Terminal-configuration acceptance
+
+The terminal-configuration smoke check is noninteractive. On Unix it launches a child with echo disabled and noncanonical one-byte reads, verifies that the child observes those modes before managed console initialization, sends one byte, and requires an un-echoed native acknowledgement. On Windows it verifies `PtyTerminalCapabilities.None`, rejects an explicit request before child creation, and completes a default launch.
+
+From CMD:
+
+```bat
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- --terminal-config-smoke
+```
+
+From SH:
+
+```sh
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --terminal-config-smoke
+```
+
+From Windows PowerShell 5.1:
+
+```powershell
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- --terminal-config-smoke
+```
+
+Expected output is `PTY terminal configuration smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not mutate the interactive host console. Record manual host restoration separately from this redirected smoke result.

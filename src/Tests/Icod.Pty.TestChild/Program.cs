@@ -5,8 +5,14 @@ using System.Text.Json;
 // This isolated probe must set SIGCHLD before Console or Process installs runtime handlers.
 if (args is ["scope-auto-reap-probe", _]) return await ProcessScopeFixture.AutoReapProbeAsync();
 if (args is ["scope-host-guard", string guard]) return await ProcessScopeFixture.HostGuardAsync(guard);
+// Capture the terminal before Console initialization or application mode changes.
+if (args is ["terminal-config-state"]) return TerminalConfigurationProbe.ReportCurrentState();
+if (args is ["terminal-config-read", string terminalReadSize]) return TerminalConfigurationProbe.ReadOnce(int.Parse(terminalReadSize, System.Globalization.CultureInfo.InvariantCulture));
+if (args is ["terminal-config-change"]) return TerminalConfigurationProbe.ChangeOwnState();
 Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
+if (args is ["terminal-config-native-probe"]) return await TerminalConfigurationProbe.RunAsync();
+if (args is ["write-marker", string markerPath]) { File.WriteAllText(markerPath, "started"); return 0; }
 if (args is ["scope-native-probe", string scopeScenario]) return await ProcessScopeFixture.ProbeAsync(scopeScenario);
 if (args is ["scope-parent", string scopeDirectory]) return await ProcessScopeFixture.ParentAsync(scopeDirectory);
 if (args is ["scope-parent", string scopeDirectoryMode, string scopeMode]) return await ProcessScopeFixture.ParentAsync(scopeDirectoryMode, scopeMode);

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Icod.Pty;
 
 /// <summary>Owns a child process and its pseudoterminal.</summary>
@@ -11,6 +13,12 @@ public sealed class PtyProcess : IDisposable, IAsyncDisposable {
 	private bool disposed;
 	private int shutdownActive;
 	private PtyProcess(IPtyBackend backend, PtySize size) { this.backend = backend; this.size = size; }
+	/// <summary>Gets optional launch-time terminal controls supported by the current backend and process architecture.</summary>
+	/// <remarks>This query is side-effect-free and does not inspect the host console or create a child.</remarks>
+	public static PtyTerminalCapabilities GetTerminalCapabilities() =>
+		(OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && RuntimeInformation.ProcessArchitecture is Architecture.X64 or Architecture.Arm64
+			? PtyTerminalCapabilities.RawProfile | PtyTerminalCapabilities.Echo | PtyTerminalCapabilities.CanonicalInput | PtyTerminalCapabilities.SignalProcessing | PtyTerminalCapabilities.ControlCharacters | PtyTerminalCapabilities.ReadTiming
+			: PtyTerminalCapabilities.None;
 	/// <summary>Starts the executable on a new terminal. Unix requires an installed dotnet host.</summary>
 	public static PtyProcess Start(PtyStartInfo startInfo) => StartAsync(startInfo).GetAwaiter().GetResult();
 	/// <summary>Starts an executable asynchronously and transfers ownership after startup succeeds.</summary>

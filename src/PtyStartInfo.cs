@@ -23,4 +23,7 @@ public sealed class PtyStartInfo {
 	public TimeSpan StartTimeout { get; set; } = TimeSpan.FromSeconds(15);
 	/// <summary>Gets or sets an explicit dotnet executable for the Unix managed helper.</summary>
 	public string? DotNetHostPath { get; set; }
+	/// <summary>Gets or sets optional launch-time child-terminal settings.</summary>
+	/// <remarks>Null and an all-default options object preserve existing launch behavior.</remarks>
+	public PtyTerminalOptions? TerminalOptions { get; set; }
 }
