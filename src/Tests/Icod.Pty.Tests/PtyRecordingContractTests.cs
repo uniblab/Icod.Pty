@@ -55,6 +55,17 @@ public sealed class PtyRecordingContractTests {
 	}
 
 	[Fact]
+	public async Task Cancelled_start_does_not_take_recording_stream_ownership() {
+		using MemoryStream output = new(), recording = new(); using CancellationTokenSource cancelled = new(); cancelled.Cancel();
+		SessionConfiguration configuration = SessionConfiguration.Capture(new(output) {
+			Recording = new(recording) { LeaveOpen = false }
+		});
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PtySession.StartCoreAsync(ControlledBackend.Launch(), configuration,
+			cancelled.Token, (_, token) => Task.FromCanceled<PtyProcess>(token)));
+		Assert.True(recording.CanWrite);
+	}
+
+	[Fact]
 	public void Recording_result_exposes_disabled_contract() {
 		PtyRecordingResult result = PtyRecordingResult.Disabled;
 		Assert.Equal(PtyRecordingStatus.Disabled, result.Status);

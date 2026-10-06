@@ -73,7 +73,33 @@ public sealed class PtyRecordingIntegrationTests {
 		PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(5));
 		Assert.Equal(PtySessionOutputStatus.TimedOut, result.OutputStatus); Assert.Equal(PtyRecordingStatus.Stopped, (await session.RecordingCompletion).Status);
 		Assert.Equal(1, recording.Flushes); Assert.Equal(1, recording.Disposals);
-		await session.DisposeAsync(); Assert.Equal(1, recording.Disposals);
+		await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => session.DisposeAsync().AsTask())); Assert.Equal(1, recording.Disposals);
+	}
+
+	[Fact]
+	public async Task Graceful_shutdown_completes_recording_after_output_eof() {
+		using MemoryStream output = new(), recording = new(); ControlledBackend backend = new() { Output = new MemoryStream("BYE"u8.ToArray()) };
+		PtySession session = await SessionTestSupport.Start(backend, output, recording: new(recording));
+		Task<PtyShutdownResult> shutdown = session.ShutdownAsync(new() { Request = "quit"u8.ToArray(), GracePeriod = TimeSpan.FromSeconds(5) });
+		await SessionTestSupport.Until(() => backend.Input.Length == 4); backend.Completion.SetResult(23);
+		Assert.Equal(PtyShutdownStatus.Exited, (await shutdown).Status);
+		Assert.Equal(PtySessionOutputStatus.EndOfStream, (await session.Completion).OutputStatus);
+		Assert.Equal(PtyRecordingStatus.Complete, (await session.RecordingCompletion).Status);
+		await session.DisposeAsync();
+	}
+
+	[Fact]
+	public async Task Slow_recording_sink_settles_when_drain_times_out() {
+		using MemoryStream output = new(); using GateWriteStream recording = new(); FeedStream source = new();
+		ControlledBackend backend = new() { Output = source };
+		PtySession session = await SessionTestSupport.Start(backend, output, drain: TimeSpan.FromMilliseconds(20),
+			recording: new(recording));
+		try {
+			source.Feed("PREFIX"u8.ToArray()); await recording.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5)); backend.Completion.SetResult(0);
+			PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+			Assert.Equal(PtySessionOutputStatus.TimedOut, result.OutputStatus);
+			Assert.Equal(PtyRecordingStatus.Faulted, (await session.RecordingCompletion).Status);
+		} finally { recording.Release.TrySetResult(); source.End(); await session.DisposeAsync(); }
 	}
 
 	[Fact]
