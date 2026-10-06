@@ -75,4 +75,17 @@ public sealed class PtyRecordingIntegrationTests {
 		Assert.Equal(1, recording.Flushes); Assert.Equal(1, recording.Disposals);
 		await session.DisposeAsync(); Assert.Equal(1, recording.Disposals);
 	}
+
+	[Fact]
+	public async Task Repeated_output_and_resize_storms_remain_bounded() {
+		for (int iteration = 0; iteration < 20; iteration++) {
+			byte[] bytes = new byte[64 * 1024]; new Random(iteration).NextBytes(bytes);
+			using MemoryStream output = new(), recording = new(); ControlledBackend backend = new() { Output = new MemoryStream(bytes) };
+			PtySession session = await SessionTestSupport.Start(backend, output, recording: new(recording) { MaxBytes = 256 });
+			await Task.WhenAll(Enumerable.Range(0, 50).Select(index => Task.Run(() => session.Resize(new PtySize(80 + index, 24 + index)))));
+			backend.Completion.SetResult(0); await session.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+			Assert.Equal(bytes, output.ToArray()); Assert.True(recording.Length <= 256); Assert.Equal(PtyRecordingStatus.Truncated, (await session.RecordingCompletion).Status);
+			await session.DisposeAsync();
+		}
+	}
 }
