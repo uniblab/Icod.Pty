@@ -124,7 +124,11 @@ unsupported requests without guessing, while old callers retain their defaults a
 merged. [PR #6](https://github.com/uniblab/Icod.Pty/pull/6) records the design and development roadmap. Read the
 [deployment design](docs/Deployment-Portability-Design.md) and
 [implementation plan](docs/Deployment-Portability-Implementation-Plan.md), tranches DP01-DP09.
-Implementation and any support expansion await qualification evidence; no version, tag, or publication is selected.
+
+**Status:** implemented and qualified in PR #6. Framework-dependent, self-contained, single-file, and trimmed
+consumers passed the full three-framework/six-platform matrix from exact package artifacts. The public API remains
+unchanged and is pinned by a 252-entry compatibility baseline. NativeAOT passed a net10.0 feasibility probe on all
+six target RIDs but is not promoted to supported status. No version, tag, or publication is selected.
 
 **Goal:** a consumer can determine which published application forms work on each supported
 OS/architecture/framework, what external assets and runtime they require, and how failures behave.
@@ -153,14 +157,14 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 3 | Reusable session orchestration | Completed in PR #4 | Coordinates ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. |
 | 4 | Diagnostics and capability discovery | Lifecycle subset completed in PR #4; terminal-configuration subset complete in PR #5 | Adds prelaunch terminal capabilities and configuration-failure context. General startup tracing, metrics/exporters, callbacks and transcripts remain deferred. |
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
-| 6 | Deployment and runtime portability | Selected; planning DP01-DP09 | Qualify exact-package ordinary, self-contained, single-file, and trimmed consumers; investigate NativeAOT and wider Unix without unsupported claims. |
+| 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
 | 8 | Recording, replay, and automation | Deferred; medium | Timestamped output/resize records, replay and bounded output matching. Benefits from session orchestration first; input capture must be opt-in and screen-aware matching needs a terminal model. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Focused API/stress/support-matrix portion selected with option 6 | Pin the PR #5 public surface, exercise published lifecycle regressions, and publish an evidence-based support matrix. Broader release work follows a chosen release target. |
+| 13 | Release stabilization and compatibility hardening | Focused API/stress/support-matrix portion completed in PR #6 | The PR #5 public surface is pinned, published lifecycle regressions run in the deployment matrix, and the support matrix records prerequisites and limitations. Broader release work follows a chosen release target. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
 Interactive hosting, scoped process ownership, reusable session orchestration, and launch-time terminal configuration are completed history. The remaining portions of options 4, 7, and 13 stay available after this focused milestone.

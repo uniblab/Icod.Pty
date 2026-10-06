@@ -1,6 +1,6 @@
 # Deployment portability and focused compatibility hardening
 
-**Status:** proposed design for the option 6 plus focused option 13 planning PR; implementation and support claims require the gates below.
+**Status:** accepted and implemented in [PR #6](https://github.com/uniblab/Icod.Pty/pull/6). Framework-dependent, self-contained, single-file self-contained, and trimmed self-contained consumers are qualified below. NativeAOT remains a feasibility result.
 
 **Decision, 2026-10-06:** qualify real deployment forms for the existing PTY package, correct demonstrated packaging/runtime-discovery defects, and pin a narrow compatibility baseline. Keep version selection and release work separate.
 
@@ -33,6 +33,25 @@ Pin the public API at merged PR #5 across all three target frameworks with a det
 
 Maintain a support table with separate columns for build, publish layout, runtime start, and full behavior. Mark each OS/architecture/framework/deployment combination supported only after its published consumer passes. Preserve known Windows ConPTY fragmented-query exclusion. Record runner images and runtime/toolchain prerequisites, and separate automated CI from the user's Windows 10.0.26200.9457 laptop evidence.
 
+## Qualification result
+
+Each `Verified` entry applies to every cross-product of the three TFMs and four deployment forms in that row. The verifier creates a fresh project, restores only the exact locally packed NuGet artifact from an isolated package cache, publishes for the target RID, and invokes the final apphost. Full behavior covers process and session startup, primary-only and owned-scope paths, cancellation, interrupt, terminal configuration, invalid-host behavior, output drain, exit observation, and cleanup.
+
+| Runner label / RID | TFMs | Deployment forms | Build | Published layout | Runtime start | Full behavior | Runtime prerequisite |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `windows-latest` / `win-x64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Target runtime for framework-dependent applications |
+| `windows-11-arm` / `win-arm64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Target runtime for framework-dependent applications |
+| `ubuntu-latest` / `linux-x64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Usable `dotnet` host and compatible installed runtime for the external net8.0 helper |
+| `ubuntu-24.04-arm` / `linux-arm64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Usable `dotnet` host and compatible installed runtime for the external net8.0 helper |
+| `macos-26-intel` / `osx-x64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Usable `dotnet` host and compatible installed runtime for the external net8.0 helper |
+| `macos-latest` / `osx-arm64` | net8.0, net9.0, net10.0 | Framework-dependent, self-contained, single-file, trimmed | Verified | Verified | Verified | Verified | Usable `dotnet` host and compatible installed runtime for the external net8.0 helper |
+
+On Unix, the supported published layout includes `Icod.Pty.Host.dll`, `Icod.Pty.Host.deps.json`, and `Icod.Pty.Host.runtimeconfig.json` under `Icod.Pty.Host/`. Relocating the complete output is verified. Removing the helper DLL produces a bounded failure without leaked child or PTY resources. Removing either metadata file can still run when the installed host supplies enough context, so that runtime observation does not expand the contract: the verifier requires all three files before recording a supported layout. Windows does not use the helper, and its positive paths remain successful with missing helper assets or an invalid `DotNetHostPath`.
+
+No product or public API change was required. The option 13 gate pins 252 public entries from merged PR #5 for each target framework and repeats the lifecycle cases above on published artifacts. Trimmed publishing emitted no warnings that required suppression or product annotations. The only expected test skips are the existing fragmented ConPTY terminal-query reproducer, once per TFM in each Windows job.
+
+The net10.0 NativeAOT probe built and executed the same nine smoke modes on all six target RIDs. The Windows x64 probe emitted eight IL3000 `Assembly.Location` warning lines from four unique sample call sites, once during analysis and once during native compilation; these warnings were retained. NativeAOT is not promoted into the support table because the probe is limited to net10.0 and the current hosted runner images. The Unix helper still requires the external three-file layout, `dotnet`, and a compatible installed runtime. Musl and other unlisted Unix environments remain untested.
+
 ## Global constraints
 
 - C# 13; net8.0, net9.0, and net10.0; AnyCPU library assemblies.
@@ -40,10 +59,10 @@ Maintain a support table with separate columns for build, publish layout, runtim
 - One LGPL-3.0-or-later NuGet library package; no new runtime package dependencies or checked-in native helper binary. NativeAOT consumer builds are feasibility probes.
 - CMD/SH/Windows PowerShell 5.1-compatible tooling; C# for fixtures, no C or Python.
 - Root solution/library project; C# sources under `src/`; retain existing package and helper boundaries.
-- No version bump, tag, merge, or publication in this planning PR. Later implementation requires reviewed evidence for its support claims.
+- No version bump, tag, merge, or publication in this milestone. Support claims require the evidence recorded in the implementation plan.
 
 ## Acceptance and stopping rules
 
-Gate A establishes the current exact-package and API baseline on all six platforms. Gate B proves ordinary and self-contained final published output. Gate C proves single-file layout and startup with external helper assets. Gate D probes trimming, applies only targeted fixes, and records supported/unsupported outcomes by platform. Gate E records NativeAOT and wider-Unix feasibility without claiming unsupported forms. Gate F closes compatibility, stress, documentation, and independent review.
+Gate A establishes the current exact-package and API baseline on all six platforms. Gate B proves ordinary and self-contained final published output. Gate C proves single-file layout and startup with external helper assets. Gate D probes trimming, applies only targeted fixes, and records supported/unsupported outcomes by platform. Gate E records NativeAOT and wider-Unix feasibility without claiming unsupported forms. Gate F closes compatibility, stress, documentation, and review.
 
 A gate may report a concrete limitation instead of a code change. Do not erase failed evidence, relax cleanup contracts, disable warnings indiscriminately, or describe an unrun combination as supported. Preserve successful ordinary consumers while extending coverage.

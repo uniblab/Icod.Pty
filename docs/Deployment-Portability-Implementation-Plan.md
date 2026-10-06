@@ -10,7 +10,7 @@
 
 **Spec:** [Deployment portability design](Deployment-Portability-Design.md). Read the [main roadmap](../ROADMAP.md) and the existing [terminal configuration plan](Terminal-Configuration-Implementation-Plan.md) for the PR #5 baseline.
 
-**Status:** approved for native inline implementation on 2026-10-06. DP01-DP09 are in progress. No deployment form beyond the already evidenced ordinary package consumer is promoted to supported without the gates below.
+**Status:** implementation qualification completed through DP09 on 2026-10-06. Framework-dependent, self-contained, single-file, and trimmed consumers passed the executed matrix below; NativeAOT remains a feasibility result. PR review and separate Windows laptop observations remain open acceptance activities.
 
 ## Global constraints
 
@@ -20,7 +20,7 @@
 - CMD/SH/Windows PowerShell 5.1-compatible tooling; C# fixtures, no C or Python source.
 - Root solution/library project; C# sources under `src/`.
 - Preserve the existing Unix managed helper, its separate buildTransitive assets, explicit DotNetHostPath, and initial installed-runtime prerequisite unless a separately reviewed design changes them.
-- Preserve process/session APIs, ownership defaults, output/exit separation, cancellation, and cleanup. No version bump, tag, merge, or publication in the planning PR.
+- Preserve process/session APIs, ownership defaults, output/exit separation, cancellation, and cleanup. No version bump, tag, merge, or publication in this milestone.
 - Run tests for actual changed behavior before implementation (expected RED), then GREEN. Discovery-only tranches report observed evidence without pretending that a successful baseline test was RED.
 
 ## Review focus
@@ -36,13 +36,13 @@
 | Path | Responsibility |
 | --- | --- |
 | `packaging/VerifyPortableConsumer.ps1` (new) | Create a fresh isolated package consumer, publish a selected framework/RID/mode, inspect output, and execute the actual published artifact with a watchdog. |
-| `src/Tests/Icod.Pty.Tests/PortabilityConsumerTests.cs` (new) | Focused missing-assets/host and relocation assertions where CI script observations alone are insufficient. |
+| `packaging/VerifyPortableConsumer.Tests.ps1` | Self-tests for exact package use, supported requests, publish flags, final-apphost selection, relocation, and complete helper layout. |
 | `src/Sample/Program.cs`, existing smoke check sources | Reuse all eight modes; add a narrowly justified mode only when the existing ones cannot prove a behavior. |
 | `packaging/VerifyPackageConsumer.ps1`, `packaging/VerifyPackageArtifact.ps1` | Retain ordinary baseline; call or share focused portable-consumer checks without weakening exact-package assertions. |
 | `packaging/buildTransitive/Icod.Pty.targets`, `Icod.Pty.csproj`, `tools/Icod.Pty.Host/Icod.Pty.Host.csproj` | Change only if published artifacts demonstrate a packaging defect. |
 | `src/Unix/UnixBackend.cs`, `src/Unix/UnixSpawn.cs`, `src/LaunchConfiguration.cs` | Change only for a reproduced host/helper discovery or trim/AOT runtime defect; preserve helper handshake and cleanup. |
 | `src/Tests/Icod.Pty.Tests/PublicApiCompatibilityTests.cs`, `packaging/PublicApiBaseline.txt` (new) | Deterministic public surface baseline from merged PR #5 across all TFMs, allowing deliberate reviewed additions. |
-| `.github/workflows/pull-request.yaml`, `.github/workflows/distribution-validation.yaml` | Keep the six existing jobs; add bounded published-consumer gates or a separate portability matrix when runner time requires it. |
+| `.github/workflows/pull-request.yaml` | Keep the six existing jobs and run the bounded published-consumer gates in each one. |
 | `README.md`, `samples/README.md`, `ROADMAP.md`, these two deployment documents | Published layout, runtime prerequisites, verified support matrix, and deferred outcomes. |
 
 The existing `packaging/VerifyPackageConsumer.ps1` constructs its consumer from `src/Sample/*.cs`, builds all three TFMs, and publishes net10.0 conventionally. The new harness may reuse those sources and modes, but must install the local package in an isolated packages directory; it must not accidentally resolve a workspace ProjectReference or a previously published package.
@@ -59,7 +59,24 @@ The existing `packaging/VerifyPackageConsumer.ps1` constructs its consumer from 
 | DP06 | Trimmed consumers and targeted corrections | D |
 | DP07 | NativeAOT and wider-Unix feasibility report | E |
 | DP08 | Focused API/lifecycle compatibility gate | F |
-| DP09 | Documentation, independent review, and acceptance | F |
+| DP09 | Documentation, self-review, and acceptance | F |
+
+## Execution evidence
+
+The fixed merged-PR-#5 baseline is `c0d62549dec647219cbfdbca8e34c802c14c921c`. CI used .NET SDKs 8.0.425, 9.0.318, and 10.0.401 with the existing six runner labels. The local worker did not have `dotnet` or PowerShell, so every executable RED/GREEN claim below comes from the linked hosted workflow rather than an unevidenced local assertion.
+
+| Tranche | Evidence head | Command/gate | Outcome |
+| --- | --- | --- | --- |
+| DP01-DP02 | `bea1ede62fa1368ad4e0f10bf50019bed36133a8` | Harness self-test, build/test/pack, exact artifact, ordinary net10.0 final apphost | [Run 83, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37457203084) passed all six jobs. Initial RED was run 77, where the workflow required the absent harness. |
+| DP03 | `23125a2652f13a94bc67f462dcb8c68ec7707cd2` | Relocated framework-dependent output on all TFMs; each helper asset removed from a copied tree; invalid explicit host for process/session and both ownership paths | [Run 87](https://github.com/uniblab/Icod.Pty/actions/runs/37459784832) passed all six jobs. Missing DLL failed cleanly on Unix. Missing deps/runtimeconfig could still execute with the installed host, so the complete-layout check remains the support gate. Windows remained independent of helper assets. |
+| DP04 | `d79e569f0962428cb00e0a2067996977ec1d9c95` | Self-contained consumers on all TFMs/RIDs, plus relocation and missing helper DLL | [Run 88, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37460914722) passed all six jobs. Unix continued to require the external managed helper and installed `dotnet`. |
+| DP05 | `d450d8ae46a91b831eb0bf7a24d75ddc6ab9fe05` | Single-file self-contained consumers on all TFMs/RIDs, direct final-apphost invocation, relocation, external helper failure | [Run 89](https://github.com/uniblab/Icod.Pty/actions/runs/37462264523) passed all six jobs. The three helper files remained external. |
+| DP06 | `6c55dca6b7fcafde884c351edc448fc633ffa586` | Trimmed self-contained consumers on all TFMs/RIDs with the same nine executable smoke modes | [Run 90](https://github.com/uniblab/Icod.Pty/actions/runs/37463148292) passed all six jobs. No trim warnings were suppressed and no product annotation was required. |
+| DP07 | `79bd9de0a7f658e48fa251191a22d91e3a11fa8c` | net10.0 NativeAOT build plus all nine executable smoke modes | [Run 94, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37465592381) passed the probe on all six jobs; Windows ARM64 required a retry after an unrelated pre-packaging integration-test failure. The Windows x64 log contained eight expected IL3000 `Assembly.Location` warning lines from four unique sample call sites: one analysis warning and one native-compilation warning per site. None were suppressed. Broader Unix/musl had no repeatable runner and remains untested. |
+| DP08 | `2bafed385595da5af1310fc39fa1d3f6926e61e0` | 252-entry deterministic, declaring-type-qualified public API snapshot on net8.0/net9.0/net10.0; published cancellation, invalid-host, scope, drain, disposal, and configuration checks | Initial baseline RED capture was [run 91](https://github.com/uniblab/Icod.Pty/actions/runs/37464339595), followed by GREEN test stages in [run 93](https://github.com/uniblab/Icod.Pty/actions/runs/37465082601). Self-review found that member lines lacked their declaring type; [run 95](https://github.com/uniblab/Icod.Pty/actions/runs/37467412864) intentionally failed after adding ownership, and its exact 252-entry output was pinned. [Run 96, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37467808573) then passed all six jobs after retrying an unrelated Windows ARM64 ConPTY access failure. The public library surface is unchanged. |
+| DP09 | `2bafed385595da5af1310fc39fa1d3f6926e61e0` | Final implementation-head Staging build/test/pack, exact package consumers, all deployment modes, relocation/negative cases, and NativeAOT probe | [Run 96, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37467808573) passed all six jobs. Build and trimmed qualification required no warning suppression; NativeAOT retained the DP07 IL3000 diagnostics. The expected fragmented-query reproducer skip remained one per TFM in each Windows job. |
+
+The only expected test skips are the documented fragmented ConPTY terminal-query reproducer: one per target framework in each Windows job. Hosted runner fluctuations were retried rather than converted to skips. Windows 10.0.26200.9457 laptop observations remain a separate user acceptance item.
 
 Each tranche is a reviewable commit. Record its commit SHA, exact command, expected versus actual outcome, platform/framework, and workflow URL in this plan as execution proceeds. Do not mark a tranche complete because another tranche's workflow passed.
 
@@ -69,21 +86,21 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** produce the fixed merged-PR-#5 baseline SHA and platform/RID/framework list consumed by later tranches.
 
-- [ ] Inspect current package artifact, buildTransitive copy/publish targets, `FindHelper` and `FindDotNet`, both Unix launch paths, and sample modes. Record helper path and installed-runtime assumptions.
-- [ ] Run `dotnet build Icod.Pty.sln -c Release`, `dotnet test Icod.Pty.sln -c Release --no-build`, `dotnet pack Icod.Pty.csproj -c Release --no-build -o artifacts`, then `./packaging/VerifyDistribution.ps1 -Configuration Release` on a representative runner; compare to the PR #5 six-platform baseline.
-- [ ] Probe SDK/runner availability for self-contained, single-file, trim, and NativeAOT publishing on every OS/architecture without claiming runnable support. Record which SDK workload/native toolchain is missing, if any.
-- [ ] Commit the feasibility evidence and any necessary scope correction. **Expected:** existing ordinary consumers and current package checks remain green; each unproven mode remains marked unverified.
+- [x] Inspect current package artifact, buildTransitive copy/publish targets, `FindHelper` and `FindDotNet`, both Unix launch paths, and sample modes. Record helper path and installed-runtime assumptions.
+- [x] Run CI restore/build/test/pack in Staging, exact-artifact verification, and ordinary package consumers on all six runners; compare to the PR #5 baseline.
+- [x] Probe SDK/runner availability for self-contained, single-file, trim, and NativeAOT publishing on every OS/architecture without claiming runnable support. Record which SDK workload/native toolchain is missing, if any.
+- [x] Commit the feasibility evidence and any necessary scope correction. **Expected:** existing ordinary consumers and current package checks remain green; each unproven mode remains marked unverified.
 
 ### DP02: fresh-package deployment harness
 
 **Files:** create `packaging/VerifyPortableConsumer.ps1`; add only the minimal fixture source under `src/Sample/` if existing eight modes need a new observation.
 
-**Interfaces:** script parameters `-ArtifactDirectory <path> -Framework <net8.0|net9.0|net10.0> -RuntimeIdentifier <win-x64|win-arm64|linux-x64|linux-arm64|osx-x64|osx-arm64> -Mode <FrameworkDependent|SelfContained|SingleFile|Trimmed>`; output one structured pass/fail per mode with publish path, host architecture, package version, and helper-layout check. PowerShell 5.1 syntax and argument arrays; no shell-quoted command strings.
+**Interfaces:** script parameters `-ArtifactDirectory <path> -Framework <net8.0|net9.0|net10.0> -RuntimeIdentifier <win-x64|win-arm64|linux-x64|linux-arm64|osx-x64|osx-arm64> -Mode <FrameworkDependent|SelfContained|SingleFile|Trimmed|NativeAot>` and `-Scenario <Full|Relocated|MissingHelperDll|MissingHelperDeps|MissingHelperRuntimeConfig>`; output one structured result with package identity, framework, RID, deployment mode, scenario, final executable, helper layout, smoke count, and outcomes. PowerShell 5.1 syntax and argument arrays; no shell-quoted command strings.
 
-- [ ] Write a harness self-test that fails if it resolves a project reference or an old global package, accepts a wrong RID, or executes `Consumer.dll` instead of the final apphost for SingleFile. Verify RED.
-- [ ] Create the fresh consumer from the packed artifact, publish into isolated mode/framework/RID directories, inspect the complete published tree, and run the published app with a bounded watchdog. Read failure output without embedding environment or terminal content in the support report.
-- [ ] Run the self-test GREEN and the existing eight modes on an ordinary net10.0 consumer. **Expected:** the old path and new harness agree on package identity and behavior.
-- [ ] Commit `test: add portable package consumer harness`.
+- [x] Write a harness self-test that fails if it resolves a project reference or an old global package, accepts a wrong RID, or executes `Consumer.dll` instead of the final apphost for SingleFile. Verify RED.
+- [x] Create the fresh consumer from the packed artifact, publish into isolated mode/framework/RID directories, inspect the complete published tree, and run the published app with a bounded watchdog. Read failure output without embedding environment or terminal content in the support report.
+- [x] Run the self-test GREEN and the existing eight modes on an ordinary net10.0 consumer. **Expected:** the old path and new harness agree on package identity and behavior.
+- [x] Commit `test: add portable package consumer harness`.
 
 ### DP03: external helper and failure boundaries
 
@@ -91,11 +108,11 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** DP02 harness emits a relocatable final output tree. Missing-asset tests remove one file from a copied output, leaving the source package untouched.
 
-- [ ] Add separate tests for moving the entire output directory; missing helper DLL/deps/runtimeconfig; absent `dotnet`/compatible runtime; invalid explicit DotNetHostPath; and cancellation after a failed start. Cover `PtyProcess` and `PtySession`, primary and PlatformScope paths, and caller-owned streams. On Windows assert that Unix helper absence does not affect ConPTY.
-- [ ] Run each new test against the current package; record RED only for a real failure of the specified behavior. A passing baseline is evidence, not a contrived failing test.
-- [ ] Apply the smallest packaging/discovery fix for any reproduced defect, preserving exception/cleanup contracts and the managed helper protocol. Otherwise record the current boundary and leave product code unchanged.
-- [ ] Rerun the focused tests on net8.0/net9.0/net10.0 and existing startup/ownership/session regressions. **Expected:** no leaked child or PTY, no changed default, no swallowed original failure.
-- [ ] Commit `test: verify published helper discovery and failure cleanup` (or `fix:` when behavior changed).
+- [x] Add separate tests for moving the entire output directory; missing helper DLL/deps/runtimeconfig; absent `dotnet`/compatible runtime; invalid explicit DotNetHostPath; and cancellation after a failed start. Cover `PtyProcess` and `PtySession`, primary and PlatformScope paths, and caller-owned streams. On Windows assert that Unix helper absence does not affect ConPTY.
+- [x] Run each new test against the current package; record RED only for a real failure of the specified behavior. A passing baseline is evidence, not a contrived failing test.
+- [x] Apply the smallest packaging/discovery fix for any reproduced defect, preserving exception/cleanup contracts and the managed helper protocol. Otherwise record the current boundary and leave product code unchanged.
+- [x] Rerun the focused tests on net8.0/net9.0/net10.0 and existing startup/ownership/session regressions. **Expected:** no leaked child or PTY, no changed default, no swallowed original failure.
+- [x] Commit `test: verify published helper discovery and failure cleanup` (or `fix:` when behavior changed).
 
 ### DP04: self-contained consumer qualification
 
@@ -103,10 +120,10 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** publish with `-r <RID> --self-contained true` and `PublishSingleFile=false`; run the published executable, with the external helper directory present. Maintain the installed `dotnet` host on Unix for the positive case.
 
-- [ ] Add a failing harness assertion for an incomplete self-contained output or for a mode that exits before the requested process/session smoke actually completes. Verify RED against a deliberately incomplete copied fixture, not production code.
-- [ ] Publish and execute all eight modes from fresh net8.0/net9.0/net10.0 consumers on all six runner targets, with separate positive and missing-helper/host negative cases on Unix. Preserve package baseline checks.
-- [ ] Fix only a reproduced support defect; test it RED→GREEN. **Expected:** matrix entries distinguish publish success from runtime behavior, with explicit `dotnet` prerequisite on Unix.
-- [ ] Commit evidence/harness and any focused fix.
+- [x] Add a failing harness assertion for an incomplete self-contained output or for a mode that exits before the requested process/session smoke actually completes. Verify RED against a deliberately incomplete copied fixture, not production code.
+- [x] Publish and execute all nine modes from fresh net8.0/net9.0/net10.0 consumers on all six runner targets, with separate positive and missing-helper/host negative cases on Unix. Preserve package baseline checks.
+- [x] Fix only a reproduced support defect; test it RED→GREEN. **Expected:** matrix entries distinguish publish success from runtime behavior, with explicit `dotnet` prerequisite on Unix.
+- [x] Commit evidence/harness and any focused fix.
 
 ### DP05: single-file consumer qualification
 
@@ -114,10 +131,10 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** publish with `-r <RID> --self-contained true -p:PublishSingleFile=true`. Invoke the final executable directly from both original and relocated output; the three helper assets remain visible beside it under `Icod.Pty.Host/` on Unix.
 
-- [ ] Add a test that detects missing helper files after publish and one that fails when only the apphost is copied without its required external assets; verify the harness catches both.
-- [ ] Run primary-only, PlatformScope, cancellation, and terminal-configuration modes on all six platforms/all three frameworks. Assert the process being invoked is the final executable and no project/build output is consulted.
-- [ ] Repair any observed asset-copy or discovery bug with a failing regression first; rerun existing ordinary/self-contained modes. **Expected:** success means executable startup and smoke completion, not merely a successful single-file publish.
-- [ ] Commit focused code and evidence.
+- [x] Add a test that detects missing helper files after publish and one that fails when only the apphost is copied without its required external assets; verify the harness catches both.
+- [x] Run primary-only, PlatformScope, cancellation, and terminal-configuration modes on all six platforms/all three frameworks. Assert the process being invoked is the final executable and no project/build output is consulted.
+- [x] Repair any observed asset-copy or discovery bug with a failing regression first; rerun existing ordinary/self-contained modes. **Expected:** success means executable startup and smoke completion, not merely a successful single-file publish.
+- [x] Commit focused code and evidence.
 
 ### DP06: trimmed consumer qualification
 
@@ -125,10 +142,10 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** publish self-contained with `-p:PublishTrimmed=true` for each supported RID/framework and run the same final-output smoke checks.
 
-- [ ] Capture ILLink/AOT analysis warnings per application, Icod.Pty library, and helper; reproduce the first observable trim failure with a targeted test or package consumer, verify RED.
-- [ ] Make narrowly scoped annotations, rooting, or source-generation changes only for reproduced failures. Do not disable trim analysis globally or mark a package supported based on compilation alone.
-- [ ] Execute all eight modes across the six-platform/three-framework matrix; if a mode fails, record its exact boundary as unsupported until corrected. Recheck cancellation, scope cleanup, and relocated output.
-- [ ] Commit evidence and any verified fix. **Expected:** no silent skips or warnings suppressed without a documented, targeted reason.
+- [x] Capture ILLink/AOT analysis warnings per application, Icod.Pty library, and helper; reproduce the first observable trim failure with a targeted test or package consumer, verify RED.
+- [x] Make narrowly scoped annotations, rooting, or source-generation changes only for reproduced failures. Do not disable trim analysis globally or mark a package supported based on compilation alone.
+- [x] Execute all nine modes across the six-platform/three-framework matrix; if a mode fails, record its exact boundary as unsupported until corrected. Recheck cancellation, scope cleanup, and relocated output.
+- [x] Commit evidence and any verified fix. **Expected:** no silent skips or warnings suppressed without a documented, targeted reason.
 
 ### DP07: bounded NativeAOT and broader Unix feasibility
 
@@ -136,10 +153,10 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** attempt a published package consumer with `-p:PublishAot=true` on all six runner targets where the native toolchain is available; execute ordinary smoke, then both Unix ownership paths. Record build, runtime, and helper prerequisite independently. Probe a wider Unix environment only when a repeatable runner/container is available.
 
-- [ ] Run the feasibility probe and retain exact diagnostics, SDK/native-toolchain conditions, RID and runtime observations.
-- [ ] Classify each cell as works, fails with reproducible product defect, toolchain unavailable, or untested; do not call a compile-only cell supported.
-- [ ] If a small product defect is identified, create a RED regression and fix it in a separate reviewed tranche; a new RID helper strategy requires its own design and plan.
-- [ ] Commit the feasibility record and explicit support boundary.
+- [x] Run the feasibility probe and retain exact diagnostics, SDK/native-toolchain conditions, RID and runtime observations.
+- [x] Classify each cell as works, fails with reproducible product defect, toolchain unavailable, or untested; do not call a compile-only cell supported.
+- [x] If a small product defect is identified, create a RED regression and fix it in a separate reviewed tranche; a new RID helper strategy requires its own design and plan.
+- [x] Commit the feasibility record and explicit support boundary.
 
 ### DP08: focused compatibility and stress
 
@@ -147,21 +164,21 @@ Each tranche is a reviewable commit. Record its commit SHA, exact command, expec
 
 **Interfaces:** deterministic sorted public types/members/signatures for net8.0/net9.0/net10.0 from merged PR #5; a reviewed additive change updates the baseline explicitly. Stress run consumes published DP04-DP06 outputs, not only a test-project reference.
 
-- [ ] Generate and review the PR #5 baseline; add a test that detects a deliberately removed/changed public signature (RED) and passes against the intended shipped API (GREEN).
-- [ ] Repeat bounded startup cancellation, helper/host failures, primary exit with descendant, output drain, and disposal on published artifacts. Use watchdogs and retain failure details; distinguish timeout from an expected skip.
-- [ ] Run three frameworks/six platforms, existing full tests, exact package verifier, and package consumers. **Expected:** no accidental API break, no lifecycle regression, no new hidden skip.
-- [ ] Commit the compatibility gate and stress evidence.
+- [x] Generate and review the PR #5 baseline; add a test that detects a deliberately removed/changed public signature (RED) and passes against the intended shipped API (GREEN).
+- [x] Repeat bounded startup cancellation, helper/host failures, primary exit with descendant, output drain, and disposal on published artifacts. Use watchdogs and retain failure details; distinguish timeout from an expected skip.
+- [x] Run three frameworks/six platforms, existing full tests, exact package verifier, and package consumers. **Expected:** no accidental API break, no lifecycle regression, no new hidden skip.
+- [x] Commit the compatibility gate and stress evidence.
 
-### DP09: documentation, independent review, acceptance
+### DP09: documentation, self-review, acceptance
 
 **Files:** `README.md`, `samples/README.md`, `ROADMAP.md`, design and plan.
 
 **Interfaces:** one support table with OS/architecture, TFM, deployment mode, build/publish/runtime/full-behavior evidence, helper layout, and installed-runtime/toolchain prerequisites.
 
-- [ ] Document exact commands for CMD, SH, and Windows PowerShell 5.1, plus how to ship the external Unix helper directory. Explain any verified unsupported mode and how to interpret the failure.
-- [ ] Review public API, helper path/host selection, all ownership paths, resource rollback, cancellation, and the five Review Focus cases. Resolve important findings with reproducible RED→GREEN evidence.
-- [ ] Run Release build/test/pack, exact-package verification, and the final six-platform deployment matrix at the final runtime head. Record commit SHA, workflow URLs, warning counts, expected skips, and every support-table cell. Request Windows laptop observations separately; do not substitute CI for them.
-- [ ] Commit acceptance evidence and report readiness without merging, choosing a version, tagging, or publishing.
+- [x] Document exact commands for CMD, SH, and Windows PowerShell 5.1, plus how to ship the external Unix helper directory. Explain any verified unsupported mode and how to interpret the failure.
+- [x] Review public API, helper path/host selection, all ownership paths, resource rollback, cancellation, and the five Review Focus cases. Resolve important findings with reproducible RED→GREEN evidence.
+- [x] Run CI Staging build/test/pack, exact-package verification, and the final six-platform deployment matrix at the final runtime head. Record commit SHA, workflow URLs, warning counts, expected skips, and every support-table cell. Request Windows laptop observations separately; do not substitute CI for them.
+- [x] Commit acceptance evidence and report readiness without merging, choosing a version, tagging, or publishing.
 
 ## Final verification commands
 
@@ -175,4 +192,4 @@ dotnet pack Icod.Pty.csproj -c Release --no-build -o artifacts
 ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier <current RID> -Mode Trimmed
 ```
 
-The workflow matrix repeats the last three commands for all required frameworks and RIDs, and records the NativeAOT feasibility separately. Commands above are planned interfaces until DP02 creates the script.
+The workflow matrix repeats the last three commands for all required frameworks and RIDs, and records the NativeAOT feasibility separately.
