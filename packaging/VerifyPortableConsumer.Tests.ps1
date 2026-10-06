@@ -14,6 +14,8 @@ if ('--self-contained' -notin $selfContained -or 'true' -notin $selfContained -o
 }
 $trimmed = Get-PublishArguments 'Consumer.csproj' 'net10.0' 'linux-x64' 'Trimmed' 'publish'
 if ('-p:PublishTrimmed=true' -notin $trimmed -or 'true' -notin $trimmed) { throw 'Trimmed publish arguments are incomplete.' }
+$nativeAot = Get-PublishArguments 'Consumer.csproj' 'net10.0' 'linux-x64' 'NativeAot' 'publish'
+if ('-p:PublishAot=true' -notin $nativeAot -or 'true' -notin $nativeAot) { throw 'NativeAOT publish arguments are incomplete.' }
 
 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('icod-pty-layout-selftest-' + [Guid]::NewGuid().ToString('N'))
 $publish = Join-Path $root 'publish'

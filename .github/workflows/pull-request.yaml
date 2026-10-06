@@ -216,3 +216,23 @@ jobs:
           }
           ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario Relocated
           ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario MissingHelperDll
+      - name: Probe NativeAOT consumer feasibility
+        if: matrix.os != 'windows-latest'
+        continue-on-error: true
+        shell: pwsh
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode NativeAot
+      - name: Probe NativeAOT with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: powershell
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode NativeAot

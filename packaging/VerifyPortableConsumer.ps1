@@ -7,7 +7,7 @@ param(
 	[ValidateSet('', 'win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')]
 	[string]$RuntimeIdentifier = '',
 
-	[ValidateSet('', 'FrameworkDependent', 'SelfContained', 'SingleFile', 'Trimmed')]
+	[ValidateSet('', 'FrameworkDependent', 'SelfContained', 'SingleFile', 'Trimmed', 'NativeAot')]
 	[string]$Mode = '',
 
 	[ValidateSet('Full', 'Relocated', 'MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')]
@@ -25,7 +25,7 @@ function Assert-PortableRequest {
 	param([string]$FrameworkValue, [string]$RuntimeValue, [string]$ModeValue)
 	if ($FrameworkValue -notin @('net8.0', 'net9.0', 'net10.0')) { throw "Unsupported target framework '$FrameworkValue'." }
 	if ($RuntimeValue -notin @('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')) { throw "Unsupported runtime identifier '$RuntimeValue'." }
-	if ($ModeValue -notin @('FrameworkDependent', 'SelfContained', 'SingleFile', 'Trimmed')) { throw "Unsupported deployment mode '$ModeValue'." }
+	if ($ModeValue -notin @('FrameworkDependent', 'SelfContained', 'SingleFile', 'Trimmed', 'NativeAot')) { throw "Unsupported deployment mode '$ModeValue'." }
 }
 
 function Get-PublishArguments {
@@ -35,6 +35,7 @@ function Get-PublishArguments {
 	$result += @('--self-contained', 'true')
 	if ($ModeValue -eq 'SingleFile') { $result += '-p:PublishSingleFile=true' }
 	if ($ModeValue -eq 'Trimmed') { $result += '-p:PublishTrimmed=true' }
+	if ($ModeValue -eq 'NativeAot') { $result += '-p:PublishAot=true' }
 	return $result
 }
 
@@ -210,7 +211,9 @@ foreach ($source in @(Get-ChildItem -LiteralPath $sampleRoot -Filter '*.cs' -Rec
 	Copy-Item -LiteralPath $source.FullName -Destination $destination
 }
 
-Invoke-DotNet -Arguments @('restore', $project, '--configfile', $nugetConfig, '--packages', $packagesRoot, '--runtime', $RuntimeIdentifier)
+$restoreArguments = @('restore', $project, '--configfile', $nugetConfig, '--packages', $packagesRoot, '--runtime', $RuntimeIdentifier)
+if ($Mode -eq 'NativeAot') { $restoreArguments += '-p:PublishAot=true' }
+Invoke-DotNet -Arguments $restoreArguments
 $restoredPackage = Join-Path $packagesRoot (Join-Path 'icod.pty' (Join-Path $metadata.Version "icod.pty.$($metadata.Version).nupkg"))
 if (-not (Test-Path -LiteralPath $restoredPackage -PathType Leaf)) { throw 'Restored Icod.Pty package is missing.' }
 $artifactHash = (Get-FileHash -LiteralPath $packages[0].FullName -Algorithm SHA256).Hash
