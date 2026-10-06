@@ -23,7 +23,7 @@
 | Path | Responsibility |
 | --- | --- |
 | `src/PtyAutomationOptions.cs`, `src/PtyExpectResult.cs`, `src/PtyScriptStep.cs`, `src/PtyScriptResult.cs`, `src/PtyScriptRunner.cs` | Opt-in configuration, immutable result/step types, and ordered script composition. |
-| `src/PtySessionOptions.cs`, `src/PtySession.cs`, `src/Session/SessionConfiguration.cs` | Capture and validate automation options, reject competing input source, expose expectation and runner concurrency gate. |
+| `src/PtySessionOptions.cs`, `src/PtySession.cs`, `src/Session/SessionConfiguration.cs` | Capture and validate automation options, reject a competing input source, and expose expectations. |
 | `src/Session/SessionAutomation.cs` | Bounded unconsumed byte window, streaming matcher, single waiter and cursor; handle EOF, failure, overrun, cancellation, and disposal. |
 | `src/Session/SessionCoordinator.cs`, `src/Session/SessionPumps.cs` | Observe accepted output after destination write; finish automation independently when output settles. |
 | `src/Tests/Icod.Pty.Tests/PtyAutomationContractTests.cs`, `PtyAutomationMatcherTests.cs`, `PtyAutomationSessionTests.cs`, `PtyScriptRunnerTests.cs` | Validation, stream/chunk/limit correctness, lifecycle and script tests. |
@@ -51,8 +51,10 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 
 | Tranche | Head | Command / gate | Result |
 | --- | --- | --- | --- |
-| Baseline | Pending | Full existing tests and package smoke on base commit | Pending. |
-| FA01–FA07 | Pending | Targeted and final gates below | Pending. |
+| Baseline | `e8d2bfe` | Full existing Staging/net10.0 tests | Passed 274/274 on Linux x64. |
+| FA01–FA05 | Local implementation through `50a8edf` | Targeted tests on net8.0/net9.0/net10.0 | Passed; see task evidence and ledger. |
+| FA06 | `8c1983cc254745f255fe01a27232d237ef781873` | [PR run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800) | Six jobs passed: three TFMs, exact package, framework-dependent, self-contained, single-file, and trimmed consumers. |
+| FA07 | Pending final head | Final gates below | Pending. |
 
 ### Task 1: FA01 contract and capture (Gate A)
 
@@ -111,9 +113,9 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 
 **Interfaces:** `--automation-smoke` launches a deterministic managed child, verifies early prompt, binary cross-chunk response, consecutive matching and timeout/retry, then disposes its session; prints only a pass/fail message without payload bytes.
 
-- [ ] Write the smoke and native failure-path tests; run it locally with `dotnet run --project samples/Icod.Pty.Sample -c Staging -f net10.0 -- --automation-smoke` and record any observed RED.
-- [ ] Wire the exact packed NuGet consumer and every existing published form to run the smoke while retaining PR #6/#7 checks.
-- [ ] Run the complete six-platform/three-framework PR workflow and record each job, package mode, expected ConPTY skip, and SHA. Fix demonstrated defects with failing regressions and rerun; commit `test: qualify packaged automation`.
+- [x] Write the smoke and native failure-path tests; run it locally with `dotnet run --project samples/Icod.Pty.Sample -c Staging -f net10.0 -- --automation-smoke` and record any observed RED.
+- [x] Wire the exact packed NuGet consumer and every existing published form to run the smoke while retaining PR #6/#7 checks.
+- [x] Run the complete six-platform/three-framework PR workflow and record each job, package mode, expected ConPTY skip, and SHA. Fix demonstrated defects with failing regressions and rerun; commit `test: qualify packaged automation`.
 
 ### Task 7: FA07 compatibility, docs, and acceptance (Gate D)
 
@@ -121,9 +123,19 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 
 **Interfaces:** public additions remain opt-in; version-1 recording bytes and existing session defaults are unchanged.
 
-- [ ] Stress continuous unmatched output, many short chunks, repeated timeout/cancellation, script retries, and concurrent dispose under watchdogs; inspect maximum retained memory and session/recording outcomes.
-- [ ] Document usage, byte matching and cursor rules, cap/overrun, timeout and disposal responsibility, confidentiality, and ConPTY limitation. Self-review all five review-focus cases and actual additive API diff.
+- [x] Stress continuous unmatched output, many short chunks, repeated timeout/cancellation, script retries, and concurrent dispose under watchdogs; inspect maximum retained memory and session/recording outcomes.
+- [x] Document usage, byte matching and cursor rules, cap/overrun, timeout and disposal responsibility, confidentiality, and ConPTY limitation. Self-review all five review-focus cases and actual additive API diff.
 - [ ] Run `dotnet build Icod.Pty.sln -c Release`, full `dotnet test Icod.Pty.sln -c Staging -f net8.0` (repeat net9.0/net10.0), and final-head six-platform package/published-consumer CI. Record commands, counts, SHA, URLs, skips, and Windows laptop smoke separately; commit `docs: record automation acceptance` only with actual evidence.
+
+### FA07 self-review evidence
+
+1. `Output_observed_before_the_wait_is_retained` and `Startup_output_is_retained_after_a_successful_destination_write` cover startup prompts before the caller waits.
+2. `Finds_overlapping_pattern_across_one_byte_chunks`, `Response_arriving_during_send_is_retained_for_the_next_step`, and the native two-write marker cover chunk and send/expect boundaries while retaining suffix bytes.
+3. `One_byte_past_the_limit_latches_overrun` and `Automation_overrun_does_not_truncate_live_output` prove the fixed-cap latch while destination output and recording complete independently. `SessionAutomation` allocates one output buffer of exactly the captured cap (1 byte–1 MiB) and stops retaining output after overrun.
+4. `A_partially_failed_destination_write_is_not_observed` and `Recorder_failure_does_not_hide_accepted_output` keep match, output, and recording outcomes independent.
+5. Matcher/session/runner tests cover timeout, cancellation, EOF, stop, drain timeout, fault, process-exit drain, input-write failure, runner rejection, and disposal. Twenty repeated net10.0 runs passed 680 focused executions under test deadlines.
+
+The reviewed additive API consists of `PtyAutomationOptions`; `PtyExpectStatus`/`PtyExpectResult`; `PtyScriptStepKind`/`PtyScriptStep`; `PtyScriptStatus`/`PtyScriptResult`; static `PtyScriptRunner.RunAsync`; `PtySessionOptions.Automation`; and `PtySession.ExpectAsync`. `packaging/PublicApiBaseline.txt` contains 377 entries. Existing defaults remain disabled and version-1 recording bytes are unchanged.
 
 ## Completion condition
 

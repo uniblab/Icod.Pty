@@ -1,6 +1,6 @@
 # Focused live matching and scripted interaction
 
-**Status:** planning design for the selected continuation of option 8 after merged [PR #7](https://github.com/uniblab/Icod.Pty/pull/7). Implementation and qualification are pending.
+**Status:** implemented in [PR #8](https://github.com/uniblab/Icod.Pty/pull/8). Runtime/package head `8c1983cc254745f255fe01a27232d237ef781873` passed the six-platform, three-framework, exact-package and published-consumer matrix in [run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800); final documentation-head qualification is recorded in the development roadmap.
 
 ## Intent and boundaries
 
@@ -10,7 +10,7 @@ The selected approach is an opt-in, session-owned bounded byte matcher plus a sm
 
 Alternative approaches considered: reread the recording stream (requires seekability and cannot reliably match live output), or place an asynchronous unbounded output queue between the pump and script (risks retained payload and shutdown complexity). Neither is selected.
 
-## Proposed public contract
+## Public contract
 
 - Add nullable `PtySessionOptions.Automation` of type `PtyAutomationOptions`. A non-null instance enables matching. Its `MaxBufferedOutputBytes` defaults to 64 KiB and must be in the inclusive range 1–1,048,576 bytes. Capture the setting before launch. The opt-in rejects a non-null `PtySessionOptions.Input` to avoid competing scripted and forwarded input. Recording may be enabled independently.
 - Add `PtySession.ExpectAsync(ReadOnlyMemory<byte> pattern, TimeSpan timeout, CancellationToken cancellationToken = default)` returning `Task<PtyExpectResult>`. Require a nonempty pattern no larger than the captured buffer cap, a positive timeout no larger than `Int32.MaxValue` milliseconds, and exactly one pending expect. The immutable result reports `Matched`, `TimedOut`, `OutputEnded`, `OutputStopped`, `OutputTimedOut`, `OutputFaulted`, or `BufferLimitExceeded`, together with the number of output bytes consumed through a match when applicable. An unmatched output EOF, stop, drain timeout, or fault completes the waiter promptly; it never waits for its deadline. Method calls without automation fail immediately. Caller cancellation throws `OperationCanceledException` and does not terminate or dispose the session.

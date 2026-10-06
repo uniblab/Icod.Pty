@@ -165,7 +165,9 @@ The plan keeps terminal content out of diagnostics and error messages, distingui
 
 ## Selected next milestone: focused live matching and scripted interaction
 
-**Decision, 2026-10-06:** after PR #7 merged, the user selected a **focused continuation of option 8**. The [design](docs/Focused-Automation-Design.md) and [development roadmap](docs/Focused-Automation-Implementation-Plan.md), tranches FA01–FA07, define the proposed implementation and qualification gates. Implementation has not begun.
+**Decision, 2026-10-06:** after PR #7 merged, the user selected a **focused continuation of option 8**. The [design](docs/Focused-Automation-Design.md) and [development roadmap](docs/Focused-Automation-Implementation-Plan.md), tranches FA01–FA07, define the implementation and qualification gates.
+
+**Status:** implemented in [PR #8](https://github.com/uniblab/Icod.Pty/pull/8). Runtime/package head `8c1983cc254745f255fe01a27232d237ef781873` passed all six platform jobs, three target frameworks, the exact-package consumer, and framework-dependent, self-contained, single-file, and trimmed published consumers in [run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800). Final documentation-head qualification is recorded in the development roadmap. Windows laptop `--automation-smoke` remains unreported and separate from hosted CI.
 
 **Goal:** a consumer opts into bounded, binary-safe live output matching and runs a short, ordered sequence of send/expect steps against a PTY session. Matches consume accepted output bytes in order; startup prompts and immediate replies remain available across asynchronous reads. Match timeout, output completion, and buffer overrun are explicit, while the live session and optional recording retain independent outcomes.
 
@@ -186,7 +188,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
-| 8 | Recording, replay, and automation | Recording/replay complete in merged PR #7; focused live matching and scripted send/expect selected next | Add opt-in bounded byte matching and sequential scripts. Input capture, timed replay, regex/text matching, branching, and screen-aware automation remain deferred. |
+| 8 | Recording, replay, and automation | Recording/replay complete in merged PR #7; focused live matching and scripted send/expect implemented in PR #8 | Opt-in bounded byte matching and sequential scripts are complete. Input capture, timed replay, regex/text matching, branching, and screen-aware automation remain deferred. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |

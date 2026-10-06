@@ -1,4 +1,4 @@
-# PR #8 focused automation additive API baseline (FA01 contract).
+# PR #8 focused automation additive API baseline (runtime head 8c1983cc254745f255fe01a27232d237ef781873).
   ctor Icod.Pty.PtyAutomationOptions()
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
   ctor Icod.Pty.PtyExpectResult(Icod.Pty.PtyExpectStatus Status,System.Int64 ConsumedBytes)

@@ -48,14 +48,17 @@ public sealed class PtyAutomationSessionTests {
 
 	[Fact]
 	public async Task Automation_overrun_does_not_truncate_live_output() {
-		byte[] bytes = Enumerable.Range(0, 4096).Select(index => (byte)index).ToArray(); using MemoryStream destination = new();
+		byte[] bytes = Enumerable.Range(0, 4096).Select(index => (byte)index).ToArray(); using MemoryStream destination = new(), recording = new();
 		ControlledBackend backend = new() { Output = new MemoryStream(bytes) };
-		PtySession session = await SessionTestSupport.Start(backend, destination, automation: new() { MaxBufferedOutputBytes = 16 });
+		PtySession session = await SessionTestSupport.Start(backend, destination, recording: new(recording),
+			automation: new() { MaxBufferedOutputBytes = 16 });
 		try {
 			Assert.Equal(PtySessionOutputStatus.EndOfStream, await session.OutputCompletion.WaitAsync(TimeSpan.FromSeconds(5)));
 			Assert.Equal(PtyExpectStatus.BufferLimitExceeded,
 				(await session.ExpectAsync(new byte[] { 1 }, TimeSpan.FromSeconds(1))).Status);
 			Assert.Equal(bytes, destination.ToArray());
+			backend.Completion.SetResult(0);
+			Assert.Equal(PtyRecordingStatus.Complete, (await session.RecordingCompletion).Status);
 		} finally { backend.Completion.TrySetResult(0); await session.DisposeAsync(); }
 	}
 
