@@ -63,6 +63,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify portable consumer harness
+        shell: pwsh
+        run: ./packaging/VerifyPortableConsumer.Tests.ps1
       - name: Verify Windows PowerShell 5.1 tooling
         if: matrix.os == 'windows-latest'
         shell: powershell
