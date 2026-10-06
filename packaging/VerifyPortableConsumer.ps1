@@ -70,6 +70,7 @@ function Invoke-PublishedMode {
 			try { $process.Kill() } catch { }
 			throw "Published consumer timed out in mode $SmokeMode after $Timeout seconds."
 		}
+		$process.WaitForExit()
 		$outputText = if (Test-Path -LiteralPath $stdout) { [System.IO.File]::ReadAllText($stdout) } else { '' }
 		$errorText = if (Test-Path -LiteralPath $stderr) { [System.IO.File]::ReadAllText($stderr) } else { '' }
 		if ($process.ExitCode -ne 0) { throw "Published consumer mode $SmokeMode exited $($process.ExitCode): $errorText$outputText" }
