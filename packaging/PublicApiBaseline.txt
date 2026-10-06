@@ -1,4 +1,4 @@
-+# Merged PR #5 public API baseline (c0d62549dec647219cbfdbca8e34c802c14c921c).
+# Merged PR #5 public API baseline (c0d62549dec647219cbfdbca8e34c802c14c921c).
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
   ctor Icod.Pty.PtySessionDiagnostics(Icod.Pty.PtySessionPhase Phase,System.Boolean InputSealed,System.Int64 BytesWrittenToPty,System.Int64 BytesReadFromPty,System.Int64 BytesWrittenToOutput,System.Int64 DroppedEvents,System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events)
   ctor Icod.Pty.PtySessionEvent(System.Int64 Sequence,System.TimeSpan Elapsed,Icod.Pty.PtySessionEventKind Kind)
