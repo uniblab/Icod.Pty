@@ -86,6 +86,21 @@ public sealed class PtyRecordingReaderTests {
 	}
 
 	[Fact]
+	public async Task Reader_total_limit_is_independent_from_frame_limit() {
+		await using PtyRecordingReader reader = await PtyRecordingReader.OpenAsync(new MemoryStream(Golden),
+			new PtyRecordingReaderOptions { MaxBytes = PtyRecordingOptions.MinimumBytes, MaxFrameBytes = 16 * 1024 });
+		await Assert.ThrowsAsync<PtyRecordingFormatException>(async () => await reader.ReadAsync());
+	}
+
+	[Fact]
+	public async Task Reader_honors_cancellation_without_disposing_default_source() {
+		using MemoryStream source = new(Golden); await using PtyRecordingReader reader = await PtyRecordingReader.OpenAsync(source);
+		using CancellationTokenSource cancelled = new(); cancelled.Cancel();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadAsync(cancelled.Token));
+		Assert.True(source.CanRead);
+	}
+
+	[Fact]
 	public async Task Reader_respects_source_ownership() {
 		MemoryStream source = new(Golden); await using (PtyRecordingReader reader = await PtyRecordingReader.OpenAsync(source,
 			new PtyRecordingReaderOptions { LeaveOpen = false })) { while (await reader.ReadAsync() != null) { } }

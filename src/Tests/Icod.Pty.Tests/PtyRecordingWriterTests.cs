@@ -59,6 +59,23 @@ public sealed class PtyRecordingWriterTests {
 	}
 
 	[Fact]
+	public async Task Flush_failure_is_reported_and_owned_stream_is_still_disposed() {
+		IOException failure = new("flush"); TrackingStream stream = new() { FlushFailure = failure };
+		SessionRecorder writer = new(new(stream, false, 4096), new PtySize(80, 24), () => 1);
+		PtyRecordingResult result = await writer.FinishAsync(PtyRecordingStatus.Complete);
+		Assert.Equal(PtyRecordingStatus.Faulted, result.Status); Assert.Same(failure, result.Exception);
+		Assert.Equal(1, stream.Flushes); Assert.Equal(1, stream.Disposals);
+	}
+
+	[Fact]
+	public async Task Owned_stream_disposal_failure_is_reported() {
+		IOException failure = new("dispose"); AsyncDisposeFailRecordingStream stream = new(failure);
+		SessionRecorder writer = new(new(stream, false, 4096), new PtySize(80, 24), () => 1);
+		PtyRecordingResult result = await writer.FinishAsync(PtyRecordingStatus.Complete);
+		Assert.Equal(PtyRecordingStatus.Faulted, result.Status); Assert.Same(failure, result.Exception); Assert.Equal(1, stream.Disposals);
+	}
+
+	[Fact]
 	public async Task Cancellation_during_sink_write_is_an_independent_recording_fault() {
 		using CancellationTokenSource stop = new(); using CancelRecordingStream stream = new(stop);
 		SessionRecorder writer = new(new(stream, true, 4096), new PtySize(80, 24), () => 1);
@@ -76,4 +93,9 @@ internal sealed class CancelRecordingStream(CancellationTokenSource stop) : Memo
 
 internal sealed class AsyncFailRecordingStream(Exception failure) : MemoryStream {
 	public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default) => ValueTask.FromException(failure);
+}
+
+internal sealed class AsyncDisposeFailRecordingStream(Exception failure) : MemoryStream {
+	internal int Disposals;
+	public override ValueTask DisposeAsync() { Disposals++; return ValueTask.FromException(failure); }
 }
