@@ -17,25 +17,26 @@ public sealed class PublicApiCompatibilityTests {
 	private static IEnumerable<string> Describe(Assembly assembly) {
 		List<string> lines = [];
 		foreach (Type type in assembly.GetExportedTypes().OrderBy(TypeName, StringComparer.Ordinal)) {
-			lines.Add("type " + TypeKind(type) + " " + TypeName(type));
+			string owner = TypeName(type);
+			lines.Add("type " + TypeKind(type) + " " + owner);
 			foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
 				string value = field.IsLiteral ? " = " + Value(field.GetRawConstantValue()) : "";
-				lines.Add("  field " + TypeName(field.FieldType) + " " + field.Name + value);
+				lines.Add("  field " + owner + "::" + field.Name + " " + TypeName(field.FieldType) + value);
 			}
 			foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-				lines.Add("  ctor " + TypeName(type) + "(" + Parameters(constructor.GetParameters()) + ")");
+				lines.Add("  ctor " + owner + "(" + Parameters(constructor.GetParameters()) + ")");
 			foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
 				string access = (property.GetMethod?.IsPublic == true ? "get;" : "") + (property.SetMethod?.IsPublic == true ? "set;" : "");
 				string index = property.GetIndexParameters().Length == 0 ? "" : "[" + Parameters(property.GetIndexParameters()) + "]";
-				lines.Add("  property " + TypeName(property.PropertyType) + " " + property.Name + index + " { " + access + " }");
+				lines.Add("  property " + owner + "::" + property.Name + index + " " + TypeName(property.PropertyType) + " { " + access + " }");
 			}
 			foreach (EventInfo @event in type.GetEvents(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-				lines.Add("  event " + TypeName(@event.EventHandlerType!) + " " + @event.Name);
+				lines.Add("  event " + owner + "::" + @event.Name + " " + TypeName(@event.EventHandlerType!));
 			foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
 				if (method.Name.StartsWith("get_", StringComparison.Ordinal) || method.Name.StartsWith("set_", StringComparison.Ordinal) ||
 					method.Name.StartsWith("add_", StringComparison.Ordinal) || method.Name.StartsWith("remove_", StringComparison.Ordinal)) continue;
 				string generic = method.IsGenericMethodDefinition ? "<" + string.Join(",", method.GetGenericArguments().Select(argument => argument.Name)) + ">" : "";
-				lines.Add("  method " + TypeName(method.ReturnType) + " " + method.Name + generic + "(" + Parameters(method.GetParameters()) + ")");
+				lines.Add("  method " + owner + "::" + method.Name + generic + "(" + Parameters(method.GetParameters()) + ") " + TypeName(method.ReturnType));
 			}
 		}
 		return lines.OrderBy(line => line, StringComparer.Ordinal);
