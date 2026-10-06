@@ -4,7 +4,9 @@ using System.Text;
 namespace Icod.Pty.Sample;
 
 internal static class AutomationSmokeChecks {
-	private static readonly byte[] BinaryMarker = [0xff, 0x00, 0xfe, 0x80];
+	// ConPTY transports UTF-8 rather than arbitrary invalid byte sequences. Split a
+	// valid multi-byte code point across writes; matcher unit tests cover invalid UTF-8.
+	private static readonly byte[] BinaryMarker = [0xe2, 0x82, 0xac, (byte)'|'];
 
 	internal static async Task<int> RunAsync() {
 		using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(30));
