@@ -8,6 +8,13 @@ if (-not (Test-Path -LiteralPath $subject -PathType Leaf)) {
 
 . $subject -SelfTest
 
+$selfContained = Get-PublishArguments 'Consumer.csproj' 'net10.0' 'linux-x64' 'SelfContained' 'publish'
+if ('--self-contained' -notin $selfContained -or 'true' -notin $selfContained -or '-p:PublishSingleFile=true' -in $selfContained -or '-p:PublishTrimmed=true' -in $selfContained) {
+	throw 'Self-contained publish arguments are incorrect.'
+}
+$trimmed = Get-PublishArguments 'Consumer.csproj' 'net10.0' 'linux-x64' 'Trimmed' 'publish'
+if ('-p:PublishTrimmed=true' -notin $trimmed -or 'true' -notin $trimmed) { throw 'Trimmed publish arguments are incomplete.' }
+
 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('icod-pty-layout-selftest-' + [Guid]::NewGuid().ToString('N'))
 $publish = Join-Path $root 'publish'
 $helper = Join-Path $publish 'Icod.Pty.Host'

@@ -163,9 +163,10 @@ if ($packages.Count -ne 1) { throw 'Portable consumer verification requires exac
 $metadata = Get-PackageMetadata -PackagePath $packages[0].FullName
 if ($metadata.Id -ne 'Icod.Pty') { throw "Expected Icod.Pty; found $($metadata.Id)." }
 
-$consumerRoot = Join-Path $repositoryRoot (Join-Path 'artifacts/portable-consumer' (Join-Path $Framework (Join-Path $RuntimeIdentifier $Mode)))
+$portableRoot = Join-Path $repositoryRoot 'artifacts/portable-consumer'
+$consumerRoot = Join-Path $portableRoot (Join-Path 'work' (Join-Path $Framework (Join-Path $RuntimeIdentifier (Join-Path $Mode $Scenario))))
 if (Test-Path -LiteralPath $consumerRoot) { Remove-Item -LiteralPath $consumerRoot -Recurse -Force }
-$packagesRoot = Join-Path $consumerRoot 'packages'
+$packagesRoot = Join-Path $portableRoot (Join-Path 'packages' (Join-Path $Framework $RuntimeIdentifier))
 $publishRoot = Join-Path $consumerRoot 'publish'
 New-Item -ItemType Directory -Path $consumerRoot -Force | Out-Null
 $nugetConfig = Join-Path $consumerRoot 'NuGet.Config'
