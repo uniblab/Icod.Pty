@@ -37,7 +37,7 @@ Maintain a support table with separate columns for build, publish layout, runtim
 
 - C# 13; net8.0, net9.0, and net10.0; AnyCPU library assemblies.
 - Windows, Linux, and macOS, each on x64 and ARM64; Windows floor 10.0.26200.9457.
-- One LGPL-3.0-or-later NuGet library package; no new runtime package dependencies or native binary build.
+- One LGPL-3.0-or-later NuGet library package; no new runtime package dependencies or checked-in native helper binary. NativeAOT consumer builds are feasibility probes.
 - CMD/SH/Windows PowerShell 5.1-compatible tooling; C# for fixtures, no C or Python.
 - Root solution/library project; C# sources under `src/`; retain existing package and helper boundaries.
 - No version bump, tag, merge, or publication in this planning PR. Later implementation requires reviewed evidence for its support claims.
