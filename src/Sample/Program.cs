@@ -14,6 +14,7 @@ try {
 	if (args is ["--scope-descendant", string childDirectory]) return await ProcessScopeSmokeChecks.DescendantAsync(childDirectory);
 	if (args is ["--lifecycle-smoke"]) return await PackageSmokeChecks.RunLifecycleAsync();
 	if (args is ["--cancel-start-smoke"]) return await PackageSmokeChecks.RunCancelledStartAsync();
+	if (args is ["--invalid-host-smoke"]) return await PackageSmokeChecks.RunInvalidHostAsync();
 	if (args is ["--interrupt-smoke"]) return await PackageSmokeChecks.RunInterruptAsync();
 	if (args is ["--interrupt-child"]) return await PackageSmokeChecks.RunInterruptChildAsync();
 	bool smoke = args is ["--smoke"];

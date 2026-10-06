@@ -91,17 +91,18 @@ Read the [accepted design](docs/Session-Orchestration-Design.md) and
 The recorded contracts include permanent input sealing after accepted shutdown and the requirement for
 cancellation-cooperative streams.
 
-## Selected milestone: terminal configuration and focused capability discovery
+### Terminal configuration and focused capability discovery
 
 **Decision, 2026-10-05:** the user selected **option 7 plus a focused portion of option 4**, requested a new
 planning PR, preservation of the full option menu, and a proper development roadmap.
 
-**Status:** implementation and hosted acceptance complete in [PR #5](https://github.com/uniblab/Icod.Pty/pull/5); awaiting review and merge. Read the
+**Status:** [PR #5](https://github.com/uniblab/Icod.Pty/pull/5) merged on 2026-10-06. Its final head passed
+[six-platform CI run 72, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37363586412) on all three frameworks, including exact package consumers. Manual Windows laptop execution of `--terminal-config-smoke` remains separately pending. Read the
 [approved design](docs/Terminal-Configuration-Design.md) and
 [development roadmap and evidence](docs/Terminal-Configuration-Implementation-Plan.md), tranches TC01-TC09.
 No version, tag, or publication is selected.
 
-The proposed first increment configures the child terminal at launch: echo, canonical/noncanonical input,
+The completed first increment configures the child terminal at launch: echo, canonical/noncanonical input,
 terminal-generated signals, control characters, read timing, and an explicit Raw preset. A side-effect-free
 capability query lets consumers discover supported controls before launch. Null/default requests preserve
 today's behavior. Both PtyProcess and PtySession use the same capture and validation path.
@@ -117,6 +118,34 @@ today's behavior. Both PtyProcess and PtySession use the same capture and valida
 **Acceptance goal:** a consumer can deliberately choose supported initial terminal behavior and determine
 unsupported requests without guessing, while old callers retain their defaults and lifecycle contracts.
 
+## Selected milestone: deployment portability and focused compatibility hardening
+
+**Decision, 2026-10-06:** the user selected **option 6 plus a focused portion of option 13** after PR #5
+merged. [PR #6](https://github.com/uniblab/Icod.Pty/pull/6) records the design and development roadmap. Read the
+[deployment design](docs/Deployment-Portability-Design.md) and
+[implementation plan](docs/Deployment-Portability-Implementation-Plan.md), tranches DP01-DP09.
+
+**Status:** implemented and qualified in PR #6. Framework-dependent, self-contained, single-file, and trimmed
+consumers passed the full three-framework/six-platform matrix from exact package artifacts. The public API remains
+unchanged and is pinned by a 252-entry compatibility baseline. NativeAOT passed a net10.0 feasibility probe on all
+six target RIDs but is not promoted to supported status. No version, tag, or publication is selected.
+
+**Goal:** a consumer can determine which published application forms work on each supported
+OS/architecture/framework, what external assets and runtime they require, and how failures behave.
+Start from the exact NuGet package and its existing framework-dependent Unix helper. Qualify ordinary,
+self-contained, single-file, and trimmed consumers by running the final published executable. Keep
+the helper external for single-file consumers and report the installed `dotnet` runtime prerequisite
+truthfully. Make targeted packaging/runtime fixes only when an actual consumer test demonstrates a defect.
+
+The focused option 13 portion pins the merged PR #5 public API surface, repeats critical startup,
+ownership, drain, and disposal scenarios on published artifacts, and records a verified support matrix.
+NativeAOT and wider Unix environments receive bounded feasibility investigation; build success alone
+does not establish runtime support. Retain all existing six-platform, three-framework ordinary package checks.
+
+**Acceptance goal:** every supported matrix cell has build, published-layout, and executed behavior
+evidence; unresolved cells carry a reproducible limitation or remain explicitly unverified. Preserve
+the current package and public contracts while recording Windows laptop results separately from hosted CI.
+
 ## Full current menu
 
 Effort is relative, not a schedule. Deferred options remain available and are not release commitments.
@@ -128,18 +157,17 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 3 | Reusable session orchestration | Completed in PR #4 | Coordinates ordered input, forwarding, shutdown, draining, failure results and deterministic ownership above PtyProcess. |
 | 4 | Diagnostics and capability discovery | Lifecycle subset completed in PR #4; terminal-configuration subset complete in PR #5 | Adds prelaunch terminal capabilities and configuration-failure context. General startup tracing, metrics/exporters, callbacks and transcripts remain deferred. |
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
-| 6 | Deployment and runtime portability | Deferred; medium-large | Validate or extend trimming, NativeAOT, single-file/self-contained consumers and wider Unix environments. Strong alternative when standalone distribution becomes the immediate priority. |
+| 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
 | 8 | Recording, replay, and automation | Deferred; medium | Timestamped output/resize records, replay and bounded output matching. Benefits from session orchestration first; input capture must be opt-in and screen-aware matching needs a terminal model. |
 | 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Deferred as a dedicated milestone; small-medium | API compatibility checks, targeted lifecycle stress, support matrix and release documentation. Ordinary regression/package checks remain required now; broader release hardening follows when the release target is chosen. |
+| 13 | Release stabilization and compatibility hardening | Focused API/stress/support-matrix portion completed in PR #6 | The PR #5 public surface is pinned, published lifecycle regressions run in the deployment matrix, and the support matrix records prerequisites and limitations. Broader release work follows a chosen release target. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
-Interactive hosting, scoped process ownership, and reusable session orchestration are completed history. Option 13 records the additional
-release-stabilization alternative considered alongside the remaining feature menu.
+Interactive hosting, scoped process ownership, reusable session orchestration, and launch-time terminal configuration are completed history. The remaining portions of options 4, 7, and 13 stay available after this focused milestone.
 
 ## Completion policy
 

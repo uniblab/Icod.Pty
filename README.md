@@ -23,7 +23,35 @@ CI exercises all six OS/architecture combinations and all three target framework
 
 GitHub uses explicit labels for Windows/Linux ARM64 and macOS Intel; the selected labels match the current latest images (Ubuntu 24.04 and macOS 26).
 
-**Unix requires an installed .NET 8, 9, or 10 runtime and its `dotnet` host**, including when your application is self-contained. The helper targets .NET 8 and rolls forward to the newest installed major runtime. You can set `PtyStartInfo.DotNetHostPath` explicitly. NuGet copies the `Icod.Pty.Host` directory into application build and publish output; distribute that directory with your application. Do not exclude the package's `buildTransitive` assets. NativeAOT and trimming are not currently validated.
+**Unix requires an installed .NET 8, 9, or 10 runtime and its `dotnet` host**, including when your application is self-contained. The helper targets .NET 8 and rolls forward to the newest installed major runtime. You can set `PtyStartInfo.DotNetHostPath` explicitly. NuGet copies the `Icod.Pty.Host` directory into application build and publish output; distribute that directory with your application. Do not exclude the package's `buildTransitive` assets.
+
+### Published application support
+
+The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
+
+| OS / architecture | RIDs | TFMs | Framework-dependent | Self-contained | Single-file self-contained | Trimmed self-contained |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows x64 / ARM64 | `win-x64`, `win-arm64` | net8.0, net9.0, net10.0 | Verified | Verified | Verified | Verified |
+| Linux x64 / ARM64 | `linux-x64`, `linux-arm64` | net8.0, net9.0, net10.0 | Verified | Verified | Verified | Verified |
+| macOS x64 / ARM64 | `osx-x64`, `osx-arm64` | net8.0, net9.0, net10.0 | Verified | Verified | Verified | Verified |
+
+Framework-dependent applications need their target runtime. On Unix, every form also needs a usable `dotnet` host and a compatible installed runtime for the external net8.0 helper. A consumer's bundled runtime is not used to launch that helper. Windows ConPTY does not launch the helper, and tests verify that missing Unix helper assets and an invalid `DotNetHostPath` do not affect it.
+
+Single-file publishing bundles the consumer while leaving `Icod.Pty.Host/Icod.Pty.Host.dll`, `.deps.json`, and `.runtimeconfig.json` beside the executable as external files. Copy the complete publish directory. The package verifier rejects an incomplete helper directory before making a support claim. Runtime behavior with missing metadata can vary by installed `dotnet`; only a complete three-file layout is supported.
+
+Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
+
+Run the same exact-package check from SH or PowerShell 7:
+
+```sh
+pwsh -File ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier linux-x64 -Mode SingleFile -Scenario Relocated
+```
+
+From CMD or Windows PowerShell 5.1:
+
+```powershell
+powershell.exe -NoProfile -File .\packaging\VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier win-x64 -Mode SingleFile -Scenario Relocated
+```
 
 ## Usage
 

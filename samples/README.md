@@ -118,3 +118,13 @@ dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build --
 ```
 
 Expected output is `PTY terminal configuration smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not mutate the interactive host console. Record manual host restoration separately from this redirected smoke result.
+
+## Deployment-portability acceptance
+
+`--invalid-host-smoke` is the focused startup-failure check used by the published-consumer matrix. On Unix it supplies a nonexistent `DotNetHostPath` to `PtyProcess` and `PtySession` under both ownership policies, requires a bounded failure, and verifies that failed session startup leaves caller streams open. On Windows it verifies that the Unix-only host override does not affect either ConPTY ownership path.
+
+```text
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --invalid-host-smoke
+```
+
+Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application support table](../README.md#published-application-support) for verified RIDs, frameworks, external helper files, and runtime prerequisites.

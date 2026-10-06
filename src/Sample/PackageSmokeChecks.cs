@@ -24,6 +24,31 @@ internal static class PackageSmokeChecks {
 		catch (OperationCanceledException) when (cancelled.IsCancellationRequested) { Console.WriteLine("PTY cancelled-start smoke check passed."); return 0; }
 		throw new IOException("A pre-cancelled startup returned a process.");
 	}
+	internal static async Task<int> RunInvalidHostAsync() {
+		using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(30));
+		string invalidHost = Path.Combine(Path.GetTempPath(), "icod-pty-missing-host-" + Guid.NewGuid().ToString("N"));
+		foreach (PtyProcessOwnership ownership in new[] { PtyProcessOwnership.PrimaryProcess, PtyProcessOwnership.PlatformScope }) {
+			PtyStartInfo start = new(Shell) { DotNetHostPath = invalidHost, Ownership = ownership, StartTimeout = TimeSpan.FromSeconds(3) };
+			if (OperatingSystem.IsWindows()) {
+				start.ArgumentList.Add("/c"); start.ArgumentList.Add("echo ICOD-PTY-HOST-OVERRIDE-IGNORED");
+				await using PtyProcess process = await PtyProcess.StartAsync(start, deadline.Token);
+				Require(await process.WaitForExitAsync().WaitAsync(deadline.Token) == 0, "ConPTY was affected by the Unix host override.");
+				continue;
+			}
+			Exception? processFailure = null;
+			try { await using PtyProcess unexpected = await PtyProcess.StartAsync(start, deadline.Token); }
+			catch (Exception error) when (error is not OperationCanceledException) { processFailure = error; }
+			Require(processFailure != null, "An invalid explicit DotNetHostPath was accepted for a PTY process.");
+
+			using MemoryStream input = new(), output = new();
+			Exception? sessionFailure = null;
+			try { await using PtySession unexpected = await PtySession.StartAsync(start, new(output) { Input = input, LeaveInputOpen = false, LeaveOutputOpen = false }, deadline.Token); }
+			catch (Exception error) when (error is not OperationCanceledException) { sessionFailure = error; }
+			Require(sessionFailure != null, "An invalid explicit DotNetHostPath was accepted for a PTY session.");
+			Require(input.CanRead && output.CanWrite, "Failed PTY session startup transferred caller-owned streams.");
+		}
+		Console.WriteLine("PTY invalid-host cleanup smoke check passed."); return 0;
+	}
 	internal static async Task<int> RunInterruptAsync() {
 		using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(30));
 		string executable = Environment.ProcessPath ?? throw new IOException("Cannot identify the verification executable.");

@@ -45,17 +45,23 @@ jobs:
         include:
           - os: windows-latest
             name: Windows x64
+            rid: win-x64
           - os: windows-11-arm
             name: Windows ARM64
+            rid: win-arm64
           - os: ubuntu-latest
             name: Linux x64
+            rid: linux-x64
           - os: ubuntu-24.04-arm
             name: Linux ARM64
+            rid: linux-arm64
           - os: macos-26-intel
             name: macOS x64
+            rid: osx-x64
           - os: macos-latest
             name: macOS ARM64
-    timeout-minutes: 15
+            rid: osx-arm64
+    timeout-minutes: 45
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -63,6 +69,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify portable consumer harness
+        shell: pwsh
+        run: ./packaging/VerifyPortableConsumer.Tests.ps1
       - name: Verify Windows PowerShell 5.1 tooling
         if: matrix.os == 'windows-latest'
         shell: powershell
@@ -115,3 +124,115 @@ jobs:
         run: |
           ./packaging/VerifyPackageArtifact.ps1 -ArtifactDirectory artifacts -Configuration Staging
           ./packaging/VerifyPackageConsumer.ps1 -ArtifactDirectory artifacts
+      - name: Verify portable framework-dependent consumer
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode FrameworkDependent
+      - name: Verify portable consumer with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode FrameworkDependent
+      - name: Verify relocated and incomplete helper layouts
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario Relocated
+          }
+          foreach ($scenario in @('MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario $scenario
+          }
+      - name: Verify relocated and incomplete layouts with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario Relocated
+          }
+          foreach ($scenario in @('MissingHelperDll', 'MissingHelperDeps', 'MissingHelperRuntimeConfig')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode FrameworkDependent -Scenario $scenario
+          }
+      - name: Verify self-contained consumers
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario MissingHelperDll
+      - name: Verify self-contained consumers with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SelfContained -Scenario MissingHelperDll
+      - name: Verify single-file consumers
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario MissingHelperDll
+      - name: Verify single-file consumers with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode SingleFile -Scenario MissingHelperDll
+      - name: Verify trimmed consumers
+        if: matrix.os != 'windows-latest'
+        shell: pwsh
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario MissingHelperDll
+      - name: Verify trimmed consumers with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework $framework -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed
+          }
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario Relocated
+          ./packaging/VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier '${{ matrix.rid }}' -Mode Trimmed -Scenario MissingHelperDll
+      - name: Probe NativeAOT consumer feasibility
+        if: matrix.os != 'windows-latest'
+        continue-on-error: true
+        shell: pwsh
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode NativeAot
+      - name: Probe NativeAOT with Windows PowerShell 5.1
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: powershell
+        run: >-
+          ./packaging/VerifyPortableConsumer.ps1
+          -ArtifactDirectory artifacts
+          -Framework net10.0
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -Mode NativeAot
