@@ -122,6 +122,19 @@ if (Test-Path -LiteralPath $consumerRoot) { Remove-Item -LiteralPath $consumerRo
 $packagesRoot = Join-Path $consumerRoot 'packages'
 $publishRoot = Join-Path $consumerRoot 'publish'
 New-Item -ItemType Directory -Path $consumerRoot -Force | Out-Null
+$nugetConfig = Join-Path $consumerRoot 'NuGet.Config'
+$escapedArtifactDirectory = [System.Security.SecurityElement]::Escape($ArtifactDirectory)
+$nugetXml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="local-artifacts" value="$escapedArtifactDirectory" />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+"@
+[System.IO.File]::WriteAllText($nugetConfig, $nugetXml, [System.Text.UTF8Encoding]::new($false))
 $project = Join-Path $consumerRoot 'Consumer.csproj'
 $xml = @"
 <Project Sdk="Microsoft.NET.Sdk">
@@ -150,7 +163,7 @@ foreach ($source in @(Get-ChildItem -LiteralPath $sampleRoot -Filter '*.cs' -Rec
 	Copy-Item -LiteralPath $source.FullName -Destination $destination
 }
 
-Invoke-DotNet -Arguments @('restore', $project, '--source', $ArtifactDirectory, '--source', 'https://api.nuget.org/v3/index.json', '--packages', $packagesRoot, '--runtime', $RuntimeIdentifier)
+Invoke-DotNet -Arguments @('restore', $project, '--configfile', $nugetConfig, '--packages', $packagesRoot, '--runtime', $RuntimeIdentifier)
 $metadataPath = Join-Path $packagesRoot (Join-Path 'icod.pty' (Join-Path $metadata.Version '.nupkg.metadata'))
 if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) { throw 'Restored Icod.Pty package metadata is missing.' }
 $restored = [System.IO.File]::ReadAllText($metadataPath)
