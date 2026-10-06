@@ -1,5 +1,10 @@
-# Merged PR #5 public API baseline (c0d62549dec647219cbfdbca8e34c802c14c921c).
+# PR #7 focused recording/replay additive API baseline (runtime head a25687550dd976a8f2a2e3b2ec8c7319afbfc3a3).
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
+  ctor Icod.Pty.PtyRecordingFormatException(System.String message)
+  ctor Icod.Pty.PtyRecordingOptions(System.IO.Stream destination)
+  ctor Icod.Pty.PtyRecordingReaderOptions()
+  ctor Icod.Pty.PtyRecordingReplayResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 OutputBytes,System.Int64 EventCount)
+  ctor Icod.Pty.PtyRecordingResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 BytesWritten,System.Int64 EventCount,System.Exception Exception)
   ctor Icod.Pty.PtySessionDiagnostics(Icod.Pty.PtySessionPhase Phase,System.Boolean InputSealed,System.Int64 BytesWrittenToPty,System.Int64 BytesReadFromPty,System.Int64 BytesWrittenToOutput,System.Int64 DroppedEvents,System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events)
   ctor Icod.Pty.PtySessionEvent(System.Int64 Sequence,System.TimeSpan Elapsed,Icod.Pty.PtySessionEventKind Kind)
   ctor Icod.Pty.PtySessionFailure(Icod.Pty.PtySessionFailureStage Stage,System.Exception Exception)
@@ -25,6 +30,16 @@
   field Icod.Pty.PtyProcessTarget::OwnedScope Icod.Pty.PtyProcessTarget = 1
   field Icod.Pty.PtyProcessTarget::PrimaryProcess Icod.Pty.PtyProcessTarget = 0
   field Icod.Pty.PtyProcessTarget::value__ System.Int32
+  field Icod.Pty.PtyRecordingEventKind::Output Icod.Pty.PtyRecordingEventKind = 0
+  field Icod.Pty.PtyRecordingEventKind::Resize Icod.Pty.PtyRecordingEventKind = 1
+  field Icod.Pty.PtyRecordingEventKind::value__ System.Int32
+  field Icod.Pty.PtyRecordingOptions::MinimumBytes System.Int64 = 32
+  field Icod.Pty.PtyRecordingStatus::Complete Icod.Pty.PtyRecordingStatus = 1
+  field Icod.Pty.PtyRecordingStatus::Disabled Icod.Pty.PtyRecordingStatus = 0
+  field Icod.Pty.PtyRecordingStatus::Faulted Icod.Pty.PtyRecordingStatus = 4
+  field Icod.Pty.PtyRecordingStatus::Stopped Icod.Pty.PtyRecordingStatus = 3
+  field Icod.Pty.PtyRecordingStatus::Truncated Icod.Pty.PtyRecordingStatus = 2
+  field Icod.Pty.PtyRecordingStatus::value__ System.Int32
   field Icod.Pty.PtySessionEndReason::Disposed Icod.Pty.PtySessionEndReason = 1
   field Icod.Pty.PtySessionEndReason::InputFailed Icod.Pty.PtySessionEndReason = 2
   field Icod.Pty.PtySessionEndReason::OutputFailed Icod.Pty.PtySessionEndReason = 3
@@ -102,6 +117,27 @@
   method Icod.Pty.PtyProcess::StartAsync(Icod.Pty.PtyStartInfo startInfo,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyProcess>
   method Icod.Pty.PtyProcess::Terminate() System.Void
   method Icod.Pty.PtyProcess::WaitForExitAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<System.Int32>
+  method Icod.Pty.PtyRecordingReader::Dispose() System.Void
+  method Icod.Pty.PtyRecordingReader::DisposeAsync() System.Threading.Tasks.ValueTask
+  method Icod.Pty.PtyRecordingReader::OpenAsync(System.IO.Stream source,Icod.Pty.PtyRecordingReaderOptions options=null,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyRecordingReader>
+  method Icod.Pty.PtyRecordingReader::ReadAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.ValueTask<Icod.Pty.PtyRecordingEvent>
+  method Icod.Pty.PtyRecordingReader::ReplayAsync(System.IO.Stream destination,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyRecordingReplayResult>
+  method Icod.Pty.PtyRecordingReplayResult::<Clone>$() Icod.Pty.PtyRecordingReplayResult
+  method Icod.Pty.PtyRecordingReplayResult::Deconstruct(out Icod.Pty.PtyRecordingStatus Status,out System.Int64 OutputBytes,out System.Int64 EventCount) System.Void
+  method Icod.Pty.PtyRecordingReplayResult::Equals(Icod.Pty.PtyRecordingReplayResult other) System.Boolean
+  method Icod.Pty.PtyRecordingReplayResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyRecordingReplayResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyRecordingReplayResult::ToString() System.String
+  method Icod.Pty.PtyRecordingReplayResult::op_Equality(Icod.Pty.PtyRecordingReplayResult left,Icod.Pty.PtyRecordingReplayResult right) System.Boolean
+  method Icod.Pty.PtyRecordingReplayResult::op_Inequality(Icod.Pty.PtyRecordingReplayResult left,Icod.Pty.PtyRecordingReplayResult right) System.Boolean
+  method Icod.Pty.PtyRecordingResult::<Clone>$() Icod.Pty.PtyRecordingResult
+  method Icod.Pty.PtyRecordingResult::Deconstruct(out Icod.Pty.PtyRecordingStatus Status,out System.Int64 BytesWritten,out System.Int64 EventCount,out System.Exception Exception) System.Void
+  method Icod.Pty.PtyRecordingResult::Equals(Icod.Pty.PtyRecordingResult other) System.Boolean
+  method Icod.Pty.PtyRecordingResult::Equals(System.Object obj) System.Boolean
+  method Icod.Pty.PtyRecordingResult::GetHashCode() System.Int32
+  method Icod.Pty.PtyRecordingResult::ToString() System.String
+  method Icod.Pty.PtyRecordingResult::op_Equality(Icod.Pty.PtyRecordingResult left,Icod.Pty.PtyRecordingResult right) System.Boolean
+  method Icod.Pty.PtyRecordingResult::op_Inequality(Icod.Pty.PtyRecordingResult left,Icod.Pty.PtyRecordingResult right) System.Boolean
   method Icod.Pty.PtySession::Dispose() System.Void
   method Icod.Pty.PtySession::DisposeAsync() System.Threading.Tasks.ValueTask
   method Icod.Pty.PtySession::GetDiagnostics() Icod.Pty.PtySessionDiagnostics
@@ -167,12 +203,33 @@
   property Icod.Pty.PtyProcess::Ownership Icod.Pty.PtyProcessOwnership { get; }
   property Icod.Pty.PtyProcess::ProcessId System.Int32 { get; }
   property Icod.Pty.PtyProcess::Size Icod.Pty.PtySize { get; }
+  property Icod.Pty.PtyRecordingEvent::Elapsed System.TimeSpan { get; }
+  property Icod.Pty.PtyRecordingEvent::Kind Icod.Pty.PtyRecordingEventKind { get; }
+  property Icod.Pty.PtyRecordingEvent::Output System.ReadOnlyMemory<System.Byte> { get; }
+  property Icod.Pty.PtyRecordingEvent::Size System.Nullable<Icod.Pty.PtySize> { get; }
+  property Icod.Pty.PtyRecordingOptions::Destination System.IO.Stream { get;set; }
+  property Icod.Pty.PtyRecordingOptions::LeaveOpen System.Boolean { get;set; }
+  property Icod.Pty.PtyRecordingOptions::MaxBytes System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingReader::FinalStatus System.Nullable<Icod.Pty.PtyRecordingStatus> { get; }
+  property Icod.Pty.PtyRecordingReader::InitialSize Icod.Pty.PtySize { get; }
+  property Icod.Pty.PtyRecordingReaderOptions::LeaveOpen System.Boolean { get;set; }
+  property Icod.Pty.PtyRecordingReaderOptions::MaxBytes System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingReaderOptions::MaxFrameBytes System.Int32 { get;set; }
+  property Icod.Pty.PtyRecordingReplayResult::EventCount System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingReplayResult::OutputBytes System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingReplayResult::Status Icod.Pty.PtyRecordingStatus { get;set; }
+  property Icod.Pty.PtyRecordingResult::BytesWritten System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingResult::Disabled Icod.Pty.PtyRecordingResult { get; }
+  property Icod.Pty.PtyRecordingResult::EventCount System.Int64 { get;set; }
+  property Icod.Pty.PtyRecordingResult::Exception System.Exception { get;set; }
+  property Icod.Pty.PtyRecordingResult::Status Icod.Pty.PtyRecordingStatus { get;set; }
   property Icod.Pty.PtySession::Capabilities Icod.Pty.PtyProcessCapabilities { get; }
   property Icod.Pty.PtySession::Completion System.Threading.Tasks.Task<Icod.Pty.PtySessionResult> { get; }
   property Icod.Pty.PtySession::HasExited System.Boolean { get; }
   property Icod.Pty.PtySession::OutputCompletion System.Threading.Tasks.Task<Icod.Pty.PtySessionOutputStatus> { get; }
   property Icod.Pty.PtySession::Ownership Icod.Pty.PtyProcessOwnership { get; }
   property Icod.Pty.PtySession::ProcessId System.Int32 { get; }
+  property Icod.Pty.PtySession::RecordingCompletion System.Threading.Tasks.Task<Icod.Pty.PtyRecordingResult> { get; }
   property Icod.Pty.PtySession::Size Icod.Pty.PtySize { get; }
   property Icod.Pty.PtySessionDiagnostics::BytesReadFromPty System.Int64 { get;set; }
   property Icod.Pty.PtySessionDiagnostics::BytesWrittenToOutput System.Int64 { get;set; }
@@ -191,6 +248,7 @@
   property Icod.Pty.PtySessionOptions::LeaveInputOpen System.Boolean { get;set; }
   property Icod.Pty.PtySessionOptions::LeaveOutputOpen System.Boolean { get;set; }
   property Icod.Pty.PtySessionOptions::Output System.IO.Stream { get; }
+  property Icod.Pty.PtySessionOptions::Recording Icod.Pty.PtyRecordingOptions { get;set; }
   property Icod.Pty.PtySessionResult::ExitCode System.Nullable<System.Int32> { get;set; }
   property Icod.Pty.PtySessionResult::Failures System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionFailure> { get;set; }
   property Icod.Pty.PtySessionResult::LastShutdownResult System.Nullable<Icod.Pty.PtyShutdownResult> { get;set; }
@@ -229,6 +287,8 @@ type enum Icod.Pty.PtyControlStatus
 type enum Icod.Pty.PtyProcessCapabilities
 type enum Icod.Pty.PtyProcessOwnership
 type enum Icod.Pty.PtyProcessTarget
+type enum Icod.Pty.PtyRecordingEventKind
+type enum Icod.Pty.PtyRecordingStatus
 type enum Icod.Pty.PtySessionEndReason
 type enum Icod.Pty.PtySessionEventKind
 type enum Icod.Pty.PtySessionFailureStage
@@ -239,6 +299,13 @@ type enum Icod.Pty.PtySignal
 type enum Icod.Pty.PtyTerminalCapabilities
 type enum Icod.Pty.PtyTerminalProfile
 type sealed-class Icod.Pty.PtyProcess
+type sealed-class Icod.Pty.PtyRecordingEvent
+type sealed-class Icod.Pty.PtyRecordingFormatException
+type sealed-class Icod.Pty.PtyRecordingOptions
+type sealed-class Icod.Pty.PtyRecordingReader
+type sealed-class Icod.Pty.PtyRecordingReaderOptions
+type sealed-class Icod.Pty.PtyRecordingReplayResult
+type sealed-class Icod.Pty.PtyRecordingResult
 type sealed-class Icod.Pty.PtySession
 type sealed-class Icod.Pty.PtySessionDiagnostics
 type sealed-class Icod.Pty.PtySessionEvent

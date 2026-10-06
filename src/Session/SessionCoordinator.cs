@@ -1,6 +1,9 @@
 namespace Icod.Pty.Session;
 
+using Icod.Pty.Recording;
+
 internal sealed class SessionCoordinator {
+	private static readonly Task<PtyRecordingResult> DisabledRecording = Task.FromResult(PtyRecordingResult.Disabled);
 	private readonly object gate = new();
 	private readonly SessionConfiguration configuration;
 	private readonly CancellationTokenSource inputStop = new(), outputStop = new(), releaseNow = new();
@@ -10,6 +13,7 @@ internal sealed class SessionCoordinator {
 	private readonly List<PtySessionFailure> failures = new();
 	private readonly List<Task> shutdowns = new();
 	private readonly SessionJournal journal = new();
+	private readonly SessionRecorder? recorder;
 	private PtySessionEndReason? reason;
 	private PtyShutdownResult? lastShutdownResult;
 	private PtySessionOutputStatus? outputOverride;
@@ -20,10 +24,12 @@ internal sealed class SessionCoordinator {
 	internal Stream Output { get; }
 	internal Task<PtySessionResult> Completion => completion.Task;
 	internal Task<PtySessionOutputStatus> OutputCompletion => outputCompletion.Task;
+	internal Task<PtyRecordingResult> RecordingCompletion => recorder?.Completion ?? DisabledRecording;
 	internal PtySessionDiagnostics Diagnostics => journal.Snapshot();
 	internal SessionCoordinator(PtyProcess process, SessionConfiguration configuration) {
 		Process = process; this.configuration = configuration;
 		Input = process.Input; Output = process.Output; Writer = new(Input, journal.AddWrittenToPty);
+		recorder = configuration.Recording == null ? null : new(configuration.Recording, process.Size);
 		_ = Task.Run(RunAsync);
 	}
 	private void Trigger(PtySessionEndReason why, PtySessionFailureStage? stage = null, Exception? error = null) {
@@ -64,6 +70,7 @@ internal sealed class SessionCoordinator {
 		try { await Task.WhenAll(activeShutdowns).ConfigureAwait(false); } catch (Exception) { }
 		await Task.Run(() => Cleanup(Process.Dispose)).ConfigureAwait(false);
 		await input.ConfigureAwait(false); await output.ConfigureAwait(false); await Writer.Idle.ConfigureAwait(false); await process.ConfigureAwait(false);
+		if (recorder != null) await recorder.FinishAsync(output.Result == PtySessionOutputStatus.EndOfStream ? PtyRecordingStatus.Complete : PtyRecordingStatus.Stopped).ConfigureAwait(false);
 		if (!configuration.LeaveInputOpen && configuration.Input != null) Cleanup(configuration.Input.Dispose);
 		if (!configuration.LeaveOutputOpen) Cleanup(configuration.Output.Dispose);
 		journal.SetPhase(PtySessionPhase.Completed); journal.Record(PtySessionEventKind.Completed);
@@ -77,12 +84,13 @@ internal sealed class SessionCoordinator {
 		catch (Exception error) { journal.Record(PtySessionEventKind.ProcessFailed); Trigger(PtySessionEndReason.ProcessFailed, PtySessionFailureStage.Process, error); }
 	}
 	private async Task<PtySessionOutputStatus> PumpOutputAsync() {
+		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? record = recorder == null ? null : recorder.RecordOutputAsync;
 		PtySessionOutputStatus observed = await SessionPumps.OutputAsync(Output, configuration.Output, outputStop.Token,
 			error => {
 				lock (gate) { if (outputOverride is null or PtySessionOutputStatus.Stopped) outputOverride = PtySessionOutputStatus.Faulted; }
 				journal.Record(PtySessionEventKind.OutputFailed); Trigger(PtySessionEndReason.OutputFailed, PtySessionFailureStage.Output, error);
 			},
-			journal.AddReadFromPty, journal.AddWrittenToOutput).ConfigureAwait(false);
+			journal.AddReadFromPty, journal.AddWrittenToOutput, record).ConfigureAwait(false);
 		if (observed == PtySessionOutputStatus.EndOfStream) journal.Record(PtySessionEventKind.OutputEnded);
 		PtySessionOutputStatus status; lock (gate) status = outputOverride ?? observed;
 		outputCompletion.TrySetResult(status); return status;
@@ -100,6 +108,7 @@ internal sealed class SessionCoordinator {
 			Trigger(PtySessionEndReason.InputFailed, PtySessionFailureStage.Input, error); throw;
 		}
 	}
+	internal void Resize(PtySize size) { Process.Resize(size); recorder?.RecordResize(size); }
 	internal Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, CancellationToken token) {
 		Task<PtyShutdownResult> operation; TaskCompletionSource<PtyShutdownResult> tracked = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		lock (gate) {

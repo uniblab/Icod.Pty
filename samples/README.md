@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, and `--session-smoke` for the reusable-owner package check.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, `--session-smoke` for the reusable-owner package check, and `--recording-smoke` for bounded output/resize recording and replay.
 
 Build once from the repository root:
 
@@ -128,3 +128,26 @@ dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build --
 ```
 
 Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application support table](../README.md#published-application-support) for verified RIDs, frameworks, external helper files, and runtime prerequisites.
+
+## Recording and replay acceptance
+
+The recording check launches two managed children through `PtySession`. The first records raw binary output plus a successful resize, validates the file, and requires replayed output to match the bytes accepted by the session destination. The second uses the 32-byte minimum cap, requires a valid `Truncated` prefix while live output still completes, and verifies that removing one byte makes the reader reject the file. Captured terminal bytes are never printed.
+
+From CMD or Windows PowerShell 5.1:
+
+```text
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- --recording-smoke
+```
+
+From SH:
+
+```sh
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --recording-smoke
+```
+
+Expected output is `PTY recording smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. This noninteractive check does not capture input or mutate the host console. Record Windows laptop results separately from hosted CI.
+
+**Reported 2026-10-06:** the user ran the CMD command above without `--no-build`, in Release/net10.0
+on the previously identified Windows x64 laptop (Windows 10.0.26200.9457), and reported
+`PTY recording smoke check passed.` The checked-out commit was not shown. Manual net8.0/net9.0
+runs remain unreported; this noninteractive result does not establish interactive host restoration.

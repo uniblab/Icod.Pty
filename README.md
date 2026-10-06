@@ -1,10 +1,10 @@
 # Icod.Pty
 
-Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
+Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, bounded output/resize recording and replay, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md) and its [development roadmap](docs/Terminal-Configuration-Implementation-Plan.md).
+Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md). Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
 
 ## Platforms
 
@@ -27,7 +27,7 @@ GitHub uses explicit labels for Windows/Linux ARM64 and macOS Intel; the selecte
 
 ### Published application support
 
-The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
+The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, recording/replay, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
 
 | OS / architecture | RIDs | TFMs | Framework-dependent | Self-contained | Single-file self-contained | Trimmed self-contained |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -160,6 +160,40 @@ Operational input, output, process-observation, and cleanup failures are retaine
 
 `GetDiagnostics()` returns a detached snapshot: the current phase, input-seal state, completed byte counts, and the latest 32 lifecycle events. It contains no command, environment, input, output, transcript, or exception-message data. `DroppedEvents` reports ring-buffer eviction. Use `PtyProcess` when the caller deliberately wants direct streams and manual lifetime coordination.
 
+### Bounded recording and replay
+
+Attach recording to `PtySessionOptions`; existing sessions keep recording disabled:
+
+```csharp
+using var output = new MemoryStream();
+using var recording = new MemoryStream();
+await using var session = await PtySession.StartAsync(start, new(output) {
+    Recording = new PtyRecordingOptions(recording) {
+        MaxBytes = 16 * 1024 * 1024,
+        LeaveOpen = true
+    }
+});
+
+PtySessionResult sessionResult = await session.Completion;
+PtyRecordingResult recordingResult = await session.RecordingCompletion;
+
+recording.Position = 0;
+await using var reader = await PtyRecordingReader.OpenAsync(recording);
+while (await reader.ReadAsync() is { } item) {
+    if (item.Kind == PtyRecordingEventKind.Output)
+        await Console.OpenStandardOutput().WriteAsync(item.Output);
+    else
+        Console.WriteLine($"resize: {item.Size}");
+}
+Console.WriteLine($"recording: {reader.FinalStatus}");
+```
+
+The version 1 binary file stores the initial size, output byte frames of at most 16 KiB, successful resizes, nondecreasing elapsed `TimeSpan` ticks, and one terminal marker. Output is admitted after the configured output destination accepts the chunk; resize is admitted after the native resize succeeds. Their recorded order is the order in which those completed operations enter the recorder. It does not claim when the child observed bytes relative to a resize already in flight.
+
+`MaxBytes` includes the file and frame headers and defaults to 16 MiB; 32 bytes is the minimum valid file. The writer reserves room for a terminal marker. Reaching the cap produces a valid `Truncated` prefix and leaves the live session running. `Complete`, `Truncated`, `Stopped`, and `Faulted` are reported through `RecordingCompletion` independently of `Completion` and `OutputCompletion`. A slow or cancellation-uncooperative recording stream can delay output, synchronous `Resize`, and finalization. `LeaveOpen = false` transfers disposal to the successfully started session; failed startup leaves the supplied stream open.
+
+The reader validates magic, version, reserved fields, sizes, lengths, timestamp order, terminal marker, and trailing data before accepting a complete file. Its independent defaults are 64 MiB total input and 16 KiB per output frame. `ReplayAsync` copies output bytes in event order without timing delays or process launch; event iteration also exposes resize records. Input bytes are never captured. The file can contain passwords or other sensitive terminal output, so protect it as application data. Format errors and session diagnostics do not include payload bytes.
+
 ### Interrupt and controlled shutdown
 
 For an already-running shell, with an output reader already active:
@@ -283,7 +317,7 @@ dotnet run --project samples/Icod.Pty.Sample -f net10.0 -- --smoke
 
 The sample accepts an executable followed by arguments and forwards input immediately. With no arguments it opens the platform shell. It copies terminal dimensions, forwards resize changes, and restores host modes and Windows code pages on normal exit and handled failures. Use `--line` for line input or redirected streams, `--interactive` to state the default explicitly, or `--` before the executable. The host terminal renders output.
 
-Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, and `--terminal-config-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published net10.0 output; internal child switches support the behavioral checks.
+Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, `--terminal-config-smoke`, and `--recording-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published output; internal child switches support the behavioral checks.
 
 ### Windows laptop acceptance
 

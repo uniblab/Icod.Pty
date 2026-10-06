@@ -17,10 +17,11 @@ internal sealed class ControlledBackend : IPtyBackend {
 	private Stream output = new MemoryStream();
 	internal Exception? OutputAccessFailure { get; set; }
 	internal Exception? DisposeFailure { get; set; }
+	internal Exception? ResizeFailure { get; set; }
 	public Stream Output { get => OutputAccessFailure == null ? output : throw OutputAccessFailure; set => output = value; }
 	public int ProcessId => 42;
 	public Task<int> Exit => Completion.Task;
-	public void Resize(PtySize size) { }
+	public void Resize(PtySize size) { if (ResizeFailure != null) throw ResizeFailure; }
 	public void Terminate() { TerminateCount++; if (CompleteOnTerminate) Completion.TrySetResult(1); }
 	public void Dispose() { DisposeCount++; Input.Dispose(); output.Dispose(); Completion.TrySetResult(1); if (DisposeFailure != null) throw DisposeFailure; }
 	internal static LaunchConfiguration Launch() => new() { Columns = 80, Rows = 24 };

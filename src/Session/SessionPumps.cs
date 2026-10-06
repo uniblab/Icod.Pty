@@ -16,7 +16,8 @@ internal static class SessionPumps {
 		catch (Exception error) { failed(error); }
 	}
 	internal static async Task<PtySessionOutputStatus> OutputAsync(Stream source, Stream destination,
-		CancellationToken token, Action<Exception> failed, Action<int>? read = null, Action<int>? written = null) {
+		CancellationToken token, Action<Exception> failed, Action<int>? read = null, Action<int>? written = null,
+		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? recorded = null) {
 		byte[] buffer = new byte[16384];
 		try {
 			while (true) {
@@ -29,6 +30,7 @@ internal static class SessionPumps {
 					return PtySessionOutputStatus.EndOfStream;
 				}
 				await destination.WriteAsync(buffer.AsMemory(0, count), token).ConfigureAwait(false);
+				if (recorded != null) await recorded(buffer.AsMemory(0, count), token).ConfigureAwait(false);
 				written?.Invoke(count);
 			}
 		} catch (OperationCanceledException error) when (IsExpectedCancellation(error, token)) { return PtySessionOutputStatus.Stopped; }
