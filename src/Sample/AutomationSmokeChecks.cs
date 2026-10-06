@@ -4,8 +4,8 @@ using System.Text;
 namespace Icod.Pty.Sample;
 
 internal static class AutomationSmokeChecks {
-	// ConPTY transports UTF-8 rather than arbitrary invalid byte sequences. Split a
-	// valid multi-byte code point across writes; matcher unit tests cover invalid UTF-8.
+	// ConPTY transcodes each child write as UTF-8. Cross a write boundary only after
+	// a complete code point; matcher unit tests cover arbitrary byte boundaries.
 	private static readonly byte[] BinaryMarker = [0xe2, 0x82, 0xac, (byte)'|'];
 
 	internal static async Task<int> RunAsync() {
@@ -45,10 +45,10 @@ internal static class AutomationSmokeChecks {
 		await output.FlushAsync();
 		Require(await Console.In.ReadLineAsync() == "go", "Automation child expected go.");
 
-		await output.WriteAsync(BinaryMarker.AsMemory(0, 2));
+		await output.WriteAsync(BinaryMarker.AsMemory(0, 3));
 		await output.FlushAsync();
 		await Task.Delay(25);
-		await output.WriteAsync(BinaryMarker.AsMemory(2));
+		await output.WriteAsync(BinaryMarker.AsMemory(3));
 		await output.WriteAsync("ONE:TWO:RETRY"u8.ToArray());
 		await output.FlushAsync();
 		Require(await Console.In.ReadLineAsync() == "quit", "Automation child expected quit.");
