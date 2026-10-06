@@ -164,10 +164,11 @@ foreach ($source in @(Get-ChildItem -LiteralPath $sampleRoot -Filter '*.cs' -Rec
 }
 
 Invoke-DotNet -Arguments @('restore', $project, '--configfile', $nugetConfig, '--packages', $packagesRoot, '--runtime', $RuntimeIdentifier)
-$metadataPath = Join-Path $packagesRoot (Join-Path 'icod.pty' (Join-Path $metadata.Version '.nupkg.metadata'))
-if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) { throw 'Restored Icod.Pty package metadata is missing.' }
-$restored = [System.IO.File]::ReadAllText($metadataPath)
-if ($restored.IndexOf($ArtifactDirectory, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) { throw 'Icod.Pty was not restored from the requested artifact directory.' }
+$restoredPackage = Join-Path $packagesRoot (Join-Path 'icod.pty' (Join-Path $metadata.Version "icod.pty.$($metadata.Version).nupkg"))
+if (-not (Test-Path -LiteralPath $restoredPackage -PathType Leaf)) { throw 'Restored Icod.Pty package is missing.' }
+$artifactHash = (Get-FileHash -LiteralPath $packages[0].FullName -Algorithm SHA256).Hash
+$restoredHash = (Get-FileHash -LiteralPath $restoredPackage -Algorithm SHA256).Hash
+if ($artifactHash -ne $restoredHash) { throw 'Restored Icod.Pty package does not match the requested artifact.' }
 Invoke-DotNet -Arguments (Get-PublishArguments $project $Framework $RuntimeIdentifier $Mode $publishRoot)
 Assert-HelperLayout $publishRoot
 $executable = Get-PublishedExecutable $publishRoot $RuntimeIdentifier
