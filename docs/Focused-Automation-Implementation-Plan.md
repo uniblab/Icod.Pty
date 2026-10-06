@@ -54,7 +54,7 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 | Baseline | `e8d2bfe` | Full existing Staging/net10.0 tests | Passed 274/274 on Linux x64. |
 | FA01–FA05 | Local implementation through `50a8edf` | Targeted tests on net8.0/net9.0/net10.0 | Passed; see task evidence and ledger. |
 | FA06 | `8c1983cc254745f255fe01a27232d237ef781873` | [PR run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800) | Six jobs passed: three TFMs, exact package, framework-dependent, self-contained, single-file, and trimmed consumers. |
-| FA07 | Pending final head | Final gates below | Pending. |
+| FA07 | `eb34b5a07b388324872ddf7d44782201eedef3fc` | [PR run 113](https://github.com/uniblab/Icod.Pty/actions/runs/37541654421) plus final local gates | Six platform jobs passed; Release build and 317/317 tests on each target framework passed locally. |
 
 ### Task 1: FA01 contract and capture (Gate A)
 
@@ -125,7 +125,7 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 
 - [x] Stress continuous unmatched output, many short chunks, repeated timeout/cancellation, script retries, and concurrent dispose under watchdogs; inspect maximum retained memory and session/recording outcomes.
 - [x] Document usage, byte matching and cursor rules, cap/overrun, timeout and disposal responsibility, confidentiality, and ConPTY limitation. Self-review all five review-focus cases and actual additive API diff.
-- [ ] Run `dotnet build Icod.Pty.sln -c Release`, full `dotnet test Icod.Pty.sln -c Staging -f net8.0` (repeat net9.0/net10.0), and final-head six-platform package/published-consumer CI. Record commands, counts, SHA, URLs, skips, and Windows laptop smoke separately; commit `docs: record automation acceptance` only with actual evidence.
+- [x] Run `dotnet build Icod.Pty.sln -c Release`, full `dotnet test Icod.Pty.sln -c Staging -f net8.0` (repeat net9.0/net10.0), and final-head six-platform package/published-consumer CI. Record commands, counts, SHA, URLs, skips, and Windows laptop smoke separately; commit `docs: record automation acceptance` only with actual evidence.
 
 ### FA07 self-review evidence
 
@@ -136,6 +136,8 @@ Each tranche ends in a reviewable commit. Append evidence below with exact SHA, 
 5. Matcher/session/runner tests cover timeout, cancellation, EOF, stop, drain timeout, fault, process-exit drain, input-write failure, runner rejection, and disposal. Twenty repeated net10.0 runs passed 680 focused executions under test deadlines.
 
 The reviewed additive API consists of `PtyAutomationOptions`; `PtyExpectStatus`/`PtyExpectResult`; `PtyScriptStepKind`/`PtyScriptStep`; `PtyScriptStatus`/`PtyScriptResult`; static `PtyScriptRunner.RunAsync`; `PtySessionOptions.Automation`; and `PtySession.ExpectAsync`. `packaging/PublicApiBaseline.txt` contains 377 entries. Existing defaults remain disabled and version-1 recording bytes are unchanged.
+
+Final local qualification built the Release solution with zero warnings/errors, passed all 317 tests on each of net8.0, net9.0, and net10.0, and passed Release/net10.0 `--automation-smoke`. Remote head `eb34b5a07b388324872ddf7d44782201eedef3fc` passed [run 113](https://github.com/uniblab/Icod.Pty/actions/runs/37541654421) on Windows x64/ARM64, Linux x64/ARM64, and macOS x64/ARM64. Every job passed the complete test phase and the exact-package, framework-dependent, self-contained, single-file, and trimmed consumer checks; the expected Windows-only ConPTY query test skipped once per framework. NativeAOT remained a continue-on-error feasibility probe and completed successfully. Windows laptop `--automation-smoke` remains unreported; the prior `--recording-smoke` observation does not qualify it.
 
 ## Completion condition
 
