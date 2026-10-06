@@ -1,6 +1,6 @@
 # Recording and replay development roadmap
 
-**Status:** proposed execution plan for the focused option 8 milestone selected on 2026-10-06. Planning PR only; no tranche is complete yet. Read the [design](Recording-Replay-Design.md) and [main roadmap](../ROADMAP.md) first.
+**Status:** implementation in progress in [PR #7](https://github.com/uniblab/Icod.Pty/pull/7). RR01–RR06 have local Linux x64 evidence; final six-platform package qualification and final-head evidence remain open. Read the [design](Recording-Replay-Design.md) and [main roadmap](../ROADMAP.md) first.
 
 ## Constraints and baseline
 
@@ -40,6 +40,15 @@
 | D | Final six-platform/three-framework build, test, pack, exact-artifact and published-consumer regression; documentation and self-review at the final head. |
 
 Each tranche is a reviewable commit. In an execution PR, append an evidence table with tranche, head SHA, test command, expected/actual result, platform/TFM, and CI URL. A green earlier head does not qualify a changed final head. Hosted CI is distinct from Windows laptop acceptance.
+
+## Execution evidence
+
+| Tranche | Evidence head | Command/gate | Outcome |
+| --- | --- | --- | --- |
+| Baseline | `69fcffac1c4c8de9ed263e9983dd1d1cb551fdfc` | `dotnet test Icod.Pty.sln -c Staging -f net10.0` | Linux x64: 233 passed, 0 failed before implementation. |
+| RR01–RR05 | `10b5a1f` plus pending documentation head | Focused recording contracts, golden/malformed codec cases, cap/fault/ordering/lifecycle tests on net8.0/net9.0/net10.0 | Linux x64: 30 per TFM passed before final self-review additions; 32 net10.0 tests passed after terminal-failure and replay-alias regressions. Full final run remains below. |
+| RR06 | `551efde` plus pending self-review head | `dotnet run --project samples/Icod.Pty.Sample -c Staging -f net10.0 -- --recording-smoke` | Linux x64 native PTY recording, replay, truncation, and malformed-prefix smoke passed. Exact-package six-platform execution remains the CI gate. |
+| RR07–RR08 | pending | Release build, full tests, exact package and published consumers, final documentation/self-review | Local Release build passed with 0 warnings and 0 errors; final-head matrix pending. |
 
 ### RR01: freeze the public contract and format (Gate A)
 

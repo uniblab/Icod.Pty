@@ -1,6 +1,6 @@
 # Focused recording and replay
 
-**Status:** proposed planning design for option 8, selected on 2026-10-06 after PR #6 merged. No feature implementation, release, or publication is implied by this document.
+**Status:** accepted and implemented in [PR #7](https://github.com/uniblab/Icod.Pty/pull/7); final cross-platform qualification is recorded in the development roadmap. No release or publication is implied by this document.
 
 ## Intent and boundary
 
