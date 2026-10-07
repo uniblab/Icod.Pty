@@ -181,7 +181,7 @@ the local branch to that exact head, the user reported successful Windows x64 la
 
 **Acceptance goal:** all three target frameworks and six platform/RID jobs exercise the exact package consumer and published application modes, with controlled tests for early prompts, chunk boundaries, cap exhaustion, faults, cancellation, and cleanup. Record manual Windows laptop observations separately from hosted CI. No merge or release is implied by selecting this milestone.
 
-## Selected next milestone: release stabilization and focused ConPTY investigation
+## Release stabilization and focused ConPTY investigation
 
 **Decision, 2026-10-07:** after PR #8 merged, the user selected **option 13 plus a focused portion of
 option 9**. [PR #9](https://github.com/uniblab/Icod.Pty/pull/9) records the selection. The
@@ -191,7 +191,7 @@ stabilization work and limits the ConPTY investigation to an evidence-producing,
 implementation and evidence gates. No version, tag, publication, or production workaround is implied by
 selecting this milestone.
 
-**Status:** implemented and qualified in PR #9. Candidate head
+**Status:** [PR #9](https://github.com/uniblab/Icod.Pty/pull/9) merged on 2026-10-07. Candidate head
 `ddb5633a38a4a73dce8aa2b582e5ae63916d2351` passed metadata and all six platform/architecture jobs, all three
 target frameworks, exact-package consumers, and all supported published layouts in
 [run 128](https://github.com/uniblab/Icod.Pty/actions/runs/37663074586). The 377-entry/43-type public API baseline
@@ -200,6 +200,26 @@ not a managed-forwarding defect. Exact-head CI also exposed and verified a priva
 Windows process cleanup race. The [readiness report](docs/Release-Readiness-Report.md) recommends **ready with
 named nonblocking limitations** for a separately selected prerelease; laptop acceptance, merge, version, tag,
 and publication remain separate.
+
+## Selected next milestone: focused timed playback
+
+**Decision, 2026-10-07:** after PR #9 merged, the user selected a focused continuation of **option 8:
+timed playback of existing output-and-resize recordings**. The [proposed design](docs/Timed-Playback-Design.md)
+and [development roadmap](docs/Timed-Playback-Implementation-Plan.md) define this increment. Planning and review
+do not select a package version, tag, or publication.
+
+**Goal:** let a consumer stream the validated recording's output and resize events at their recorded relative
+times without launching a PTY. Preserve the v1 recording format, binary payloads, event order, independent
+reader limits, source ownership, and the existing immediate output-only replay method. The consumer applies each
+event to its own destination; Icod.Pty does not interpret terminal content or control a host console.
+
+**Boundary:** one opt-in timed event-dispatch method with a configurable elapsed-time cap, monotonic scheduling,
+cancellation, and explicit callback/format failures. No input capture, playback speed control, pause/seek, live
+script branching, terminal emulation, or general observer/exporter API. This milestone does not expand NativeAOT
+or the ConPTY compatibility promise.
+
+**Acceptance goal:** deterministic scheduling and failure tests, exact-package smoke on net8.0/net9.0/net10.0,
+and the complete six-platform published-consumer matrix. Record Windows laptop acceptance separately from CI.
 
 **Goal:** determine whether the current public surface and shipped package are ready for a deliberately chosen
 prerelease, correct evidence-supported compatibility defects before they become durable contracts, and replace
@@ -239,7 +259,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
-| 8 | Recording, replay, and automation | Recording/replay complete in merged PR #7; focused live matching and scripted send/expect implemented in PR #8 | Opt-in bounded byte matching and sequential scripts are complete. Input capture, timed replay, regex/text matching, branching, and screen-aware automation remain deferred. |
+| 8 | Recording, replay, and automation | Recording/replay complete in PR #7; live matching/scripts complete in PR #8; focused timed playback selected next | Dispatch existing output/resize events at their recorded times. Input capture, speed/seek, regex/text matching, branching, and screen-aware automation remain deferred. |
 | 9 | ConPTY compatibility investigation | Focused investigation completed in PR #9 | The bounded pure-C# classifier reproduced native prefix loss across Windows architectures while deterministic managed forwarding remained exact. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
