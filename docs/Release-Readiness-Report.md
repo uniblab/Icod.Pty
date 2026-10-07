@@ -40,6 +40,9 @@ all three target frameworks in [run 116](https://github.com/uniblab/Icod.Pty/act
 Equivalent evidence for the final PR #9 head is **Open**. The PR workflow now requests six bounded Windows ConPTY
 classification reports—two RIDs by three frameworks—and uploads one artifact per RID. The reports and their
 cross-architecture classification remain **Open** until both Windows jobs complete on the same exact head.
+Runs 122 and 123 produced no usable classification evidence: run 122 exposed harness-only report-path and loaded
+test-deadline defects, while run 123 ended after its successful metadata job without creating the validation
+matrix. Both are excluded from the outcome decision.
 
 ## Exact-package consumers
 
