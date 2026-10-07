@@ -5,6 +5,8 @@ using Icod.Pty.Sample;
 try {
 	if (args is ["--terminal-config-child"]) return TerminalConfigurationSmokeChecks.RunChild();
 	if (args is ["--recording-child"]) return await RecordingSmokeChecks.RunChildAsync();
+	if (args is ["--automation-child"]) return await AutomationSmokeChecks.RunChildAsync();
+	if (args is ["--automation-smoke"]) return await AutomationSmokeChecks.RunAsync();
 	if (args is ["--recording-smoke"]) return await RecordingSmokeChecks.RunAsync();
 	if (args is ["--terminal-config-smoke"]) return await TerminalConfigurationSmokeChecks.RunAsync();
 	if (args is ["--session-smoke"]) return await SessionSmokeChecks.RunAsync();

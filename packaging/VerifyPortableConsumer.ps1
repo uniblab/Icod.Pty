@@ -227,7 +227,7 @@ $isUnix = -not $RuntimeIdentifier.StartsWith('win-', [System.StringComparison]::
 $expectFailure = $layout.MissingAsset -eq 'Icod.Pty.Host.dll' -and $isUnix
 $allowFailure = $layout.MissingAsset.Length -ne 0 -and $isUnix -and -not $expectFailure
 $smokeModes = @('--smoke')
-if ($layout.MissingAsset.Length -eq 0) { $smokeModes = @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke', '--recording-smoke') }
+if ($layout.MissingAsset.Length -eq 0) { $smokeModes = @('--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke', '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke', '--terminal-config-smoke', '--recording-smoke', '--automation-smoke') }
 $outcomes = @(foreach ($smokeMode in $smokeModes) { Invoke-PublishedMode $executable $smokeMode $layout.Directory $TimeoutSeconds -ExpectFailure:$expectFailure -AllowFailure:$allowFailure })
 $result = [ordered]@{ package = "$($metadata.Id) $($metadata.Version)"; framework = $Framework; runtimeIdentifier = $RuntimeIdentifier; mode = $Mode; scenario = $Scenario; executable = $executable; helperLayout = if ($layout.MissingAsset.Length -eq 0) { 'Complete' } else { "Missing:$($layout.MissingAsset)" }; expectedFailure = $expectFailure; outcomes = $outcomes; smokeModes = $smokeModes.Count }
 Write-Host ('PORTABILITY-RESULT ' + ($result | ConvertTo-Json -Compress))

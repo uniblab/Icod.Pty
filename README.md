@@ -1,10 +1,10 @@
 # Icod.Pty
 
-Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, bounded output/resize recording and replay, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
+Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, bounded live byte matching and send/expect scripts, bounded output/resize recording and replay, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md). Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
+Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md). Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md). Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
 
 ## Platforms
 
@@ -27,7 +27,7 @@ GitHub uses explicit labels for Windows/Linux ARM64 and macOS Intel; the selecte
 
 ### Published application support
 
-The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, recording/replay, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
+The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, live matching/scripts, recording/replay, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
 
 | OS / architecture | RIDs | TFMs | Framework-dependent | Self-contained | Single-file self-contained | Trimmed self-contained |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -194,6 +194,39 @@ The version 1 binary file stores the initial size, output byte frames of at most
 
 The reader validates magic, version, reserved fields, sizes, lengths, timestamp order, terminal marker, and trailing data before accepting a complete file. Its independent defaults are 64 MiB total input and 16 KiB per output frame. `ReplayAsync` copies output bytes in event order without timing delays or process launch; event iteration also exposes resize records. Input bytes are never captured. The file can contain passwords or other sensitive terminal output, so protect it as application data. Format errors and session diagnostics do not include payload bytes.
 
+### Bounded live matching and scripts
+
+Automation is opt-in. Do not also set `PtySessionOptions.Input`; use the session writer or a script for child input:
+
+```csharp
+using System.Text;
+
+using var output = new MemoryStream();
+await using var session = await PtySession.StartAsync(start, new(output) {
+    Automation = new PtyAutomationOptions {
+        MaxBufferedOutputBytes = 64 * 1024
+    }
+});
+
+string newline = OperatingSystem.IsWindows() ? "\r\n" : "\n";
+PtyScriptResult script = await PtyScriptRunner.RunAsync(session, [
+    PtyScriptStep.Expect("ready> "u8.ToArray(), TimeSpan.FromSeconds(5)),
+    PtyScriptStep.Send(Encoding.UTF8.GetBytes("status" + newline)),
+    PtyScriptStep.Expect("complete"u8.ToArray(), TimeSpan.FromSeconds(5))
+], cancellationToken);
+
+if (script.Status != PtyScriptStatus.Completed)
+    Console.WriteLine($"step {script.FailedStepIndex}: {script.ExpectStatus}");
+```
+
+Matching is ordinal over raw bytes; it does not decode text, interpret a terminal screen, or use regular expressions. Output accepted by the configured destination is retained from session startup. A successful match consumes through the first occurrence and leaves its suffix for the next expectation. Timeout or caller cancellation leaves the cursor unchanged. Only one expectation and one script runner may be pending per session; direct concurrent writes and expectations have no script-order guarantee.
+
+`MaxBufferedOutputBytes` defaults to 64 KiB and accepts 1 byte through 1 MiB. A pattern must be nonempty and no larger than the cap. If unmatched output would exceed the cap, automation permanently reports `BufferLimitExceeded` for that session while live output, recording, and process lifetime continue. Other nonmatching results distinguish the caller deadline from output EOF, stop, drain timeout, and fault. Buffered bytes are searched before a terminal output result is returned. Primary-process exit alone does not end matching while output is still draining.
+
+The runner copies the step list before awaiting and each step factory copies its byte argument. It propagates cancellation and input-write exceptions, returns the failed expectation index/status, and never shuts down or disposes the caller's session. Dispose the session on every path. Send bytes and retained output can contain credentials or other secrets; the library does not log, redact, or record script input. Optional recording remains output/resize-only and has an independent result.
+
+ConPTY exposes terminal presentation bytes, not a transparent arbitrary-binary child channel: console output code pages can translate non-ASCII child writes, and its documented fragmented-query limitation can discard native input bytes. `ExpectAsync` matches exactly the bytes that Icod.Pty successfully delivered to the output destination; it cannot recover bytes changed or discarded by the native terminal.
+
 ### Interrupt and controlled shutdown
 
 For an already-running shell, with an output reader already active:
@@ -317,7 +350,7 @@ dotnet run --project samples/Icod.Pty.Sample -f net10.0 -- --smoke
 
 The sample accepts an executable followed by arguments and forwards input immediately. With no arguments it opens the platform shell. It copies terminal dimensions, forwards resize changes, and restores host modes and Windows code pages on normal exit and handled failures. Use `--line` for line input or redirected streams, `--interactive` to state the default explicitly, or `--` before the executable. The host terminal renders output.
 
-Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, `--terminal-config-smoke`, and `--recording-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published output; internal child switches support the behavioral checks.
+Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, `--terminal-config-smoke`, `--recording-smoke`, and `--automation-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published output; internal child switches support the behavioral checks.
 
 ### Windows laptop acceptance
 

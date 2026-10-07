@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input, `--session-smoke` for the reusable-owner package check, and `--recording-smoke` for bounded output/resize recording and replay.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output, `--session-smoke` for the reusable-owner package check, `--recording-smoke` for bounded output/resize recording and replay, and `--automation-smoke` for live matching and ordered scripts.
 
 Build once from the repository root:
 
@@ -151,3 +151,21 @@ Expected output is `PTY recording smoke check passed.` Repeat for net8.0 and net
 on the previously identified Windows x64 laptop (Windows 10.0.26200.9457), and reported
 `PTY recording smoke check passed.` The checked-out commit was not shown. Manual net8.0/net9.0
 runs remain unreported; this noninteractive result does not establish interactive host restoration.
+
+## Live automation acceptance
+
+The automation check starts a managed child through `PtySession`, captures an early prompt, sends a line, matches one byte pattern spanning two child writes, consumes two consecutive suffix matches, verifies a timed-out step and retry without moving the cursor, then sends the child's exit request. It explicitly disposes its session and prints no child payload bytes. Transport-independent tests separately cover NUL, invalid UTF-8, and every byte boundary; the native Windows fixture stays in the portable ASCII range because console output code pages can translate non-ASCII writes before ConPTY emits terminal data.
+
+From CMD or Windows PowerShell 5.1:
+
+```text
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- --automation-smoke
+```
+
+From SH:
+
+```sh
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --automation-smoke
+```
+
+Expected output is `PTY automation smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not change the host console's code pages or record/send payloads to its output. Hosted CI passed this mode from exact-package and published consumers on six platform/RID jobs at runtime head `8c1983cc254745f255fe01a27232d237ef781873` in [run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800). On 2026-10-07, the user reported that exact success message from a Windows x64 laptop Release/net10.0 run. The checked-out commit was not shown; manual net8.0/net9.0 runs remain unreported.

@@ -14,6 +14,7 @@ internal sealed class SessionCoordinator {
 	private readonly List<Task> shutdowns = new();
 	private readonly SessionJournal journal = new();
 	private readonly SessionRecorder? recorder;
+	private readonly SessionAutomation? automation;
 	private PtySessionEndReason? reason;
 	private PtyShutdownResult? lastShutdownResult;
 	private PtySessionOutputStatus? outputOverride;
@@ -30,6 +31,7 @@ internal sealed class SessionCoordinator {
 		Process = process; this.configuration = configuration;
 		Input = process.Input; Output = process.Output; Writer = new(Input, journal.AddWrittenToPty);
 		recorder = configuration.Recording == null ? null : new(configuration.Recording, process.Size);
+		automation = configuration.Automation == null ? null : new(configuration.Automation.MaxBufferedOutputBytes);
 		_ = Task.Run(RunAsync);
 	}
 	private void Trigger(PtySessionEndReason why, PtySessionFailureStage? stage = null, Exception? error = null) {
@@ -85,14 +87,16 @@ internal sealed class SessionCoordinator {
 	}
 	private async Task<PtySessionOutputStatus> PumpOutputAsync() {
 		Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? record = recorder == null ? null : recorder.RecordOutputAsync;
+		Action<ReadOnlyMemory<byte>>? observe = automation == null ? null : automation.Observe;
 		PtySessionOutputStatus observed = await SessionPumps.OutputAsync(Output, configuration.Output, outputStop.Token,
 			error => {
 				lock (gate) { if (outputOverride is null or PtySessionOutputStatus.Stopped) outputOverride = PtySessionOutputStatus.Faulted; }
 				journal.Record(PtySessionEventKind.OutputFailed); Trigger(PtySessionEndReason.OutputFailed, PtySessionFailureStage.Output, error);
 			},
-			journal.AddReadFromPty, journal.AddWrittenToOutput, record).ConfigureAwait(false);
+			journal.AddReadFromPty, journal.AddWrittenToOutput, record, observe).ConfigureAwait(false);
 		if (observed == PtySessionOutputStatus.EndOfStream) journal.Record(PtySessionEventKind.OutputEnded);
 		PtySessionOutputStatus status; lock (gate) status = outputOverride ?? observed;
+		automation?.Complete(status);
 		outputCompletion.TrySetResult(status); return status;
 	}
 	private void Cleanup(Action action) {
@@ -107,6 +111,10 @@ internal sealed class SessionCoordinator {
 		catch (Exception error) when (error is not OperationCanceledException and not InvalidOperationException and not ObjectDisposedException) {
 			Trigger(PtySessionEndReason.InputFailed, PtySessionFailureStage.Input, error); throw;
 		}
+	}
+	internal Task<PtyExpectResult> ExpectAsync(ReadOnlyMemory<byte> pattern, TimeSpan timeout, CancellationToken token) {
+		if (automation == null) throw new InvalidOperationException("Automation is not enabled for this session.");
+		return automation.ExpectAsync(pattern, timeout, token);
 	}
 	internal void Resize(PtySize size) { Process.Resize(size); recorder?.RecordResize(size); }
 	internal Task<PtyShutdownResult> ShutdownAsync(PtyShutdownOptions options, CancellationToken token) {

@@ -14,6 +14,7 @@ public sealed class PackageSmokeTests {
 	[InlineData("--scope-smoke")]
 	[InlineData("--terminal-config-smoke")]
 	[InlineData("--recording-smoke")]
+	[InlineData("--automation-smoke")]
 	public async Task Verification_modes_work_with_redirected_host(string mode) {
 		using Process process = Process.Start(new ProcessStartInfo(PtyTestSupport.DotNet) {
 			ArgumentList = { Path.Combine(AppContext.BaseDirectory, "sample", "Icod.Pty.Sample.dll"), mode },
