@@ -18,20 +18,24 @@ The child recorded received bytes in a shared file, independently of screen rend
 
 - The sample forwards every byte it receives, including fragmented Unicode, VT, and query replies. A controlled fragmented-host fixture verifies the actual forwarding loop on all six platforms.
 - Real direct and nested PTY tests verify fragmented Unicode/arrow input and a complete query reply on every platform. Send a complete terminal reply in one write when possible; this reduces exposure but is not a universal native transport guarantee.
-- The native test that fragments the query itself remains enabled on Unix. On Windows it is explicitly skipped by default because the native behavior above prevents a portable success assertion. It remains available as an opt-in reproducer, and its skip is visible in xUnit results.
+- The strict native test that fragments the query itself remains enabled on Unix. On Windows it is always skipped because the native behavior above prevents a portable success assertion. A separate opt-in Windows classifier runs a fixed ten-pattern matrix over direct and nested-sample paths, five attempts per pattern, and reports `Reproduced`, `NotReproduced`, or `Inconclusive` without converting an environmental outcome into a test failure.
+- PR validation creates one privacy-safe JSON report for each Windows RID and target framework and uploads the three reports under a RID-specific artifact. Missing, malformed, unavailable, or incomplete output fails the harness; a completed native classification does not. Exact-head results remain unclassified until both Windows artifacts are available.
 - Icod.Pty does not add a VT parser, delay lone Escape keys, synthesize handshake input, or bundle a replacement native ConPTY DLL. Those would require a separate design. Applications that require arbitrary fragmented reply delivery must account for this Windows limitation.
 
-From Windows PowerShell 5.1, run the reproducer on a specific Windows build:
+From Windows PowerShell 5.1, run the bounded classifier on a specific Windows build:
 
 ```powershell
 $env:ICOD_PTY_VERIFY_SPLIT_QUERIES = '1'
+$env:ICOD_PTY_CONPTY_REPORT_PATH = Join-Path $PWD 'artifacts/conpty-fragmentation-local-net10.0.json'
 try {
-    dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Release -f net10.0 --filter FullyQualifiedName~Native_terminal_preserves_split_query_reply
+    New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+    dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Release -f net10.0 --filter FullyQualifiedName=Icod.Pty.Tests.InteractiveSampleTests.ConPty_fragmentation_probe_writes_classified_report
 } finally {
     Remove-Item Env:ICOD_PTY_VERIFY_SPLIT_QUERIES
+    Remove-Item Env:ICOD_PTY_CONPTY_REPORT_PATH
 }
 ```
 
-The diagnostic environment variable affects test discovery only. It has no effect on the library or sample. Record the OS build, architecture, runtime, and full failure trace; five attempts run per direct/nested case. A passing run establishes only those attempts, not absence of the intermittent native limitation.
+The diagnostic environment variables affect tests only. They have no effect on the library or sample. The report records OS/build, architecture, framework, fixed pattern names, received byte counts, and outcomes; it never records terminal payload or caller input. A `NotReproduced` report establishes only its 100 bounded trials, not absence of the intermittent native limitation.
 
 Microsoft describes the [pseudoconsole's input translation responsibilities](https://learn.microsoft.com/en-us/windows/console/pseudoconsoles). Its [input state machine](https://github.com/microsoft/terminal/blob/main/src/terminal/parser/stateMachine.cpp) also documents the ambiguity between fragmented escape sequences and individual Escape/Alt keystrokes. These explain why native interpretation is part of the transport; the concrete loss above is established by this repository's recorded tests.

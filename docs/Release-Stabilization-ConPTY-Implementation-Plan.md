@@ -2,7 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** proposed in [PR #9](https://github.com/uniblab/Icod.Pty/pull/9); implementation awaits plan review and execution-method selection.
+**Status:** approved on 2026-10-07; native inline execution is in progress without subagents in
+[PR #9](https://github.com/uniblab/Icod.Pty/pull/9).
 
 **Goal:** audit and stabilize the post-PR #8 package contract, classify the known ConPTY fragmented-input behavior with bounded evidence, and produce a release-readiness report without selecting or publishing a version.
 
@@ -45,7 +46,7 @@
 - Consumes: `packaging/PublicApiBaseline.txt`, `Icod.Pty.csproj`, the approved design, and the final PR #8 evidence.
 - Produces: one contract-disposition ledger and one readiness ledger used by Tasks 2 and 6–9.
 
-- [ ] **Step 1: Capture the unmodified baseline**
+- [x] **Step 1: Capture the unmodified baseline**
 
 Run:
 
@@ -57,15 +58,15 @@ rg '^type ' packaging/PublicApiBaseline.txt | wc -l
 
 Expected: 317/317 tests on each target framework, 377 public baseline entries, and 43 exported types. Record the exact commit and counts in both ledgers.
 
-- [ ] **Step 2: Create the public-contract audit table**
+- [x] **Step 2: Create the public-contract audit table**
 
 Group all 43 exported types under process/startup, control/scope, shutdown, session/diagnostics, terminal configuration, recording/replay, and automation. Give every group columns for `Surface`, `Ownership`, `Cancellation`, `Failure semantics`, `Platform variance`, `Disposition`, and `Evidence`. Initial dispositions are only `Reviewing`, `Retain`, `Clarify`, `Correct`, or `Defer`; no row may remain absent.
 
-- [ ] **Step 3: Create the readiness report skeleton**
+- [x] **Step 3: Create the readiness report skeleton**
 
 Record current version `0.1.0-alpha.1`, target frameworks, six RIDs, 377-entry/43-type baseline, supported deployment layouts, NativeAOT's informational status, known ConPTY limitation, and separate sections for repository tests, native CI, exact-package consumers, published layouts, and manual Windows acceptance. Mark every unresolved item explicitly `Open`.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `git diff --check && rg -n 'Reviewing|Open' docs/Public-Contract-Audit.md docs/Release-Readiness-Report.md`
 
@@ -87,19 +88,19 @@ git commit -m "docs: establish release readiness ledgers"
 - Consumes: the complete ledger from Task 1 and the existing public compatibility test.
 - Produces: a `Retain`, `Clarify`, `Correct`, or `Defer` disposition for every group. A `Correct` finding is a stop condition that receives an exact TDD amendment before product code changes.
 
-- [ ] **Step 1: Audit each contract group against source, README, and tests**
+- [x] **Step 1: Audit each contract group against source, README, and tests**
 
 For every ledger row, check construction/mutability, ownership/disposal, cancellation before and after side effects, timeout bounds, exception/result separation, post-completion behavior, capability reporting, platform variance, and payload secrecy. Cite exact tests or documentation; absence is a finding, not evidence.
 
-- [ ] **Step 2: Resolve or gate every finding**
+- [x] **Step 2: Resolve or gate every finding**
 
 Use `Retain` when code, tests, and documentation agree; `Clarify` when documentation alone is incomplete; and `Defer` when the behavior is coherent but belongs to a later option. For `Correct`, record the exact source owner, proposed test file/name/assertion, compatibility impact, and minimal correction, then stop and amend this plan before touching product code. A public signature change, cross-layer buffering policy, or semantic break requires a separate design.
 
-- [ ] **Step 3: Close the audit**
+- [x] **Step 3: Close the audit**
 
 Run the full three-framework suite and `PublicApiCompatibilityTests`. Expected: all tests pass and the baseline remains byte-for-byte unchanged unless the ledger contains an explicitly approved compatibility correction.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```sh
 git add docs/Public-Contract-Audit.md docs/Release-Readiness-Report.md
@@ -124,29 +125,29 @@ Record `No production change required` when all findings are retained, clarified
   - `internal sealed record ConPtyProbeReport(string Schema, string OSDescription, string OSVersion, string Architecture, string Framework, int Repetitions, ConPtyProbeOutcome Outcome, IReadOnlyList<ConPtyTrialResult> Trials)`
   - `ConPtyFragmentationProbe.CreatePatterns()`, `Classify(...)`, and `WriteReport(string, ConPtyProbeReport)`.
 
-- [ ] **Step 1: Write failing pattern and classifier tests**
+- [x] **Step 1: Write failing pattern and classifier tests**
 
 Add tests named `Patterns_cover_intact_every_query_split_and_bytewise_delays`, `Any_prefix_loss_or_mismatch_is_reproduced`, `All_exact_trials_are_not_reproduced`, and `Timeout_without_mismatch_is_inconclusive`. Assert ten patterns: intact query, seven two-part query split points, zero-delay bytewise query, and 10 ms bytewise query. All retain the six-byte fragmented Unicode/up-arrow control prefix and sum to the 14-byte fixed sequence.
 
-- [ ] **Step 2: Run the tests and require failure**
+- [x] **Step 2: Run the tests and require failure**
 
 Run: `dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c Release -f net10.0 --filter FullyQualifiedName~ConPtyFragmentationProbeTests`
 
 Expected: compilation failure because the evidence model does not exist.
 
-- [ ] **Step 3: Implement the minimal model and classifier**
+- [x] **Step 3: Implement the minimal model and classifier**
 
 Use schema identifier `icod-pty/conpty-fragmentation/v1`. `Reproduced` wins when any trial is `PrefixLost` or `Mismatch`; otherwise a timeout yields `Inconclusive`; otherwise all exact trials yield `NotReproduced`. `Unavailable` is created by the platform gate, not inferred from an empty trial list. Reject empty or inconsistent reports rather than silently classifying them.
 
-- [ ] **Step 4: Write failing report-boundary tests**
+- [x] **Step 4: Write failing report-boundary tests**
 
 Add `Report_overwrites_an_existing_file_without_payload_fields`, `Report_rejects_a_missing_parent_directory`, `Proper_query_suffix_after_control_prefix_is_prefix_loss`, and `Unrelated_partial_trace_is_mismatch`. Assert UTF-8 JSON, exact schema, aggregate counts, absence of raw bytes and a sentinel `secret-marker`, deterministic replacement, and the two trace classifications from the Review Focus section.
 
-- [ ] **Step 5: Implement report writing and trace classification**
+- [x] **Step 5: Implement report writing and trace classification**
 
 Serialize names, counts, environment identity, and outcomes only, with enums represented by their invariant names through `JsonStringEnumConverter`. Write a complete temporary sibling file and atomically replace/move it to the requested path; delete the temporary file on failure. Do not create a missing parent directory implicitly.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run the focused tests on net8.0, net9.0, and net10.0; expect all to pass.
 
@@ -168,27 +169,27 @@ git commit -m "test: add ConPTY evidence model"
 - Produces: `ConPtyFragmentationProbe.RunAsync(int repetitions, CancellationToken cancellationToken, ConPtyTrialExecutor? executor = null)` and a Windows-only test `ConPty_fragmentation_probe_writes_classified_report`.
 - Test seam: `internal delegate Task<ConPtyTrialResult> ConPtyTrialExecutor(string hostPath, ConPtyWritePattern pattern, int attempt, CancellationToken cancellationToken)`; native execution passes no delegate, while focused tests inject one.
 
-- [ ] **Step 1: Write failing runner-boundary tests**
+- [x] **Step 1: Write failing runner-boundary tests**
 
 Add an injectable per-trial delegate and tests `Cancellation_during_fragment_delay_propagates_and_deletes_trace`, `Trial_timeout_records_received_count_and_disposes_process`, and `Unavailable_platform_has_no_trials`. Require cancellation to remain cancellation, not `TimedOut` evidence.
 
-- [ ] **Step 2: Run focused tests and require failure**
+- [x] **Step 2: Run focused tests and require failure**
 
 Expected: missing `RunAsync`/trial-runner interfaces.
 
-- [ ] **Step 3: Implement bounded direct and nested trials**
+- [x] **Step 3: Implement bounded direct and nested trials**
 
 Run both `direct` (`PtyTestSupport.Child`) and `nested-sample` (`InteractiveSampleTests.Sample`) paths for every pattern and five attempts. Bound readiness and completion separately at two seconds, use `Task.Delay(delay, cancellationToken)` between fragments, read the partial trace with file sharing after timeout, dispose every PTY, and delete every trace in `finally`. Startup, disposal, and report-write failures propagate as harness failures; exact, prefix-loss, mismatch, and bounded read timeout become trial evidence.
 
-- [ ] **Step 4: Replace the Windows opt-in success assertion with classification**
+- [x] **Step 4: Replace the Windows opt-in success assertion with classification**
 
 Keep `Native_terminal_preserves_split_query_reply` strict on Unix and always skipped on Windows. Add `WindowsConPtyProbeFactAttribute`, which runs only on Windows when `ICOD_PTY_VERIFY_SPLIT_QUERIES=1`; otherwise it supplies an explicit skip reason. The new fact runs five repetitions, writes the path from `ICOD_PTY_CONPTY_REPORT_PATH`, and asserts only report validity and completeness—not `NotReproduced`.
 
-- [ ] **Step 5: Verify deterministic and native-safe behavior**
+- [x] **Step 5: Verify deterministic and native-safe behavior**
 
 Run all probe tests normally on Linux: pure tests pass, Unix strict test passes, Windows classification test skips, and no report is created. Then run the full net10.0 suite to confirm the existing forwarding and native Unix coverage remains intact.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add src/Tests/Icod.Pty.Tests/ConPtyFragmentationProbe.cs src/Tests/Icod.Pty.Tests/ConPtyFragmentationProbeTests.cs src/Tests/Icod.Pty.Tests/InteractiveSampleTests.cs
@@ -206,15 +207,15 @@ git commit -m "test: classify ConPTY fragmented input"
 - Consumes: the opt-in fact and JSON report contract from Task 4.
 - Produces: six JSON files per PR head—win-x64/win-arm64 × net8.0/net9.0/net10.0—uploaded as exact-head artifacts.
 
-- [ ] **Step 1: Add the Windows classification step**
+- [x] **Step 1: Add the Windows classification step**
 
 After the ordinary test step, on Windows matrix entries only, loop over all three frameworks. Set `ICOD_PTY_VERIFY_SPLIT_QUERIES=1` and set `ICOD_PTY_CONPTY_REPORT_PATH` in PowerShell to `"artifacts/conpty-fragmentation-${{ matrix.rid }}-$framework.json"`; run only `ConPty_fragmentation_probe_writes_classified_report` with `--no-build --no-restore`. A completed `Reproduced`, `NotReproduced`, or `Inconclusive` report exits successfully; missing/malformed output fails the job.
 
-- [ ] **Step 2: Upload the reports**
+- [x] **Step 2: Upload the reports**
 
 Use `actions/upload-artifact@v4` with one artifact per Windows RID, `if: always()`, seven-day retention, and `if-no-files-found: error`. Keep the ordinary `Test` step unchanged so environmental classification cannot hide deterministic failures.
 
-- [ ] **Step 3: Verify workflow/tooling syntax**
+- [x] **Step 3: Verify workflow/tooling syntax**
 
 Run PowerShell parser checks under `pwsh`; on the identified Windows x64 environment also parse every `.ps1`/`.psm1` under Windows PowerShell 5.1. Inspect the workflow diff for Windows-only conditions and unique artifact names.
 

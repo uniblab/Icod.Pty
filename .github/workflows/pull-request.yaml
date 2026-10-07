@@ -99,6 +99,36 @@ jobs:
           --no-build
           --no-restore
           --logger trx
+      - name: Classify ConPTY fragmented input
+        if: startsWith(matrix.rid, 'win-')
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
+            $reportPath = "artifacts/conpty-fragmentation-${{ matrix.rid }}-$framework.json"
+            $env:ICOD_PTY_VERIFY_SPLIT_QUERIES = '1'
+            $env:ICOD_PTY_CONPTY_REPORT_PATH = $reportPath
+            try {
+              dotnet test tests/Icod.Pty.Tests/Icod.Pty.Tests.csproj -c ${{ env.CONFIGURATION }} -f $framework --no-build --no-restore --filter FullyQualifiedName=Icod.Pty.Tests.InteractiveSampleTests.ConPty_fragmentation_probe_writes_classified_report
+              if ($LASTEXITCODE -ne 0) { throw "ConPTY classification failed for $framework with exit code $LASTEXITCODE." }
+              if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) { throw "ConPTY classification did not create '$reportPath'." }
+              $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+              if ($report.schema -ne 'icod-pty/conpty-fragmentation/v1') { throw "ConPTY report '$reportPath' has an unsupported schema." }
+              if ($report.repetitions -ne 5 -or @($report.trials).Count -ne 100) { throw "ConPTY report '$reportPath' is incomplete." }
+              if ($report.outcome -notin @('Reproduced', 'NotReproduced', 'Inconclusive')) { throw "ConPTY report '$reportPath' has an invalid outcome." }
+            } finally {
+              Remove-Item Env:ICOD_PTY_VERIFY_SPLIT_QUERIES -ErrorAction SilentlyContinue
+              Remove-Item Env:ICOD_PTY_CONPTY_REPORT_PATH -ErrorAction SilentlyContinue
+            }
+          }
+      - name: Upload ConPTY fragmentation evidence
+        if: always() && startsWith(matrix.rid, 'win-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: conpty-fragmentation-${{ matrix.rid }}
+          path: artifacts/conpty-fragmentation-${{ matrix.rid }}-net*.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Pack Staging artifacts
         run: >-
           dotnet pack '${{ needs.metadata.outputs.solution_path }}'
