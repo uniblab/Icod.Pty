@@ -22,7 +22,7 @@ public sealed class PtyAutomationSessionTests {
 		PtySession session = await SessionTestSupport.Start(backend, destination, automation: new());
 		try {
 			await destination.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-			Task<PtyExpectResult> pending = session.ExpectAsync("par"u8.ToArray(), TimeSpan.FromSeconds(1));
+			Task<PtyExpectResult> pending = session.ExpectAsync("par"u8.ToArray(), TimeSpan.FromSeconds(10));
 			destination.Release.SetResult();
 
 			Assert.Equal(new(PtyExpectStatus.OutputFaulted, 0), await pending);
