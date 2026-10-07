@@ -7,6 +7,7 @@
   ctor Icod.Pty.PtyRecordingReaderOptions()
   ctor Icod.Pty.PtyRecordingReplayResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 OutputBytes,System.Int64 EventCount)
   ctor Icod.Pty.PtyRecordingResult(Icod.Pty.PtyRecordingStatus Status,System.Int64 BytesWritten,System.Int64 EventCount,System.Exception Exception)
+  ctor Icod.Pty.PtyRecordingTimedPlaybackOptions()
   ctor Icod.Pty.PtyScriptResult(Icod.Pty.PtyScriptStatus Status,System.Int32 CompletedStepCount,System.Nullable<System.Int32> FailedStepIndex,System.Nullable<Icod.Pty.PtyExpectStatus> ExpectStatus)
   ctor Icod.Pty.PtySessionDiagnostics(Icod.Pty.PtySessionPhase Phase,System.Boolean InputSealed,System.Int64 BytesWrittenToPty,System.Int64 BytesReadFromPty,System.Int64 BytesWrittenToOutput,System.Int64 DroppedEvents,System.Collections.Generic.IReadOnlyList<Icod.Pty.PtySessionEvent> Events)
   ctor Icod.Pty.PtySessionEvent(System.Int64 Sequence,System.TimeSpan Elapsed,Icod.Pty.PtySessionEventKind Kind)
@@ -147,6 +148,7 @@
   method Icod.Pty.PtyRecordingReader::Dispose() System.Void
   method Icod.Pty.PtyRecordingReader::DisposeAsync() System.Threading.Tasks.ValueTask
   method Icod.Pty.PtyRecordingReader::OpenAsync(System.IO.Stream source,Icod.Pty.PtyRecordingReaderOptions options=null,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyRecordingReader>
+  method Icod.Pty.PtyRecordingReader::PlayTimedAsync(System.Func<Icod.Pty.PtyRecordingEvent,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask> onEvent,Icod.Pty.PtyRecordingTimedPlaybackOptions options=null,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyRecordingReplayResult>
   method Icod.Pty.PtyRecordingReader::ReadAsync(System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.ValueTask<Icod.Pty.PtyRecordingEvent>
   method Icod.Pty.PtyRecordingReader::ReplayAsync(System.IO.Stream destination,System.Threading.CancellationToken cancellationToken=null) System.Threading.Tasks.Task<Icod.Pty.PtyRecordingReplayResult>
   method Icod.Pty.PtyRecordingReplayResult::<Clone>$() Icod.Pty.PtyRecordingReplayResult
@@ -265,6 +267,7 @@
   property Icod.Pty.PtyRecordingResult::EventCount System.Int64 { get;set; }
   property Icod.Pty.PtyRecordingResult::Exception System.Exception { get;set; }
   property Icod.Pty.PtyRecordingResult::Status Icod.Pty.PtyRecordingStatus { get;set; }
+  property Icod.Pty.PtyRecordingTimedPlaybackOptions::MaxEventElapsed System.TimeSpan { get;set; }
   property Icod.Pty.PtyScriptResult::CompletedStepCount System.Int32 { get;set; }
   property Icod.Pty.PtyScriptResult::ExpectStatus System.Nullable<Icod.Pty.PtyExpectStatus> { get;set; }
   property Icod.Pty.PtyScriptResult::FailedStepIndex System.Nullable<System.Int32> { get;set; }
@@ -361,6 +364,7 @@ type sealed-class Icod.Pty.PtyRecordingReader
 type sealed-class Icod.Pty.PtyRecordingReaderOptions
 type sealed-class Icod.Pty.PtyRecordingReplayResult
 type sealed-class Icod.Pty.PtyRecordingResult
+type sealed-class Icod.Pty.PtyRecordingTimedPlaybackOptions
 type sealed-class Icod.Pty.PtyScriptResult
 type sealed-class Icod.Pty.PtyScriptStep
 type sealed-class Icod.Pty.PtySession

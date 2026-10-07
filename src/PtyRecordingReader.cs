@@ -79,6 +79,15 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 		await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
 		return new(FinalStatus!.Value, bytes, events);
 	}
+	/// <summary>Dispatches validated events at their recorded relative times.</summary>
+	public async Task<PtyRecordingReplayResult> PlayTimedAsync(Func<PtyRecordingEvent, CancellationToken, ValueTask> onEvent,
+		PtyRecordingTimedPlaybackOptions? options = null, CancellationToken cancellationToken = default) {
+		ArgumentNullException.ThrowIfNull(onEvent);
+		TimeSpan maxEventElapsed = (options ?? new()).MaxEventElapsed;
+		if (maxEventElapsed <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(options), "MaxEventElapsed must be positive.");
+		await Task.Yield();
+		throw new NotSupportedException("Timed playback is not implemented yet.");
+	}
 	private async ValueTask<PtyRecordingEvent?> FinishAsync(PtyRecordingStatus status, int length, CancellationToken token) {
 		if (length != 0) throw Format("Recording terminal frame length is invalid.");
 		byte[] extra = new byte[1]; if (await source.ReadAsync(extra, token).ConfigureAwait(false) != 0) throw Format("Recording has data after its terminal marker.");
