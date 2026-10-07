@@ -187,8 +187,9 @@ the local branch to that exact head, the user reported successful Windows x64 la
 option 9**. [PR #9](https://github.com/uniblab/Icod.Pty/pull/9) records the selection. The
 [approved design boundary](docs/Release-Stabilization-ConPTY-Design.md) defines the release
 stabilization work and limits the ConPTY investigation to an evidence-producing, pure-C# reproducer. The
-detailed implementation roadmap follows written-specification review. No version, tag, publication, or
-production workaround is implied by selecting this milestone.
+[development roadmap](docs/Release-Stabilization-ConPTY-Implementation-Plan.md), tranches RS01–RS09, defines the
+implementation and evidence gates. No version, tag, publication, or production workaround is implied by
+selecting this milestone.
 
 **Goal:** determine whether the current public surface and shipped package are ready for a deliberately chosen
 prerelease, correct evidence-supported compatibility defects before they become durable contracts, and replace
