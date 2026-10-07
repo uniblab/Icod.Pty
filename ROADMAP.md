@@ -163,17 +163,56 @@ The plan keeps terminal content out of diagnostics and error messages, distingui
 
 **Acceptance goal:** a consumer can capture a bounded session output/resize transcript, detect truncation or failure without ambiguity, and read/replay its valid prefix on another supported platform; the existing package and session contracts remain intact. Version selection and publication remain separate decisions.
 
-## Selected next milestone: focused live matching and scripted interaction
+### Focused live matching and scripted interaction
 
 **Decision, 2026-10-06:** after PR #7 merged, the user selected a **focused continuation of option 8**. The [design](docs/Focused-Automation-Design.md) and [development roadmap](docs/Focused-Automation-Implementation-Plan.md), tranches FA01–FA07, define the implementation and qualification gates.
 
-**Status:** implemented in [PR #8](https://github.com/uniblab/Icod.Pty/pull/8). Runtime/package head `8c1983cc254745f255fe01a27232d237ef781873` passed all six platform jobs, three target frameworks, the exact-package consumer, and framework-dependent, self-contained, single-file, and trimmed published consumers in [run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800). Final documentation-head qualification is recorded in the development roadmap. On 2026-10-07, the user reported successful Windows x64 laptop Release/net10.0 `--automation-smoke` execution: `PTY automation smoke check passed.` The checked-out commit was not shown; this observation remains separate from hosted CI.
+**Status:** [PR #8](https://github.com/uniblab/Icod.Pty/pull/8) merged on 2026-10-07. Final head
+`590b621fcf7632ba15911326c97972039e7ccb36` passed all six platform jobs, three target frameworks,
+the exact-package consumer, and framework-dependent, self-contained, single-file, and trimmed published
+consumers in [run 116](https://github.com/uniblab/Icod.Pty/actions/runs/37622622960). After fast-forwarding
+the local branch to that exact head, the user reported successful Windows x64 laptop Release
+`--automation-smoke` execution on net8.0, net9.0, and net10.0; each run printed
+`PTY automation smoke check passed.` This manual acceptance remains separate from hosted CI.
 
 **Goal:** a consumer opts into bounded, binary-safe live output matching and runs a short, ordered sequence of send/expect steps against a PTY session. Matches consume accepted output bytes in order; startup prompts and immediate replies remain available across asynchronous reads. Match timeout, output completion, and buffer overrun are explicit, while the live session and optional recording retain independent outcomes.
 
 **Boundary:** integrate with the existing session output pump and ordered input writer; allocate the bounded observer only for opted-in sessions. The caller keeps ownership of the session and supplied streams. Keep the recording format and output-only capture unchanged. Input recording, timed replay, regex/text matching, screen interpretation, branching scripts, generic exporters, version selection, and publication remain deferred.
 
 **Acceptance goal:** all three target frameworks and six platform/RID jobs exercise the exact package consumer and published application modes, with controlled tests for early prompts, chunk boundaries, cap exhaustion, faults, cancellation, and cleanup. Record manual Windows laptop observations separately from hosted CI. No merge or release is implied by selecting this milestone.
+
+## Selected next milestone: release stabilization and focused ConPTY investigation
+
+**Decision, 2026-10-07:** after PR #8 merged, the user selected **option 13 plus a focused portion of
+option 9**. The [approved design boundary](docs/Release-Stabilization-ConPTY-Design.md) defines the release
+stabilization work and limits the ConPTY investigation to an evidence-producing, pure-C# reproducer. The
+detailed implementation roadmap follows written-specification review. No version, tag, publication, or
+production workaround is implied by selecting this milestone.
+
+**Goal:** determine whether the current public surface and shipped package are ready for a deliberately chosen
+prerelease, correct evidence-supported compatibility defects before they become durable contracts, and replace
+the broad ConPTY fragmented-query warning with a reproducible classification. Preserve all existing default
+behavior while reviewing ownership, cancellation, deadlines, failure results, capability reporting, package
+metadata, documentation, samples, and the verified deployment matrix.
+
+The focused option 9 work constructs a minimal C# experiment that compares intact and deliberately fragmented
+input delivery through ConPTY. It records the framework, architecture, host, fragmentation pattern, repetition
+count, and outcome without treating environmental non-reproduction as proof of absence. Deterministic managed
+forwarding tests remain required; native observations report reproduced, not reproduced, or inconclusive.
+Production changes are allowed only when the evidence locates a correctable Icod.Pty defect and the reviewed
+compatibility boundary permits the correction. Otherwise the milestone retains the reproducer and documents the
+native limitation or inconclusive result.
+
+**Boundary:** no general tracing/exporter API, terminal emulation, new automation language, input recording,
+persistent broker, resource-control subsystem, or unrelated refactoring. NativeAOT remains a feasibility result.
+Version selection, release notes finalization, tagging, and publication remain separate decisions after the
+readiness report.
+
+**Acceptance goal:** complete the public-contract, documentation, sample, package, and compatibility audits;
+classify the focused ConPTY behavior with repeatable evidence; run all three target frameworks and six platform/RID
+jobs against exact package artifacts and published application layouts; record Windows laptop acceptance
+separately; and finish with an explicit release-readiness report listing supported behavior, known limitations,
+remaining blockers, and any recommended version target.
 
 ## Full current menu
 
@@ -189,14 +228,17 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
 | 8 | Recording, replay, and automation | Recording/replay complete in merged PR #7; focused live matching and scripted send/expect implemented in PR #8 | Opt-in bounded byte matching and sequential scripts are complete. Input capture, timed replay, regex/text matching, branching, and screen-aware automation remain deferred. |
-| 9 | ConPTY compatibility investigation | Deferred bounded research | Investigate the documented fragmented-query behavior with a minimal C# reproducer. No guaranteed native fix; existing evidence/exclusion remains visible. |
+| 9 | ConPTY compatibility investigation | Focused investigation selected with option 13 | Build a minimal pure-C# fragmented-input reproducer, classify evidence across supported Windows jobs/frameworks, and change production only for a demonstrated library defect. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Focused API/stress/support-matrix portion completed in PR #6 | The PR #5 public surface is pinned, published lifecycle regressions run in the deployment matrix, and the support matrix records prerequisites and limitations. Broader release work follows a chosen release target. |
+| 13 | Release stabilization and compatibility hardening | Selected next milestone; focused API/stress/support-matrix portion completed in PR #6 | Review the complete post-PR #8 contract, documentation, samples, package metadata and qualification evidence, then produce a release-readiness report before version selection. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
-Interactive hosting, scoped process ownership, reusable session orchestration, and launch-time terminal configuration are completed history. The remaining portions of options 4, 7, 8, and 13 stay available beyond the selected focused automation increment.
+Interactive hosting, scoped process ownership, reusable session orchestration, launch-time terminal configuration,
+focused recording/replay, and focused automation are completed history. The selected milestone now advances
+option 13 and the bounded option 9 investigation; remaining portions of options 4, 7, 8, and 13 stay available
+beyond it.
 
 ## Completion policy
 
