@@ -132,7 +132,7 @@ public sealed class PtyScriptRunnerTests {
 		PtySession session = await SessionTestSupport.Start(backend, destination, automation: new());
 		try {
 			Task<PtyScriptResult> first = PtyScriptRunner.RunAsync(session,
-				[PtyScriptStep.Expect("first"u8.ToArray(), TimeSpan.FromSeconds(1))]);
+				[PtyScriptStep.Expect("first"u8.ToArray(), TimeSpan.FromSeconds(10))]);
 
 			await Assert.ThrowsAsync<InvalidOperationException>(() => PtyScriptRunner.RunAsync(session, Array.Empty<PtyScriptStep>()));
 			source.Feed("first"u8.ToArray());
