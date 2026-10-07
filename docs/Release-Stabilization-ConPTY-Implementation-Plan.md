@@ -2,8 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** approved on 2026-10-07; native inline execution is in progress without subagents in
-[PR #9](https://github.com/uniblab/Icod.Pty/pull/9).
+**Status:** implemented and qualified on 2026-10-07 by native inline execution without subagents in
+[PR #9](https://github.com/uniblab/Icod.Pty/pull/9). Merge, version selection, tagging, and publication remain
+separate decisions.
 
 **Goal:** audit and stabilize the post-PR #8 package contract, classify the known ConPTY fragmented-input behavior with bounded evidence, and produce a release-readiness report without selecting or publishing a version.
 
@@ -352,7 +353,7 @@ git commit -m "docs: complete release readiness guidance"
 - Consumes: every earlier task, exact package artifacts, six-platform CI, and separately reported manual Windows results.
 - Produces: the final release-readiness recommendation and remaining blockers without changing version or publishing.
 
-- [ ] **Step 1: Run fresh local qualification**
+- [x] **Step 1: Run fresh local qualification**
 
 ```sh
 dotnet restore Icod.Pty.sln -m:1 -nr:false -p:UseSharedCompilation=false
@@ -367,11 +368,11 @@ pwsh -NoProfile -File packaging/VerifyPortableConsumer.Tests.ps1
 
 Expected: zero warnings/errors, all three 317-or-higher test totals pass, one exact package passes metadata/artifact checks, every package smoke passes, and the portable harness self-test passes. Record fresh counts rather than copying earlier evidence.
 
-- [ ] **Step 2: Require complete exact-head CI**
+- [x] **Step 2: Require complete exact-head CI**
 
 Require green Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 jobs, all three frameworks, exact-package verification, ordinary/package/published layouts, single-file, trimmed, self-contained, and the informational NativeAOT probes. Require all six ConPTY JSON reports from the same head and classify any expected test skips explicitly.
 
-- [ ] **Step 2a: Correct the Windows already-exiting disposal race exposed by exact-head CI**
+- [x] **Step 2a: Correct the Windows already-exiting disposal race exposed by exact-head CI**
 
 Run 127 completed ordinary Windows tests but failed native probe cleanup when `TerminateProcess` returned
 `ERROR_ACCESS_DENIED` while a probe child was already exiting and the immediate zero-time wait had not yet become
@@ -380,15 +381,15 @@ make the private Windows termination path wait for the process handle only for t
 Retain existing errors for other termination failures and make no public-API change. Rerun the focused test, full
 suite, and exact-head Windows classifier before completing Step 2.
 
-- [ ] **Step 3: Prepare manual Windows acceptance**
+- [x] **Step 3: Prepare manual Windows acceptance**
 
 List Release commands for all existing smoke modes on net8.0/net9.0/net10.0 plus the opt-in ConPTY classification command under Windows PowerShell 5.1. Do not mark them passed until the user reports output from the identified laptop/build and exact checked-out head.
 
-- [ ] **Step 4: Finalize the readiness report and roadmap**
+- [x] **Step 4: Finalize the readiness report and roadmap**
 
 State one recommendation: ready for a separately selected prerelease, ready with named nonblocking limitations, or blocked by listed defects. Record supported behavior, known limitations, audit dispositions, exact commits/runs, manual evidence status, and deferred work. Mark RS01–RS09 complete only where evidence is present.
 
-- [ ] **Step 5: Run the completion verification and commit**
+- [x] **Step 5: Run the completion verification and commit**
 
 Run `git status --short`, `git diff --check`, focused tests, the full suite, and exact-package checks again after the documentation update.
 
@@ -397,6 +398,6 @@ git add ROADMAP.md docs/Release-Readiness-Report.md docs/Release-Stabilization-C
 git commit -m "docs: finalize release readiness evidence"
 ```
 
-- [ ] **Step 6: Update PR #9 without changing repository evidence**
+- [x] **Step 6: Update PR #9 without changing repository evidence**
 
 Summarize the exact-head local/CI/manual evidence, ConPTY classification, API/package disposition, and readiness recommendation in the PR body. Do not create another documentation-only commit merely to record CI for its own head. Stop for the user's merge/version/publication decision.

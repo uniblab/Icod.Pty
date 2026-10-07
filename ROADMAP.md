@@ -191,6 +191,16 @@ stabilization work and limits the ConPTY investigation to an evidence-producing,
 implementation and evidence gates. No version, tag, publication, or production workaround is implied by
 selecting this milestone.
 
+**Status:** implemented and qualified in PR #9. Candidate head
+`ddb5633a38a4a73dce8aa2b582e5ae63916d2351` passed metadata and all six platform/architecture jobs, all three
+target frameworks, exact-package consumers, and all supported published layouts in
+[run 128](https://github.com/uniblab/Icod.Pty/actions/runs/37663074586). The 377-entry/43-type public API baseline
+remains unchanged. Bounded Windows evidence classifies fragmented query-prefix loss as a ConPTY/native limitation,
+not a managed-forwarding defect. Exact-head CI also exposed and verified a private fix for an already-exiting
+Windows process cleanup race. The [readiness report](docs/Release-Readiness-Report.md) recommends **ready with
+named nonblocking limitations** for a separately selected prerelease; laptop acceptance, merge, version, tag,
+and publication remain separate.
+
 **Goal:** determine whether the current public surface and shipped package are ready for a deliberately chosen
 prerelease, correct evidence-supported compatibility defects before they become durable contracts, and replace
 the broad ConPTY fragmented-query warning with a reproducible classification. Preserve all existing default
@@ -230,17 +240,16 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
 | 8 | Recording, replay, and automation | Recording/replay complete in merged PR #7; focused live matching and scripted send/expect implemented in PR #8 | Opt-in bounded byte matching and sequential scripts are complete. Input capture, timed replay, regex/text matching, branching, and screen-aware automation remain deferred. |
-| 9 | ConPTY compatibility investigation | Focused investigation selected with option 13 | Build a minimal pure-C# fragmented-input reproducer, classify evidence across supported Windows jobs/frameworks, and change production only for a demonstrated library defect. |
+| 9 | ConPTY compatibility investigation | Focused investigation completed in PR #9 | The bounded pure-C# classifier reproduced native prefix loss across Windows architectures while deterministic managed forwarding remained exact. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Selected next milestone; focused API/stress/support-matrix portion completed in PR #6 | Review the complete post-PR #8 contract, documentation, samples, package metadata and qualification evidence, then produce a release-readiness report before version selection. |
+| 13 | Release stabilization and compatibility hardening | Completed in PR #9; earlier focused portion completed in PR #6 | The post-PR #8 contract, documentation, samples, package metadata, and six-platform qualification are audited; readiness is recorded before version selection. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
 Interactive hosting, scoped process ownership, reusable session orchestration, launch-time terminal configuration,
-focused recording/replay, and focused automation are completed history. The selected milestone now advances
-option 13 and the bounded option 9 investigation; remaining portions of options 4, 7, 8, and 13 stay available
-beyond it.
+focused recording/replay, focused automation, release stabilization, and the bounded ConPTY investigation are
+completed history. Remaining portions of options 4, 7, 8, 9, and 13 stay available beyond this milestone.
 
 ## Completion policy
 
