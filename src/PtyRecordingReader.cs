@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using Icod.Pty.Recording;
 
 namespace Icod.Pty;
@@ -10,7 +11,7 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 	private readonly long maxBytes;
 	private readonly int maxFrameBytes;
 	private long consumed = RecordingFormat.HeaderSize, previousTicks;
-	private int reading;
+	private int operation;
 	private bool ended, disposed;
 	private PtyRecordingReader(Stream source, bool leaveOpen, long maxBytes, int maxFrameBytes, PtySize initialSize) {
 		this.source = source; this.leaveOpen = leaveOpen; this.maxBytes = maxBytes; this.maxFrameBytes = maxFrameBytes; InitialSize = initialSize;
@@ -38,9 +39,13 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 	}
 	/// <summary>Reads the next owned event, or null after a validated terminal marker.</summary>
 	public async ValueTask<PtyRecordingEvent?> ReadAsync(CancellationToken cancellationToken = default) {
-		ObjectDisposedException.ThrowIf(disposed, this); if (ended) return null;
-		if (Interlocked.Exchange(ref reading, 1) != 0) throw new InvalidOperationException("A recording read is already in progress.");
-		try {
+		BeginOperation();
+		try { return await ReadCoreAsync(cancellationToken).ConfigureAwait(false); }
+		finally { EndOperation(); }
+	}
+	private async ValueTask<PtyRecordingEvent?> ReadCoreAsync(CancellationToken cancellationToken) {
+		if (ended) return null;
+		{
 			byte[] header = new byte[RecordingFormat.FrameHeaderSize];
 			await ReadExactAsync(source, header, cancellationToken, "Recording ended without a terminal marker.").ConfigureAwait(false);
 			if (header[1] != 0 || header[2] != 0 || header[3] != 0) throw Format("Recording frame flags are invalid.");
@@ -66,18 +71,21 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 				case RecordingFormat.Stopped: return await FinishAsync(PtyRecordingStatus.Stopped, length, cancellationToken).ConfigureAwait(false);
 				default: throw Format("Recording frame kind is unsupported.");
 			}
-		} finally { Volatile.Write(ref reading, 0); }
+		}
 	}
 	/// <summary>Copies output event bytes in recorded order and returns the validated terminal outcome.</summary>
 	public async Task<PtyRecordingReplayResult> ReplayAsync(Stream destination, CancellationToken cancellationToken = default) {
 		ArgumentNullException.ThrowIfNull(destination); if (!destination.CanWrite) throw new ArgumentException("The replay destination must be writable.", nameof(destination));
 		if (ReferenceEquals(destination, source)) throw new ArgumentException("The replay destination must be distinct from the recording source.", nameof(destination));
-		long bytes = 0, events = 0; PtyRecordingEvent? item;
-		while ((item = await ReadAsync(cancellationToken).ConfigureAwait(false)) != null) {
-			events++; if (item.Kind == PtyRecordingEventKind.Output) { await destination.WriteAsync(item.Output, cancellationToken).ConfigureAwait(false); bytes += item.Output.Length; }
-		}
-		await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
-		return new(FinalStatus!.Value, bytes, events);
+		BeginOperation();
+		try {
+			long bytes = 0, events = 0; PtyRecordingEvent? item;
+			while ((item = await ReadCoreAsync(cancellationToken).ConfigureAwait(false)) != null) {
+				events++; if (item.Kind == PtyRecordingEventKind.Output) { await destination.WriteAsync(item.Output, cancellationToken).ConfigureAwait(false); bytes += item.Output.Length; }
+			}
+			await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
+			return new(FinalStatus!.Value, bytes, events);
+		} finally { EndOperation(); }
 	}
 	/// <summary>Dispatches validated events at their recorded relative times.</summary>
 	public async Task<PtyRecordingReplayResult> PlayTimedAsync(Func<PtyRecordingEvent, CancellationToken, ValueTask> onEvent,
@@ -85,9 +93,26 @@ public sealed class PtyRecordingReader : IDisposable, IAsyncDisposable {
 		ArgumentNullException.ThrowIfNull(onEvent);
 		TimeSpan maxEventElapsed = (options ?? new()).MaxEventElapsed;
 		if (maxEventElapsed <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(options), "MaxEventElapsed must be positive.");
-		await Task.Yield();
-		throw new NotSupportedException("Timed playback is not implemented yet.");
+		BeginOperation();
+		try {
+			cancellationToken.ThrowIfCancellationRequested();
+			Stopwatch stopwatch = Stopwatch.StartNew();
+			TimedPlaybackScheduler scheduler = new(() => stopwatch.Elapsed, static (delay, token) => Task.Delay(delay, token));
+			long bytes = 0, events = 0; PtyRecordingEvent? item;
+			while ((item = await ReadCoreAsync(cancellationToken).ConfigureAwait(false)) != null) {
+				if (item.Elapsed > maxEventElapsed) throw new InvalidOperationException("A recording event exceeds the timed playback limit.");
+				await scheduler.WaitUntilAsync(item.Elapsed, cancellationToken).ConfigureAwait(false);
+				await onEvent(item, cancellationToken).ConfigureAwait(false);
+				events++; if (item.Kind == PtyRecordingEventKind.Output) bytes += item.Output.Length;
+			}
+			return new(FinalStatus!.Value, bytes, events);
+		} finally { EndOperation(); }
 	}
+	private void BeginOperation() {
+		ObjectDisposedException.ThrowIf(disposed, this);
+		if (Interlocked.CompareExchange(ref operation, 1, 0) != 0) throw new InvalidOperationException("Another recording reader operation is already in progress.");
+	}
+	private void EndOperation() => Volatile.Write(ref operation, 0);
 	private async ValueTask<PtyRecordingEvent?> FinishAsync(PtyRecordingStatus status, int length, CancellationToken token) {
 		if (length != 0) throw Format("Recording terminal frame length is invalid.");
 		byte[] extra = new byte[1]; if (await source.ReadAsync(extra, token).ConfigureAwait(false) != 0) throw Format("Recording has data after its terminal marker.");
