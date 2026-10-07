@@ -7,6 +7,7 @@ using Microsoft.Win32.SafeHandles;
 namespace Icod.Pty.Windows;
 
 internal sealed class WindowsBackend : IPtyBackend {
+	private const int ErrorAccessDenied = 5;
 	private readonly SafeProcessHandle process;
 	private readonly SafePseudoConsoleHandle console;
 	private readonly WindowsJob? job;
@@ -122,12 +123,28 @@ internal sealed class WindowsBackend : IPtyBackend {
 	public void Resize(PtySize size) { lock (gate) { ObjectDisposedException.ThrowIf(disposed, this); if (console.IsClosed) throw new InvalidOperationException("The child has exited."); CheckHResult(WindowsNative.ResizePseudoConsole(console, new() { X = (short)size.Columns, Y = (short)size.Rows }), "ResizePseudoConsole"); } }
 	public void Terminate() {
 		lock (gate) {
-			if (WindowsNative.WaitForSingleObject(process, 0) == 0) return;
-			if (!WindowsNative.TerminateProcess(process, 1)) {
-				IOException failure = Error("TerminateProcess");
-				if (WindowsNative.WaitForSingleObject(process, 0) != 0) throw failure;
-			}
+			TerminatePrimary(milliseconds => WindowsNative.WaitForSingleObject(process, milliseconds),
+				() => WindowsNative.TerminateProcess(process, 1), Marshal.GetLastPInvokeError);
 		}
+	}
+	internal static void TerminatePrimary(Func<uint, uint> wait, Func<bool> terminate, Func<int> getLastError) {
+		uint state = wait(0);
+		if (state == 0) return;
+		if (state == uint.MaxValue) throw Error("WaitForSingleObject PrimaryProcess", getLastError());
+		if (terminate()) return;
+
+		int terminateError = getLastError();
+		state = wait(0);
+		if (state == 0) return;
+		if (state == uint.MaxValue) throw Error("WaitForSingleObject PrimaryProcess", getLastError());
+		// TerminateProcess documents ERROR_ACCESS_DENIED after the target has terminated. Its handle can become
+		// signaled asynchronously, so finish collecting that terminal race instead of reporting cleanup failure.
+		if (terminateError == ErrorAccessDenied) {
+			state = wait(uint.MaxValue);
+			if (state == 0) return;
+			if (state == uint.MaxValue) throw Error("WaitForSingleObject PrimaryProcess", getLastError());
+		}
+		throw Error("TerminateProcess", terminateError);
 	}
 	public void Dispose() {
 		lock (gate) { if (disposed) return; disposed = true; }
@@ -138,6 +155,7 @@ internal sealed class WindowsBackend : IPtyBackend {
 			Input.Dispose, Output.Dispose, console.Dispose,
 			() => { if (terminationRequested) Exit.GetAwaiter().GetResult(); }, process.Dispose);
 	}
-	private static IOException Error(string operation) { int code = Marshal.GetLastPInvokeError(); return new IOException($"{operation} failed (Win32 error {code}).", new Win32Exception(code)); }
+	private static IOException Error(string operation) => Error(operation, Marshal.GetLastPInvokeError());
+	private static IOException Error(string operation, int code) => new($"{operation} failed (Win32 error {code}).", new Win32Exception(code));
 	private static void CheckHResult(int result, string operation) { if (result < 0) throw new IOException($"{operation} failed (HRESULT 0x{result:X8}).", Marshal.GetExceptionForHR(result)); }
 }

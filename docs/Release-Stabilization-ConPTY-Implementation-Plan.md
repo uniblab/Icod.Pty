@@ -371,6 +371,15 @@ Expected: zero warnings/errors, all three 317-or-higher test totals pass, one ex
 
 Require green Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 jobs, all three frameworks, exact-package verification, ordinary/package/published layouts, single-file, trimmed, self-contained, and the informational NativeAOT probes. Require all six ConPTY JSON reports from the same head and classify any expected test skips explicitly.
 
+- [ ] **Step 2a: Correct the Windows already-exiting disposal race exposed by exact-head CI**
+
+Run 127 completed ordinary Windows tests but failed native probe cleanup when `TerminateProcess` returned
+`ERROR_ACCESS_DENIED` while a probe child was already exiting and the immediate zero-time wait had not yet become
+signaled. Add `WindowsBackendTests.Terminate_waits_for_an_already_terminated_process_after_access_denied`, then
+make the private Windows termination path wait for the process handle only for that documented terminal race.
+Retain existing errors for other termination failures and make no public-API change. Rerun the focused test, full
+suite, and exact-head Windows classifier before completing Step 2.
+
 - [ ] **Step 3: Prepare manual Windows acceptance**
 
 List Release commands for all existing smoke modes on net8.0/net9.0/net10.0 plus the opt-in ConPTY classification command under Windows PowerShell 5.1. Do not mark them passed until the user reports output from the identified laptop/build and exact checked-out head.
