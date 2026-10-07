@@ -1,6 +1,6 @@
 # Release readiness report
 
-**Status:** Open — RS01–RS05 complete; RS06–RS09 remain open.
+**Status:** Open — RS01–RS07 complete; RS08–RS09 remain open.
 
 This report separates deterministic repository evidence, native hosted evidence, exact-package consumer
 evidence, published-layout evidence, and operator-observed acceptance. Evidence in one section does not
@@ -55,8 +55,11 @@ six-platform qualification remains **Open** for RS08.
 
 ## Exact-package consumers
 
-PR #8 run 116 verified the exact package and its noninteractive smoke modes. Metadata hardening, a fresh Staging
-package, and exact-head consumer verification for PR #9 are **Open**.
+PR #8 run 116 verified the exact package and its noninteractive smoke modes. RS06 added namespace-independent
+nuspec parsing and exact assertions for package identity, author, description, project/repository metadata,
+license acceptance, readme, release notes, tags, CHANGELOG, LICENSE, all three TFMs, build target, and helper
+assets. A fresh local Staging `0.1.0-alpha.1` package passed those assertions and every noninteractive smoke on
+net8.0, net9.0, and net10.0. Exact-head final consumer verification remains **Open** for RS08.
 
 ## Published layouts
 
@@ -73,8 +76,9 @@ identify the checked-out commit, OS/build, architecture, framework, and host.
 
 The 43-type public inventory and seven `Retain` dispositions are recorded in
 [Public-Contract-Audit.md](Public-Contract-Audit.md). The audit requires no product correction and preserves the
-377-entry baseline. Documentation reconciliation, package metadata, release materials, and supported-use guidance
-remain **Open**.
+377-entry baseline. RS06–RS07 aligned package metadata, the packaged unreleased changelog, lifecycle guidance,
+deployment prerequisites, sample acceptance, and the ConPTY operator procedure without changing the public
+contract. Final exact-head evidence and the readiness recommendation remain **Open**.
 
 ## Readiness recommendation
 

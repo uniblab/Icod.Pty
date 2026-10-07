@@ -288,7 +288,7 @@ Require ID `Icod.Pty`, author `Timothy J. Bruce`, description `Cross-platform ps
 
 Create `CHANGELOG.md` with an `Unreleased` section covering PRs #1–#8, deployment prerequisites, and known ConPTY/NativeAOT limits. Add it to the package root and set `PackageReleaseNotes` to direct consumers to the packaged changelog. Do not change `<Version>0.1.0-alpha.1</Version>`.
 
-- [ ] **Step 4: Add the self-test to CI and verify PowerShell 5.1 parsing**
+- [x] **Step 4: Add the self-test to CI and verify PowerShell 5.1 parsing**
 
 Run `VerifyPackageMetadata.Tests.ps1` beside `VerifyPortableConsumer.Tests.ps1` before restore. Parse all packaging scripts in Windows PowerShell 5.1 and run the metadata self-test there on Windows x64.
 
@@ -317,23 +317,23 @@ git commit -m "build: harden release package metadata"
 - Consumes: closed audit dispositions, exact-package metadata tests, and classified ConPTY evidence.
 - Produces: one coherent supported-use narrative and an exact Windows operator checklist.
 
-- [ ] **Step 1: Audit the documented lifecycle path**
+- [x] **Step 1: Audit the documented lifecycle path**
 
 Ensure launch, streams, resize, scope ownership, session shutdown/drain, terminal configuration, recording, and automation examples state ownership, disposal, cancellation, timeout, result, and platform limits. Correct documentation where tests already establish behavior. A newly discovered behavioral or package-consumer defect is a stop condition: record it and amend this plan with an exact failing test before changing code.
 
-- [ ] **Step 2: Document package and deployment truth**
+- [x] **Step 2: Document package and deployment truth**
 
 State helper/runtime requirements for framework-dependent, self-contained, single-file, and trimmed applications; retain NativeAOT as informational; describe missing/relocated helper outcomes; and align package metadata, README, changelog, and readiness report terminology.
 
-- [ ] **Step 3: Publish the ConPTY operator procedure**
+- [x] **Step 3: Publish the ConPTY operator procedure**
 
 Document the opt-in filtered-test command for net8.0, net9.0, and net10.0, report path, fixed five-attempt pattern set, outcome meanings, and required OS/build/architecture/host recording. State that `NotReproduced` covers only those attempts and that the probe records no caller payload.
 
-- [ ] **Step 4: Verify docs and samples**
+- [x] **Step 4: Verify docs and samples**
 
 Run every noninteractive package smoke against the exact Staging package on all local target frameworks, run `git diff --check`, and verify every repository-relative Markdown link resolves to an existing file.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add README.md samples/README.md packaging/README.md docs/ConPTY-Input-Limitations.md docs/Public-Contract-Audit.md docs/Release-Readiness-Report.md

@@ -1,6 +1,6 @@
 # Public contract audit
 
-**Status:** RS02 review complete; no production change required.
+**Status:** RS02 contract review and RS05/RS07 reconciliation complete; no production change required.
 
 This ledger inventories the public contract at commit
 `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7`, before stabilization implementation. The compatibility baseline
@@ -47,6 +47,16 @@ The approved decision rule therefore classifies the observation as a **ConPTY/na
 contract row remains `Retain`: Icod.Pty promises ordered raw-byte forwarding at the managed layer, not arbitrary
 fragment preservation after Windows console-input interpretation. No product correction, public-API change, or
 compatibility-baseline update is warranted.
+
+## RS07 documentation and package reconciliation
+
+The README lifecycle path now states ownership, disposal, cancellation, deadlines, result boundaries, and
+platform variance for process launch/streams/resize, scoped control, shutdown/drain, terminal configuration,
+recording/replay, and automation. The sample guide distinguishes bounded noninteractive checks from interactive
+host-restoration acceptance. Package guidance matches the exact metadata and asset verifier, complete relocated
+helper layout, installed Unix runtime/host requirement, incomplete-layout observations, and informational-only
+NativeAOT probe. No documented behavior contradicted source or deterministic tests, so all seven dispositions
+remain `Retain` and no product correction was opened.
 
 ## Compatibility baseline
 
