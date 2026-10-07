@@ -152,6 +152,24 @@ on the previously identified Windows x64 laptop (Windows 10.0.26200.9457), and r
 `PTY recording smoke check passed.` The checked-out commit was not shown. Manual net8.0/net9.0
 runs remain unreported; this noninteractive result does not establish interactive host restoration.
 
+## Timed playback acceptance
+
+The timed playback check opens a hand-authored v1 recording from memory and dispatches binary output followed by a resize. It verifies the event order and values, a nonzero first-event wait, and the complete result without printing recorded payload bytes or starting a PTY.
+
+From CMD or Windows PowerShell 5.1:
+
+```text
+dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build -- --timed-playback-smoke
+```
+
+From SH:
+
+```sh
+dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --timed-playback-smoke
+```
+
+Expected output is `PTY timed playback smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. This is a noninteractive best-effort timing check; deterministic scheduler tests cover exact wait decisions. Manual Windows laptop results are unreported.
+
 ## Live automation acceptance
 
 The automation check starts a managed child through `PtySession`, captures an early prompt, sends a line, matches one byte pattern spanning two child writes, consumes two consecutive suffix matches, verifies a timed-out step and retry without moving the cursor, then sends the child's exit request. It explicitly disposes its session and prints no child payload bytes. Transport-independent tests separately cover NUL, invalid UTF-8, and every byte boundary; the native Windows fixture stays in the portable ASCII range because console output code pages can translate non-ASCII writes before ConPTY emits terminal data.
