@@ -184,7 +184,8 @@ the local branch to that exact head, the user reported successful Windows x64 la
 ## Selected next milestone: release stabilization and focused ConPTY investigation
 
 **Decision, 2026-10-07:** after PR #8 merged, the user selected **option 13 plus a focused portion of
-option 9**. The [approved design boundary](docs/Release-Stabilization-ConPTY-Design.md) defines the release
+option 9**. [PR #9](https://github.com/uniblab/Icod.Pty/pull/9) records the selection. The
+[approved design boundary](docs/Release-Stabilization-ConPTY-Design.md) defines the release
 stabilization work and limits the ConPTY investigation to an evidence-producing, pure-C# reproducer. The
 detailed implementation roadmap follows written-specification review. No version, tag, publication, or
 production workaround is implied by selecting this milestone.
