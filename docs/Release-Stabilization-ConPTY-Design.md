@@ -1,8 +1,9 @@
 # Release stabilization and focused ConPTY investigation
 
-**Status:** design boundary approved on 2026-10-07 and recorded in
-[PR #9](https://github.com/uniblab/Icod.Pty/pull/9); written specification awaiting review. Implementation has not
-begun. Version selection, tagging, publication, and any production workaround remain separate decisions.
+**Status:** written specification approved on 2026-10-07 and recorded in
+[PR #9](https://github.com/uniblab/Icod.Pty/pull/9). The
+[implementation roadmap](Release-Stabilization-ConPTY-Implementation-Plan.md) is awaiting review; implementation
+has not begun. Version selection, tagging, publication, and any production workaround remain separate decisions.
 
 ## Intent
 
