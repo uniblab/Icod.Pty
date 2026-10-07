@@ -1,6 +1,6 @@
 # Focused timed playback of recordings
 
-**Status:** proposed planning design for the next option 8 increment. The selected scope is timed playback of the existing output-and-resize recording; implementation and acceptance remain pending.
+**Status:** approved and implemented on PR #10. Local tests and exact-package consumers pass; complete six-platform acceptance is pending at the implementation head.
 
 ## Intent and constraints
 
