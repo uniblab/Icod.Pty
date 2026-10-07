@@ -4,7 +4,11 @@ Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous sta
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md). Initial terminal configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md). Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md). Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
+Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md), and curated
+unreleased changes and deployment prerequisites are in the [changelog](CHANGELOG.md). Initial terminal
+configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md).
+Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
+Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
 
 ## Platforms
 
@@ -37,7 +41,7 @@ The following forms are verified from a fresh consumer of the packed NuGet artif
 
 Framework-dependent applications need their target runtime. On Unix, every form also needs a usable `dotnet` host and a compatible installed runtime for the external net8.0 helper. A consumer's bundled runtime is not used to launch that helper. Windows ConPTY does not launch the helper, and tests verify that missing Unix helper assets and an invalid `DotNetHostPath` do not affect it.
 
-Single-file publishing bundles the consumer while leaving `Icod.Pty.Host/Icod.Pty.Host.dll`, `.deps.json`, and `.runtimeconfig.json` beside the executable as external files. Copy the complete publish directory. The package verifier rejects an incomplete helper directory before making a support claim. Runtime behavior with missing metadata can vary by installed `dotnet`; only a complete three-file layout is supported.
+Single-file publishing bundles the consumer while leaving `Icod.Pty.Host/Icod.Pty.Host.dll`, `.deps.json`, and `.runtimeconfig.json` beside the executable as external files. Copy the complete publish directory. Relocating that complete output tree is verified. Removing the helper DLL produces a bounded Unix startup failure and cleanup; removing either metadata file can still run on some installed hosts, so runtime success with an incomplete helper does not expand the contract. The package verifier requires all three files before recording a supported layout. Windows does not use the helper and remains independent of these files and `DotNetHostPath`.
 
 Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
 
@@ -337,7 +341,7 @@ See the [design](docs/Process-Group-Cleanup-Design.md) and [implementation evide
 
 Install the .NET 10 SDK and .NET 8/9 runtimes. Run `build.cmd` from CMD on Windows, or `./build.sh` from SH on Unix with PowerShell installed. Tooling is compatible with Windows PowerShell 5.1. No C or Python source or build step is required.
 
-The root contains `Icod.Pty.sln` and `Icod.Pty.csproj`. All C# sources are under the root `src/` tree, including helper sources in `src/Host/`, tests in `src/Tests/`, and the sample in `src/Sample/`. Supporting projects link their sources from these directories.
+The root contains `Icod.Pty.sln` and `Icod.Pty.csproj`. All C# sources are under the root `src/` tree, including helper sources in `src/Host/`, tests in `src/Tests/`, and the sample in `src/Sample/`. Supporting projects link their sources from these directories. The exact package verifier checks identity, author, description, project/repository URL and type, license and acceptance, readme, release notes, tags, the three target frameworks, changelog/license/readme files, build target, and helper assets.
 
 Direct commands:
 
@@ -370,7 +374,7 @@ Follow the [sample acceptance guide](samples/README.md) for editing/history/Tab/
 
 ## Release
 
-The workflows are adapted from `uniblab/.github` for one DLL package. A `v<semver>` tag on the default branch must match `Version` in `Icod.Pty.csproj`. Release validation runs on all six platforms before publication to NuGet.org through trusted publishing in the `Release` environment. The workflow also publishes to GitHub Packages and creates release assets with checksums. The helper, sample, and test programs are not separate release packages or executable archives.
+The workflows are adapted from `uniblab/.github` for one DLL package. A `v<semver>` tag on the default branch must match `Version` in `Icod.Pty.csproj`. Release validation runs on all six platforms before publication to NuGet.org through trusted publishing in the `Release` environment. The workflow also publishes to GitHub Packages and creates release assets with checksums. The package includes [CHANGELOG.md](CHANGELOG.md); its `Unreleased` heading does not select a version. The helper, sample, and test programs are not separate release packages or executable archives.
 
 ## License
 

@@ -17,7 +17,7 @@ Repository and package names are not inferred from the GitHub repository name. B
 | Lifecycle | Configuration | Work |
 | --- | --- | --- |
 | local `build.cmd` / `build.sh` | `Debug` | clean, restore, build, test, pack, exact package validation |
-| pull request | `Staging` | Windows/Linux/macOS build and test; Linux also validates generated NuGet artifacts |
+| pull request | `Staging` | six-platform build/test, exact NuGet metadata and assets, package consumers, published layouts, and Windows PowerShell 5.1 tooling |
 | default branch | `Release` | six-runner Windows/Linux/macOS x64/ARM64 distribution validation |
 | `v<semver>` tag | `Release` | package/archive production and publication |
 
@@ -31,7 +31,14 @@ Shared helpers for:
 - listing C# projects in the solution;
 - reading MSBuild properties;
 - discovering executable projects from `OutputType`; and
-- reading package identity, version, and readme metadata from `.nupkg` files.
+- reading package identity, version, authors, description, project/repository details, license, acceptance,
+  normalized readme path, release notes, and tags from `.nupkg` files.
+
+### `VerifyPackageMetadata.Tests.ps1`
+
+Creates a temporary namespaced `.nupkg`, verifies every parsed metadata property and Boolean/path normalization,
+and removes its fixture. Pull-request validation runs it before restore on every job and again under Windows
+PowerShell 5.1 on Windows x64.
 
 ### `Get-RepositoryMetadata.ps1`
 
@@ -71,9 +78,21 @@ This is the implementation used by the six-platform `main` and manual distributi
 
 ### `VerifyPackageArtifact.ps1`
 
-Validates already-produced `.nupkg` files. It opens the exact artifacts supplied by the caller, verifies nuspec identity/version metadata, checks declared readme presence, and checks .NET tool metadata shape when applicable.
+Validates already-produced `.nupkg` files. It opens the exact artifacts supplied by the caller; verifies the
+Icod.Pty identity, author, description, URLs, repository type, license acceptance, readme, release notes, and
+required tags; then requires README, CHANGELOG, LICENSE, all three framework assemblies/XML files, the
+`buildTransitive` target, and the complete three-file Unix helper layout. It also checks .NET tool metadata shape
+when applicable.
 
 `-ExpectedVersion` restricts validation to packages matching a tagged release version. `-AllowNoPackages` is used for solutions that intentionally contain no packable projects.
+
+### Package-consumer and published-layout checks
+
+`VerifyPackageConsumer.ps1` creates a fresh consumer from the exact local package and runs every noninteractive
+smoke on net8.0, net9.0, and net10.0. `VerifyPortableConsumer.ps1` executes framework-dependent, self-contained,
+single-file, and trimmed apphosts for the requested RID, including complete-tree relocation and incomplete-helper
+scenarios. On Unix the supported layout always includes the helper DLL, deps file, runtimeconfig file, a usable
+`dotnet` host, and a compatible installed runtime. NativeAOT remains an informational net10.0 feasibility probe.
 
 ### `SelectReleasePackages.ps1`
 

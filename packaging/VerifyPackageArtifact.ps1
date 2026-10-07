@@ -51,11 +51,24 @@ if ($packages.Count -ne 1) { throw 'Icod.Pty requires exactly one NuGet DLL pack
 foreach ($package in $packages) {
     $metadata = Get-PackageMetadata -PackagePath $package.FullName
     if ($metadata.Id -ne 'Icod.Pty') { throw "Unexpected package: $($metadata.Id)" }
+    if ($metadata.Authors -ne 'Timothy J. Bruce') { throw "Unexpected package authors: $($metadata.Authors)" }
+    if ($metadata.Description -ne 'Cross-platform pseudoterminal process hosting for .NET.') { throw "Unexpected package description: $($metadata.Description)" }
+    if ($metadata.ProjectUrl -ne 'https://github.com/uniblab/Icod.Pty') { throw "Unexpected package project URL: $($metadata.ProjectUrl)" }
+    if ($metadata.RepositoryUrl -ne 'https://github.com/uniblab/Icod.Pty') { throw "Unexpected package repository URL: $($metadata.RepositoryUrl)" }
+    if ($metadata.RepositoryType -ne 'git') { throw "Unexpected package repository type: $($metadata.RepositoryType)" }
+    if ($metadata.LicenseExpression -ne 'LGPL-3.0-or-later') { throw "Unexpected package license: $($metadata.LicenseExpression)" }
+    if (-not $metadata.RequireLicenseAcceptance) { throw 'Package must require license acceptance.' }
+    if ($metadata.Readme -ne 'README.md') { throw "Unexpected package readme: $($metadata.Readme)" }
+    if ([string]::IsNullOrWhiteSpace($metadata.ReleaseNotes)) { throw 'Package release notes are empty.' }
+    $tags = @($metadata.Tags -split '[\s;,]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    foreach ($tag in @('pty', 'pseudoterminal', 'conpty', 'terminal', 'process', 'cross-platform')) {
+        if ($tag -notin $tags) { throw "Required package tag missing: $tag" }
+    }
     Write-Host "Verifying $($metadata.Id) $($metadata.Version): $($package.FullName)"
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
-        $required = @('LICENSE', 'README.md', 'buildTransitive/Icod.Pty.targets',
+        $required = @('CHANGELOG.md', 'LICENSE', 'README.md', 'buildTransitive/Icod.Pty.targets',
             'tools/net8.0/Icod.Pty.Host.dll', 'tools/net8.0/Icod.Pty.Host.deps.json',
             'tools/net8.0/Icod.Pty.Host.runtimeconfig.json')
         foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {

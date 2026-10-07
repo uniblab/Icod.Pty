@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output, `--session-smoke` for the reusable-owner package check, `--recording-smoke` for bounded output/resize recording and replay, and `--automation-smoke` for live matching and ordered scripts.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output. The noninteractive switches cover process lifecycle and cancellation, interrupt, scope ownership, session shutdown/drain, terminal configuration, invalid helper/host cleanup, recording/replay, and live automation; each owns and disposes its session within a bounded check.
 
 Build once from the repository root:
 
@@ -168,4 +168,4 @@ From SH:
 dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --automation-smoke
 ```
 
-Expected output is `PTY automation smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not change the host console's code pages or record/send payloads to its output. Hosted CI passed this mode from exact-package and published consumers on six platform/RID jobs at runtime head `8c1983cc254745f255fe01a27232d237ef781873` in [run 110](https://github.com/uniblab/Icod.Pty/actions/runs/37533280800). On 2026-10-07, the user reported that exact success message from a Windows x64 laptop Release/net10.0 run. The checked-out commit was not shown; manual net8.0/net9.0 runs remain unreported.
+Expected output is `PTY automation smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not change the host console's code pages or record/send payloads to its output. Hosted CI passed this mode from exact-package and published consumers on all six platform/RID jobs at PR #8 final head `590b621fcf7632ba15911326c97972039e7ccb36` in [run 116](https://github.com/uniblab/Icod.Pty/actions/runs/37622622960). After fast-forwarding to that head on 2026-10-07, the user reported the same success message from Windows x64 Release runs on net8.0, net9.0, and net10.0. These noninteractive results remain separate from interactive host-restoration acceptance.

@@ -91,6 +91,27 @@ public sealed class InteractiveSampleTests {
 	[InlineData(false)]
 	[InlineData(true)]
 	public Task Native_terminal_preserves_split_query_reply(bool nested) => VerifyNativeInput(nested, true);
+	[WindowsConPtyProbeFact]
+	public async Task ConPty_fragmentation_probe_writes_classified_report() {
+		string? reportPath = Environment.GetEnvironmentVariable("ICOD_PTY_CONPTY_REPORT_PATH");
+		if (string.IsNullOrWhiteSpace(reportPath))
+			throw new InvalidOperationException("ICOD_PTY_CONPTY_REPORT_PATH must identify an existing output directory.");
+		using CancellationTokenSource deadline = new(TimeSpan.FromMinutes(5));
+
+		ConPtyProbeReport report = await ConPtyFragmentationProbe.RunAsync(5, deadline.Token);
+		ConPtyFragmentationProbe.WriteReport(reportPath, report);
+
+		Assert.NotEqual(ConPtyProbeOutcome.Unavailable, report.Outcome);
+		Assert.Equal(100, report.Trials.Count);
+		Assert.Equal(2, report.Trials.Select(trial => trial.HostPath).Distinct().Count());
+		Assert.Equal(10, report.Trials.Select(trial => trial.Pattern).Distinct().Count());
+		Assert.Equal(5, report.Trials.Max(trial => trial.Attempt));
+		Assert.Contains(report.Outcome, new[] {
+			ConPtyProbeOutcome.Reproduced,
+			ConPtyProbeOutcome.NotReproduced,
+			ConPtyProbeOutcome.Inconclusive
+		});
+	}
 	[Fact]
 	public async Task Sample_input_pump_preserves_arbitrary_chunks() {
 		await using PtyProcess process = await PtyProcess.StartAsync(PtyTestSupport.Child("forward-chunks"));
@@ -183,7 +204,16 @@ public sealed class InteractiveSampleTests {
 
 internal sealed class UnixSplitInputTheoryAttribute : TheoryAttribute {
 	public UnixSplitInputTheoryAttribute() {
-		if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("ICOD_PTY_VERIFY_SPLIT_QUERIES") != "1")
+		if (OperatingSystem.IsWindows())
 			Skip = "Native ConPTY can discard fragmented CSI query-reply prefixes; see docs/ConPTY-Input-Limitations.md. The sample pump is tested separately on Windows.";
+	}
+}
+
+internal sealed class WindowsConPtyProbeFactAttribute : FactAttribute {
+	public WindowsConPtyProbeFactAttribute() {
+		if (!OperatingSystem.IsWindows())
+			Skip = "The ConPTY fragmentation classifier runs only on Windows.";
+		else if (Environment.GetEnvironmentVariable("ICOD_PTY_VERIFY_SPLIT_QUERIES") != "1")
+			Skip = "Set ICOD_PTY_VERIFY_SPLIT_QUERIES=1 to run the bounded ConPTY fragmentation classifier.";
 	}
 }
