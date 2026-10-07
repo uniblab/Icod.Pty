@@ -69,6 +69,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify package metadata parser
+        shell: pwsh
+        run: ./packaging/VerifyPackageMetadata.Tests.ps1
       - name: Verify portable consumer harness
         shell: pwsh
         run: ./packaging/VerifyPortableConsumer.Tests.ps1
@@ -83,6 +86,7 @@ jobs:
             [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors.Count -ne 0) { throw "PowerShell 5.1 parse errors in $($file.FullName): $($errors -join '; ')" }
           }
+          ./packaging/VerifyPackageMetadata.Tests.ps1
           ./packaging/Get-RepositoryMetadata.ps1 -Configuration Staging
       - name: Restore
         run: dotnet restore '${{ needs.metadata.outputs.solution_path }}'

@@ -14,6 +14,53 @@ The Windows ARM64 image was `20260924.168.1`; its [published image manifest](htt
 
 The child recorded received bytes in a shared file, independently of screen rendering. Unicode and arrow input survived; the query reply arrived as `R`. Changing rendered acknowledgements and native read-buffer size did not remove the loss. This localizes the observation below the sample's forwarding loop; it does not identify an upstream fix or promise that other fragmented sequences are unaffected.
 
+PR #9 exact-head [run 124](https://github.com/uniblab/Icod.Pty/actions/runs/37655837994) at
+`8114ffa4b2cf9e1432a17f69e5037df61f5c19a6` repeated the bounded classifier on Windows x64 and ARM64. Both
+RID-specific artifacts contained the required net8.0, net9.0, and net10.0 reports; every report used schema
+`icod-pty/conpty-fragmentation/v1`, both host paths, ten patterns, and five attempts per host/pattern pair.
+
+| RID | Framework runtime | Exact | Prefix lost | Mismatch | Timed out | Report outcome |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| win-x64 | .NET 8.0.31 | 92 | 8 | 0 | 0 | Reproduced |
+| win-x64 | .NET 9.0.20 | 85 | 15 | 0 | 0 | Reproduced |
+| win-x64 | .NET 10.0.12 | 97 | 3 | 0 | 0 | Reproduced |
+| win-arm64 | .NET 8.0.31 | 99 | 1 | 0 | 0 | Reproduced |
+| win-arm64 | .NET 9.0.20 | 99 | 1 | 0 | 0 | Reproduced |
+| win-arm64 | .NET 10.0.12 | 100 | 0 | 0 | 0 | NotReproduced |
+| **Total** | **Six reports** | **572** | **28** | **0** | **0** | **Reproduced** |
+
+The following are the only RID/framework/host/pattern cells with prefix loss. Each cell contains five trials, so
+its exact count is `5 - Prefix lost`; every unlisted cell was 5 exact, 0 prefix lost, 0 mismatch, and 0 timeout.
+
+| RID | Framework | Host path | Pattern | Prefix lost |
+| --- | --- | --- | --- | ---: |
+| win-x64 | net8.0 | direct | query-bytewise-0ms | 4 |
+| win-x64 | net8.0 | direct | query-split-3 | 1 |
+| win-x64 | net8.0 | nested-sample | query-split-6 | 1 |
+| win-x64 | net8.0 | nested-sample | query-split-7 | 2 |
+| win-x64 | net9.0 | direct | query-bytewise-0ms | 1 |
+| win-x64 | net9.0 | direct | query-split-3 | 3 |
+| win-x64 | net9.0 | direct | query-split-4 | 2 |
+| win-x64 | net9.0 | direct | query-split-5 | 3 |
+| win-x64 | net9.0 | direct | query-split-6 | 2 |
+| win-x64 | net9.0 | direct | query-split-7 | 1 |
+| win-x64 | net9.0 | nested-sample | query-bytewise-0ms | 2 |
+| win-x64 | net9.0 | nested-sample | query-split-7 | 1 |
+| win-x64 | net10.0 | direct | query-bytewise-0ms | 2 |
+| win-x64 | net10.0 | direct | query-split-3 | 1 |
+| win-arm64 | net8.0 | direct | query-split-6 | 1 |
+| win-arm64 | net9.0 | nested-sample | query-split-5 | 1 |
+
+The 28 prefix losses occurred in zero-delay split or bytewise-query patterns: 21 on the direct path and 7 on the
+nested-sample path. No intact-query or 10 ms bytewise trial lost data. One bounded report that did not reproduce
+the intermittent behavior does not negate the observations in the other reports.
+
+The matching deterministic probe/runner and interactive-sample tests passed on net8.0, net9.0, and net10.0, and
+the full suite passed 330 tests with only the Windows-only classifier skipped on the Linux verifier for each
+framework. Managed forwarding therefore remained exact while native trials lost prefixes. Under the approved
+decision rule, the result is classified as a **ConPTY/native limitation**, not an Icod.Pty defect. No production
+or public-API change is justified by this evidence.
+
 ## Contract and coverage
 
 - The sample forwards every byte it receives, including fragmented Unicode, VT, and query replies. A controlled fragmented-host fixture verifies the actual forwarding loop on all six platforms.

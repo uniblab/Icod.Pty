@@ -1,6 +1,6 @@
 # Release readiness report
 
-**Status:** Open — RS01–RS02 complete; RS03–RS09 remain open.
+**Status:** Open — RS01–RS05 complete; RS06–RS09 remain open.
 
 This report separates deterministic repository evidence, native hosted evidence, exact-package consumer
 evidence, published-layout evidence, and operator-observed acceptance. Evidence in one section does not
@@ -17,7 +17,7 @@ substitute for another.
 | Public compatibility baseline | 377 entries; 43 exported types | RS02 complete; unchanged and retained |
 | Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Exact-head requalification Open |
 | NativeAOT | Informational feasibility probe only | Nonblocking; promotion is outside this milestone |
-| Known native limitation | Windows ConPTY may lose or mutate a query fragmented across host writes | Classification Open |
+| Known native limitation | Windows ConPTY may lose a query prefix when the query is fragmented across host writes | Classified as ConPTY/native; documented workaround retained |
 
 ## Repository tests
 
@@ -39,10 +39,19 @@ PR #8 final head `590b621fcf7632ba15911326c97972039e7ccb36` passed all six platf
 all three target frameworks in [run 116](https://github.com/uniblab/Icod.Pty/actions/runs/37622622960).
 Equivalent evidence for the final PR #9 head is **Open**. The PR workflow now requests six bounded Windows ConPTY
 classification reports—two RIDs by three frameworks—and uploads one artifact per RID. The reports and their
-cross-architecture classification remain **Open** until both Windows jobs complete on the same exact head.
+cross-architecture classification completed on exact-head [run 124](https://github.com/uniblab/Icod.Pty/actions/runs/37655837994)
+at `8114ffa4b2cf9e1432a17f69e5037df61f5c19a6`.
 Runs 122 and 123 produced no usable classification evidence: run 122 exposed harness-only report-path and loaded
 test-deadline defects, while run 123 ended after its successful metadata job without creating the validation
 matrix. Both are excluded from the outcome decision.
+
+Run 124 produced six complete 100-trial reports. Five reports reproduced prefix loss; Windows ARM64 on .NET
+10.0.12 completed all 100 trials exactly. Across all reports, 572 trials were exact and 28 lost a prefix, with no
+mismatch or timeout. Loss occurred on both architectures and through both the direct and nested-sample host paths.
+The deterministic managed probe/runner and sample-forwarding tests passed on all three target frameworks, as did
+the full local suite (330 passed and the Windows-only fact skipped once per framework). The approved outcome is
+therefore **ConPTY/native limitation**. No product or public-API correction is indicated. Complete exact-head
+six-platform qualification remains **Open** for RS08.
 
 ## Exact-package consumers
 

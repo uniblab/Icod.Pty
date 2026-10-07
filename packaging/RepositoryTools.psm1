@@ -155,11 +155,35 @@ function Get-PackageMetadata {
             throw "Package '$PackagePath' does not declare package ID and version."
         }
 
+        $authorsNode = $metadata.SelectSingleNode("*[local-name()='authors']")
+        $descriptionNode = $metadata.SelectSingleNode("*[local-name()='description']")
+        $projectUrlNode = $metadata.SelectSingleNode("*[local-name()='projectUrl']")
+        $repositoryNode = $metadata.SelectSingleNode("*[local-name()='repository']")
+        $licenseNode = $metadata.SelectSingleNode("*[local-name()='license']")
+        $requireLicenseAcceptanceNode = $metadata.SelectSingleNode("*[local-name()='requireLicenseAcceptance']")
         $readmeNode = $metadata.SelectSingleNode("*[local-name()='readme']")
+        $releaseNotesNode = $metadata.SelectSingleNode("*[local-name()='releaseNotes']")
+        $tagsNode = $metadata.SelectSingleNode("*[local-name()='tags']")
+
+        $requireLicenseAcceptance = $false
+        if ($null -ne $requireLicenseAcceptanceNode -and
+            -not [bool]::TryParse($requireLicenseAcceptanceNode.InnerText.Trim(), [ref]$requireLicenseAcceptance)) {
+            throw "Package '$PackagePath' has an invalid requireLicenseAcceptance value."
+        }
+
         return [pscustomobject]@{
             Id = $idNode.InnerText.Trim()
             Version = $versionNode.InnerText.Trim()
-            Readme = if ($null -eq $readmeNode) { '' } else { $readmeNode.InnerText.Trim().Replace('\\', '/') }
+            Authors = if ($null -eq $authorsNode) { '' } else { $authorsNode.InnerText.Trim() }
+            Description = if ($null -eq $descriptionNode) { '' } else { $descriptionNode.InnerText.Trim() }
+            ProjectUrl = if ($null -eq $projectUrlNode) { '' } else { $projectUrlNode.InnerText.Trim() }
+            RepositoryUrl = if ($null -eq $repositoryNode) { '' } else { $repositoryNode.GetAttribute('url').Trim() }
+            RepositoryType = if ($null -eq $repositoryNode) { '' } else { $repositoryNode.GetAttribute('type').Trim() }
+            LicenseExpression = if ($null -eq $licenseNode) { '' } else { $licenseNode.InnerText.Trim() }
+            RequireLicenseAcceptance = $requireLicenseAcceptance
+            Readme = if ($null -eq $readmeNode) { '' } else { $readmeNode.InnerText.Trim().Replace('\', '/') }
+            ReleaseNotes = if ($null -eq $releaseNotesNode) { '' } else { $releaseNotesNode.InnerText.Trim() }
+            Tags = if ($null -eq $tagsNode) { '' } else { $tagsNode.InnerText.Trim() }
         }
     } finally {
         $archive.Dispose()

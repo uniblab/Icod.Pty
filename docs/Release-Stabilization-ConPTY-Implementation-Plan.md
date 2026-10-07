@@ -219,7 +219,7 @@ Use `actions/upload-artifact@v4` with one artifact per Windows RID, `if: always(
 
 Run PowerShell parser checks under `pwsh`; on the identified Windows x64 environment also parse every `.ps1`/`.psm1` under Windows PowerShell 5.1. Inspect the workflow diff for Windows-only conditions and unique artifact names.
 
-- [ ] **Step 4: Commit and observe exact-head CI**
+- [x] **Step 4: Commit and observe exact-head CI**
 
 ```sh
 git add .github/workflows/pull-request.yaml docs/ConPTY-Input-Limitations.md docs/Release-Readiness-Report.md
@@ -240,22 +240,22 @@ Do not classify the result in documentation until the Windows x64 and ARM64 arti
 - Consumes: exact-head JSON artifacts and logs from both Windows architectures and all three frameworks.
 - Produces: one of `Icod.Pty defect`, `ConPTY/native limitation`, or `Inconclusive`, with counts and source links.
 
-- [ ] **Step 1: Validate and summarize all six reports**
+- [x] **Step 1: Validate and summarize all six reports**
 
 Require matching schema, sequence/pattern inventory, five repetitions, both host paths, and no harness omissions. Tabulate exact, prefix-loss, mismatch, and timeout counts by RID/framework/pattern. Do not combine absent evidence with zero observations.
 
-- [ ] **Step 2: Apply the approved outcome rule**
+- [x] **Step 2: Apply the approved outcome rule**
 
 - If deterministic managed tests lose/reorder/rewrite bytes, record the exact failing scenario, owning source path, proposed test name/assertion, and compatibility impact; stop and amend this plan with an exact TDD correction task before editing product code.
 - If managed forwarding is exact and native trials reproduce loss/mutation, make no production change; document the native limitation and workarounds without promising arbitrary fragmented delivery.
 - If reports do not reproduce consistently or cannot isolate the layer, retain the prior warning and mark the result `Inconclusive`.
 - If any correction needs a public API change, general buffering/retry policy, parser, or terminal emulator, stop implementation and request a separate design.
 
-- [ ] **Step 3: Rerun affected deterministic tests**
+- [x] **Step 3: Rerun affected deterministic tests**
 
 Run the probe model/runner tests, `InteractiveSampleTests`, and the full suite on every locally available framework. Expected: no environmental outcome is encoded as a universal assertion.
 
-- [ ] **Step 4: Record evidence and commit**
+- [x] **Step 4: Record evidence and commit**
 
 ```sh
 git add docs/ConPTY-Input-Limitations.md docs/Release-Readiness-Report.md docs/Public-Contract-Audit.md docs/Release-Stabilization-ConPTY-Implementation-Plan.md
@@ -276,15 +276,15 @@ git commit -m "docs: classify ConPTY fragmentation evidence"
 - Consumes: the Task 1 readiness ledger and current NuGet metadata.
 - Produces: parsed metadata fields `Authors`, `Description`, `ProjectUrl`, `RepositoryUrl`, `RepositoryType`, `LicenseExpression`, `RequireLicenseAcceptance`, `Readme`, `ReleaseNotes`, and `Tags`, plus exact-package assertions.
 
-- [ ] **Step 1: Write the failing metadata-parser self-test**
+- [x] **Step 1: Write the failing metadata-parser self-test**
 
 Create a temporary `.nupkg` with a fixed nuspec and assert every produced property, namespace-independent XML lookup, normalized readme path, Boolean license-acceptance value, and cleanup. Run it and require failure because `Get-PackageMetadata` currently returns only ID, version, and readme.
 
-- [ ] **Step 2: Extend metadata parsing and artifact assertions**
+- [x] **Step 2: Extend metadata parsing and artifact assertions**
 
 Require ID `Icod.Pty`, author `Timothy J. Bruce`, description `Cross-platform pseudoterminal process hosting for .NET.`, project/repository URL `https://github.com/uniblab/Icod.Pty`, repository type `git`, license `LGPL-3.0-or-later`, license acceptance `true`, readme `README.md`, nonempty release notes, and tags containing `pty`, `pseudoterminal`, `conpty`, `terminal`, `process`, and `cross-platform`.
 
-- [ ] **Step 3: Add curated unreleased notes without selecting a version**
+- [x] **Step 3: Add curated unreleased notes without selecting a version**
 
 Create `CHANGELOG.md` with an `Unreleased` section covering PRs #1–#8, deployment prerequisites, and known ConPTY/NativeAOT limits. Add it to the package root and set `PackageReleaseNotes` to direct consumers to the packaged changelog. Do not change `<Version>0.1.0-alpha.1</Version>`.
 
@@ -292,11 +292,11 @@ Create `CHANGELOG.md` with an `Unreleased` section covering PRs #1–#8, deploym
 
 Run `VerifyPackageMetadata.Tests.ps1` beside `VerifyPortableConsumer.Tests.ps1` before restore. Parse all packaging scripts in Windows PowerShell 5.1 and run the metadata self-test there on Windows x64.
 
-- [ ] **Step 5: Pack and verify the exact artifact**
+- [x] **Step 5: Pack and verify the exact artifact**
 
 Run a Staging build/pack, `VerifyPackageMetadata.Tests.ps1`, and `VerifyPackageArtifact.ps1`. Inspect the `.nupkg` to confirm README, CHANGELOG, LICENSE, all three TFMs, and helper assets occur exactly where asserted.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add CHANGELOG.md Icod.Pty.csproj packaging/RepositoryTools.psm1 packaging/VerifyPackageArtifact.ps1 packaging/VerifyPackageMetadata.Tests.ps1 .github/workflows/pull-request.yaml

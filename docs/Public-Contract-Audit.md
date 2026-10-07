@@ -35,6 +35,19 @@ No production change required. Source, deterministic tests, XML documentation, d
 agree for all seven groups. No `Correct`, `Clarify`, or `Defer` disposition was required. Later tasks may improve
 release guidance without changing these contracts. `packaging/PublicApiBaseline.txt` remains unchanged.
 
+## RS05 native evidence classification
+
+PR #9 exact-head [run 124](https://github.com/uniblab/Icod.Pty/actions/runs/37655837994) produced six complete
+Windows ConPTY classifier reports: 600 bounded trials across win-x64/win-arm64 and net8.0/net9.0/net10.0. The
+reports recorded 572 exact deliveries and 28 prefix losses, with no mismatch or timeout; loss appeared on both
+architectures and through both direct and nested-sample host paths. Deterministic managed forwarding remained
+exact on all three target frameworks.
+
+The approved decision rule therefore classifies the observation as a **ConPTY/native limitation**. The Automation
+contract row remains `Retain`: Icod.Pty promises ordered raw-byte forwarding at the managed layer, not arbitrary
+fragment preservation after Windows console-input interpretation. No product correction, public-API change, or
+compatibility-baseline update is warranted.
+
 ## Compatibility baseline
 
 - Baseline file: `packaging/PublicApiBaseline.txt`
