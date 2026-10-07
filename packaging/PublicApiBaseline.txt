@@ -1,4 +1,4 @@
-# PR #10 focused timed playback additive API baseline (hosted acceptance pending).
+# PR #10 focused timed playback additive API baseline (qualified implementation head 1a02ab33477244f7c15273cae0a4727054bbeec2).
   ctor Icod.Pty.PtyAutomationOptions()
   ctor Icod.Pty.PtyControlResult(Icod.Pty.PtyProcessTarget Target,Icod.Pty.PtyControlStatus Status)
   ctor Icod.Pty.PtyExpectResult(Icod.Pty.PtyExpectStatus Status,System.Int64 ConsumedBytes)

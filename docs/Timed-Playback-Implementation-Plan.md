@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** implementation complete locally; exact-head six-platform CI acceptance is pending. Read the [design](Timed-Playback-Design.md) and [main roadmap](../ROADMAP.md) first.
+**Status:** implementation and qualification complete on PR #10. Read the [design](Timed-Playback-Design.md) and [main roadmap](../ROADMAP.md) first.
 
 **Goal:** dispatch existing validated output-and-resize recording events at their recorded relative times, without changing the v1 format or immediate replay.
 
@@ -97,8 +97,8 @@
 
 - [x] **Step 1: Add a concise usage example and limits to `README.md`.** Separate a valid `Truncated`/`Stopped` terminal result from format, cap, callback and cancellation exceptions. Mark the feature's manual Windows acceptance unreported unless an exact-head result is actually supplied.
 - [x] **Step 2: Review the entire PR diff** for payload leakage, cancellation after consumption, callback reentrancy, overflow, time-origin drift, reader ownership, and the additive API. Add a failing regression before any correction.
-- [ ] **Step 3: Run full Release tests and Staging pack; verify the exact package and every consumer smoke on all three frameworks.** Run the complete six-platform CI matrix at the final implementation head: Windows/Linux/macOS x64/ARM64, net8.0/net9.0/net10.0, ordinary and exact-package consumers, framework-dependent/self-contained/single-file/trimmed layouts, and informational NativeAOT probes. If a test cannot start in the local sandbox, record that distinctly and rely on the CI gate rather than guessing.
-- [ ] **Step 4: Record final SHA, workflow URLs, exact outcomes and expected skips in this plan and the roadmap.** Keep laptop observations separate. Commit `docs: complete timed playback acceptance` only after evidence; no version/tag/publish/merge in this tranche.
+- [x] **Step 3: Run full Release tests and Staging pack; verify the exact package and every consumer smoke on all three frameworks.** Run the complete six-platform CI matrix at the final implementation head: Windows/Linux/macOS x64/ARM64, net8.0/net9.0/net10.0, ordinary and exact-package consumers, framework-dependent/self-contained/single-file/trimmed layouts, and informational NativeAOT probes. If a test cannot start in the local sandbox, record that distinctly and rely on the CI gate rather than guessing.
+- [x] **Step 4: Record final SHA, workflow URLs, exact outcomes and expected skips in this plan and the roadmap.** Keep laptop observations separate. Commit `docs: complete timed playback acceptance` only after evidence; no version/tag/publish/merge in this tranche.
 
 ## Local implementation evidence
 
@@ -106,8 +106,9 @@
 - TP02 scheduler tests passed 8/8 on every framework without wall-clock sleeps. They cover the first wait, equal timestamps, absolute scheduling after a slow callback, late events, 30-second slicing, cancellation, and near-`TimeSpan.MaxValue` arithmetic.
 - TP03–TP04 focused reader tests passed 44/44 on every framework. The full Release solution passed 359 tests with one expected interactive ConPTY probe skip on each framework.
 - TP05 built and ran `--timed-playback-smoke` on all three frameworks. A Staging package passed exact artifact validation, every exact-package and published-consumer mode on all three frameworks, and a relocated net10.0 linux-x64 framework-dependent layout with all 12 smoke modes.
-- Manual Windows laptop timed-playback acceptance is unreported. The complete six-platform PR workflow remains the final acceptance gate.
+- Implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed [PR run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876): metadata plus Windows x64/ARM64, Linux x64/ARM64, and macOS x64/ARM64 all succeeded. Every platform completed all three target frameworks, the exact-package consumer, framework-dependent, self-contained, single-file, and trimmed layouts, plus the informational NativeAOT probe. The existing interactive ConPTY classifier test remains excluded from the ordinary test run and is exercised by the separate Windows classification step; both Windows evidence artifacts were produced from the same head.
+- Manual Windows laptop timed-playback acceptance is unreported and remains separate from hosted acceptance.
 
 ## Completion condition
 
-The feature is ready for review when a package consumer receives output and resize events in recorded order at best-effort recorded times; the existing immediate replay and binary format remain unchanged; cap, cancellation, reader-concurrency, format, and callback failures are explicit; and the final implementation source tree passes all six platform jobs and three frameworks. Local implementation is complete; hosted acceptance remains pending.
+The feature is ready for review: a package consumer receives output and resize events in recorded order at best-effort recorded times; the existing immediate replay and binary format remain unchanged; cap, cancellation, reader-concurrency, format, and callback failures are explicit; and the implementation source tree passed all six platform jobs and three frameworks. Merge, version selection, tagging, and publication remain separate decisions.

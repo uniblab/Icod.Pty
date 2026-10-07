@@ -1,6 +1,6 @@
 # Focused timed playback of recordings
 
-**Status:** approved and implemented on PR #10. Local tests and exact-package consumers pass; complete six-platform acceptance is pending at the implementation head.
+**Status:** implemented and qualified on PR #10. Implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed the complete six-platform matrix in [run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876).
 
 ## Intent and constraints
 
