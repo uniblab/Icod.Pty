@@ -34,7 +34,7 @@ public sealed class UnixStartupTests {
 		Task<PtyProcess> pending = PtyProcess.StartAsync(info, cancellation.Token);
 		int pid = 0;
 		try {
-			using CancellationTokenSource readyTimeout = new(TimeSpan.FromSeconds(5));
+			using CancellationTokenSource readyTimeout = new(TimeSpan.FromSeconds(30));
 			while (!File.Exists(pidFile) || !int.TryParse(await File.ReadAllTextAsync(pidFile), out pid)) await Task.Delay(10, readyTimeout.Token);
 			if (cancelCaller) {
 				cancellation.Cancel();

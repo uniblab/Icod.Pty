@@ -107,7 +107,10 @@
 - TP03–TP04 focused reader tests passed 44/44 on every framework. The full Release solution passed 359 tests with one expected interactive ConPTY probe skip on each framework.
 - TP05 built and ran `--timed-playback-smoke` on all three frameworks. A Staging package passed exact artifact validation, every exact-package and published-consumer mode on all three frameworks, and a relocated net10.0 linux-x64 framework-dependent layout with all 12 smoke modes.
 - Implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed [PR run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876): metadata plus Windows x64/ARM64, Linux x64/ARM64, and macOS x64/ARM64 all succeeded. Every platform completed all three target frameworks, the exact-package consumer, framework-dependent, self-contained, single-file, and trimmed layouts, plus the informational NativeAOT probe. The existing interactive ConPTY classifier test remains excluded from the ordinary test run and is exercised by the separate Windows classification step; both Windows evidence artifacts were produced from the same head.
-- Manual Windows laptop timed-playback acceptance is unreported and remains separate from hosted acceptance.
+- On 2026-10-07, the user checked out exact final PR head
+  `6d45dbfb69ca9b94de9533e569c6e7ee724efb25` and ran Release `--timed-playback-smoke` successfully on net8.0,
+  net9.0, and net10.0 on the identified Windows x64 laptop. These observations remain separate from hosted
+  acceptance.
 
 ## Completion condition
 

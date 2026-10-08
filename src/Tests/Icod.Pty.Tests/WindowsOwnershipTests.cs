@@ -83,6 +83,7 @@ public sealed class WindowsOwnershipTests {
 	}
 	private sealed class Fixture : IDisposable {
 		private readonly string directory = Path.Combine(Path.GetTempPath(), "icod-owned-" + Guid.NewGuid().ToString("N"));
+		private int childId;
 		internal string ParentReady => Path.Combine(directory, "parent-ready");
 		internal string ExitPrimary => Path.Combine(directory, "exit-primary");
 		internal Fixture() { Directory.CreateDirectory(directory); }
@@ -92,9 +93,15 @@ public sealed class WindowsOwnershipTests {
 		}
 		internal async Task WaitReady() {
 			using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
-			while (!File.Exists(Path.Combine(directory, "child-ready"))) await Task.Delay(10, timeout.Token);
+			string ready = Path.Combine(directory, "child-ready");
+			while (true) {
+				try {
+					if (File.Exists(ready) && int.TryParse(File.ReadAllText(ready), System.Globalization.CultureInfo.InvariantCulture, out childId)) return;
+				} catch (IOException) { }
+				await Task.Delay(10, timeout.Token);
+			}
 		}
-		internal int ChildId() => int.Parse(File.ReadAllText(Path.Combine(directory, "child-ready")), System.Globalization.CultureInfo.InvariantCulture);
+		internal int ChildId() => childId != 0 ? childId : throw new InvalidOperationException("The child readiness marker has not been read.");
 		public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 	}
 }

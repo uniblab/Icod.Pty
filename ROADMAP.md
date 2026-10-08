@@ -97,7 +97,10 @@ cancellation-cooperative streams.
 planning PR, preservation of the full option menu, and a proper development roadmap.
 
 **Status:** [PR #5](https://github.com/uniblab/Icod.Pty/pull/5) merged on 2026-10-06. Its final head passed
-[six-platform CI run 72, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37363586412) on all three frameworks, including exact package consumers. Manual Windows laptop execution of `--terminal-config-smoke` remains separately pending. Read the
+[six-platform CI run 72, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37363586412) on all three
+frameworks, including exact package consumers. On 2026-10-08, the user ran Windows x64 Release
+`--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from exact PR #11 pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755`. Read the
 [approved design](docs/Terminal-Configuration-Design.md) and
 [development roadmap and evidence](docs/Terminal-Configuration-Implementation-Plan.md), tranches TC01-TC09.
 No version, tag, or publication is selected.
@@ -201,28 +204,6 @@ Windows process cleanup race. The [readiness report](docs/Release-Readiness-Repo
 named nonblocking limitations** for a separately selected prerelease; laptop acceptance, merge, version, tag,
 and publication remain separate.
 
-## Selected next milestone: focused timed playback
-
-**Decision, 2026-10-07:** after PR #9 merged, the user selected a focused continuation of **option 8:
-timed playback of existing output-and-resize recordings**. The [design](docs/Timed-Playback-Design.md)
-and [development roadmap](docs/Timed-Playback-Implementation-Plan.md) define this increment. Planning and review
-do not select a package version, tag, or publication.
-
-**Status:** implementation on [PR #10](https://github.com/uniblab/Icod.Pty/pull/10) is qualified for review. Implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed metadata and all six Windows/Linux/macOS x64/ARM64 jobs, all three target frameworks, exact-package consumers, framework-dependent/self-contained/single-file/trimmed layouts, and informational NativeAOT probes in [run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876). Manual Windows laptop timed-playback acceptance remains unreported; merge, version selection, tagging, and publication remain separate decisions.
-
-**Goal:** let a consumer stream the validated recording's output and resize events at their recorded relative
-times without launching a PTY. Preserve the v1 recording format, binary payloads, event order, independent
-reader limits, source ownership, and the existing immediate output-only replay method. The consumer applies each
-event to its own destination; Icod.Pty does not interpret terminal content or control a host console.
-
-**Boundary:** one opt-in timed event-dispatch method with a configurable elapsed-time cap, monotonic scheduling,
-cancellation, and explicit callback/format failures. No input capture, playback speed control, pause/seek, live
-script branching, terminal emulation, or general observer/exporter API. This milestone does not expand NativeAOT
-or the ConPTY compatibility promise.
-
-**Acceptance goal:** deterministic scheduling and failure tests, exact-package smoke on net8.0/net9.0/net10.0,
-and the complete six-platform published-consumer matrix. Record Windows laptop acceptance separately from CI.
-
 **Goal:** determine whether the current public surface and shipped package are ready for a deliberately chosen
 prerelease, correct evidence-supported compatibility defects before they become durable contracts, and replace
 the broad ConPTY fragmented-query warning with a reproducible classification. Preserve all existing default
@@ -248,6 +229,76 @@ jobs against exact package artifacts and published application layouts; record W
 separately; and finish with an explicit release-readiness report listing supported behavior, known limitations,
 remaining blockers, and any recommended version target.
 
+### Focused timed playback
+
+**Decision, 2026-10-07:** after PR #9 merged, the user selected a focused continuation of **option 8:
+timed playback of existing output-and-resize recordings**. The [design](docs/Timed-Playback-Design.md)
+and [development roadmap](docs/Timed-Playback-Implementation-Plan.md) define this increment. Planning and review
+do not select a package version, tag, or publication.
+
+**Status:** [PR #10](https://github.com/uniblab/Icod.Pty/pull/10) merged on 2026-10-08 at
+`210d6346619b3133d58c7c3485d3dcf1cd562e97`. Implementation head
+`1a02ab33477244f7c15273cae0a4727054bbeec2` passed the complete matrix in
+[run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876), and final evidence head
+`6d45dbfb69ca9b94de9533e569c6e7ee724efb25` repeated it in
+[run 132](https://github.com/uniblab/Icod.Pty/actions/runs/37685894498): metadata, all six
+Windows/Linux/macOS x64/ARM64 jobs, all three target frameworks, exact-package consumers,
+framework-dependent/self-contained/single-file/trimmed layouts, and informational NativeAOT probes passed.
+From that exact final head, the user ran Release `--timed-playback-smoke` successfully on the identified Windows
+x64 laptop with net8.0, net9.0, and net10.0.
+
+**Goal:** let a consumer stream the validated recording's output and resize events at their recorded relative
+times without launching a PTY. Preserve the v1 recording format, binary payloads, event order, independent
+reader limits, source ownership, and the existing immediate output-only replay method. The consumer applies each
+event to its own destination; Icod.Pty does not interpret terminal content or control a host console.
+
+**Boundary:** one opt-in timed event-dispatch method with a configurable elapsed-time cap, monotonic scheduling,
+cancellation, and explicit callback/format failures. No input capture, playback speed control, pause/seek, live
+script branching, terminal emulation, or general observer/exporter API. This milestone does not expand NativeAOT
+or the ConPTY compatibility promise.
+
+**Acceptance goal:** deterministic scheduling and failure tests, exact-package smoke on net8.0/net9.0/net10.0,
+and the complete six-platform published-consumer matrix. Record Windows laptop acceptance separately from CI.
+
+## Selected milestone: stable 1.0 release
+
+**Decision, 2026-10-08:** after PR #10 merged, the user accepted the recommendation that Icod.Pty is
+feature-complete for 1.0 and selected a no-new-features release-preparation milestone. After the complete
+candidate-shaped matrix and manual terminal-configuration checks passed, the user chose to publish directly as
+stable `1.0.0` rather than introduce an intermediate public release candidate. The
+[release design](docs/Release-1.0-Design.md) and
+[development roadmap](docs/Release-1.0-Implementation-Plan.md), RP01–RP06, define the stable qualification and
+publication gates.
+
+**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is preparing stable `1.0.0` from merged PR #10
+on the historically named `release/1.0.0-rc.1` branch. Pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755` passed metadata and all six Windows/Linux/macOS x64/ARM64 jobs in
+[run 137](https://github.com/uniblab/Icod.Pty/actions/runs/37782321473), covering all three target frameworks,
+exact package consumers, framework-dependent/self-contained/single-file/trimmed and relocated layouts,
+intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY classification, and informational
+NativeAOT probes. The user also ran `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from
+that exact head. Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` then passed the complete
+`1.0.0` matrix in [run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047): metadata plus all six
+platform jobs, all three target frameworks, exact package consumers and supported deployment layouts. Final
+evidence head `94689f3843934318c25e4bc3a68d94a0d309f8c9` repeated all seven jobs successfully in
+[run 140](https://github.com/uniblab/Icod.Pty/actions/runs/37799284372). No tag or publication is part of this
+pull request.
+
+**Goal:** deliver a coherent package manual, complete feature history through PR #10, reconciled
+release-readiness evidence, an exact stable package, and a repeatable direct-stable publication and
+fresh-consumer confirmation procedure.
+
+**Boundary:** correct release documentation, metadata, verification, or demonstrated blocking defects only.
+Broader signals, high-concurrency redesign, live terminal changes, generic telemetry, richer
+recording/automation, resource controls, persistence, terminal emulation, NativeAOT promotion, and wider
+platform qualification remain post-1.0 choices.
+
+**Publication gate:** the exact `1.0.0` package and complete six-platform matrix must pass, the Windows
+interactive-host procedure must be recorded without a blocking defect, and PR #11 must be reviewed and merged.
+Tagging `v1.0.0` is then an explicit operator action. Because no public prerelease is introduced, a fresh
+consumer installs the public stable package immediately after publication as delivery-path confirmation; any
+failure requires prompt corrective action and is not retroactively described as prepublication evidence.
+
 ## Full current menu
 
 Effort is relative, not a schedule. Deferred options remain available and are not release commitments.
@@ -261,12 +312,12 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 5 | High-concurrency I/O and process waiting | Deferred; large | Reduce worker/polling costs after measuring throughput, memory and cancellation with a representative concurrent-session workload. |
 | 6 | Deployment and runtime portability | Qualified in PR #6 | Exact-package framework-dependent, self-contained, single-file, and trimmed consumers are verified across three TFMs and six target RIDs. NativeAOT is a net10.0 feasibility result; wider Unix remains untested. |
 | 7 | Terminal configuration controls | Initial launch-time increment complete in PR #5 | Launch-time echo, canonical/noncanonical and Raw input, signal processing, control characters and read timing, with native feasibility/readback gates. Live query/update/restoration and broader controls remain deferred. |
-| 8 | Recording, replay, and automation | Recording/replay complete in PR #7; live matching/scripts complete in PR #8; focused timed playback qualified on PR #10 | Dispatch existing output/resize events at their recorded times. Input capture, speed/seek, regex/text matching, branching, and screen-aware automation remain deferred. |
+| 8 | Recording, replay, and automation | Recording/replay complete in PR #7; live matching/scripts complete in PR #8; focused timed playback complete in PR #10 | Input capture, speed/seek, regex/text matching, branching, and screen-aware automation remain deferred until a demonstrated post-1.0 need. |
 | 9 | ConPTY compatibility investigation | Focused investigation completed in PR #9 | The bounded pure-C# classifier reproduced native prefix loss across Windows architectures while deterministic managed forwarding remained exact. |
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Completed in PR #9; earlier focused portion completed in PR #6 | The post-PR #8 contract, documentation, samples, package metadata, and six-platform qualification are audited; readiness is recorded before version selection. |
+| 13 | Release stabilization and compatibility hardening | Completed in PR #9; direct stable 1.0 preparation selected after PR #10 | The audited contract and six-platform qualification now feed documentation, exact stable-package, interactive-acceptance, publication, and fresh-consumer confirmation gates with no new feature surface. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
 Interactive hosting, scoped process ownership, reusable session orchestration, launch-time terminal configuration,

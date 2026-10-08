@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output. The noninteractive switches cover process lifecycle and cancellation, interrupt, scope ownership, session shutdown/drain, terminal configuration, invalid helper/host cleanup, recording/replay, and live automation; each owns and disposes its session within a bounded check.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output. The noninteractive switches cover process lifecycle and cancellation, interrupt, scope ownership, session shutdown/drain, terminal configuration, invalid helper/host cleanup, recording/replay, live automation, and timed playback; each owns and disposes its session within a bounded check.
 
 Build once from the repository root:
 
@@ -50,7 +50,63 @@ Optionally run an already installed full-screen editor, resize it, enter and lea
 
 Record OS build/architecture, host terminal, child shell/version, .NET runtime, and observations for immediate keys, no extra echo, Ctrl+C, resize, exit, and restored host state. Repeat with `-f net8.0` or `-f net9.0` when checking those runtimes.
 
-The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Acceptance of this interactive milestone on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
+The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Complete 1.0 interactive acceptance
+on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
+
+## 1.0 stable release acceptance
+
+Before tagging, record the exact repository commit, OS build/architecture, host terminal, .NET runtimes, CMD
+version, and Windows PowerShell version.
+
+1. From a clean checkout of the release commit, build Release once. Run every noninteractive smoke—through
+   `--timed-playback-smoke`—on net8.0, net9.0, and net10.0. Each must print its documented success line and exit
+   zero.
+2. Run the **Windows CMD** procedure above. Require immediate editing/history, one visible echo, working Tab and
+   Escape, live resize during continuous output, Ctrl+C interrupt without killing the child shell, clean `exit`,
+   and normal editing/history in the original CMD afterward.
+3. Run the **Windows PowerShell 5.1** procedure above with the same requirements. After child `exit`, confirm the
+   original shell's code page, echo, editing, history, and Ctrl+C behavior are normal.
+4. Treat any hang, duplicated input, missing resize, unusable child after Ctrl+C, nonzero clean-exit result, or
+   altered original console as a pre-tag stable-release blocker. Record a pass only when both shells satisfy
+   every observation.
+
+After `1.0.0` is published to the intended public NuGet source:
+
+5. In a new directory with no repository or local-feed dependency, create a net10.0 console application and run
+   `dotnet add package Icod.Pty --version 1.0.0`. Confirm restore selects the public stable package. Replace
+   `Program.cs` with the following complete program:
+
+   ```csharp
+   using System.Text;
+   using Icod.Pty;
+
+   const string expected = "Icod.Pty public package check";
+   var start = new PtyStartInfo(
+       OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh");
+   start.ArgumentList.Add(OperatingSystem.IsWindows() ? "/c" : "-c");
+   start.ArgumentList.Add($"echo {expected}");
+
+   await using PtyProcess process = await PtyProcess.StartAsync(start);
+   using var output = new MemoryStream();
+   Task drain = process.Output.CopyToAsync(output);
+   int exitCode = await process.WaitForExitAsync();
+   await drain;
+
+   string text = Encoding.UTF8.GetString(output.ToArray());
+   if ((exitCode != 0) || !text.Contains(expected, StringComparison.Ordinal))
+       throw new InvalidOperationException(
+           $"PTY check failed: exit={exitCode}; output={text}");
+
+   Console.WriteLine("Icod.Pty public package check passed.");
+   ```
+
+   Run `dotnet run -c Release` and require
+   `Icod.Pty public package check passed.` with exit code zero. This confirms the public delivery path; the
+   exact-package matrix supplies the broader automated scenarios.
+
+No public prerelease is introduced. The fresh public consumer therefore follows stable publication and cannot be
+used as prepublication evidence. A failure requires prompt corrective action through a reviewed patch release; it
+does not alter the frozen 1.0 feature/API boundary unless a demonstrated defect requires a reviewed fix.
 
 ## Lifetimes and limits
 
@@ -119,6 +175,10 @@ dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build --
 
 Expected output is `PTY terminal configuration smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not mutate the interactive host console. Record manual host restoration separately from this redirected smoke result.
 
+**Reported 2026-10-08:** from exact PR #11 pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755`, the user ran the Windows x64 Release check successfully on
+net8.0, net9.0, and net10.0. This noninteractive result does not establish interactive host restoration.
+
 ## Deployment-portability acceptance
 
 `--invalid-host-smoke` is the focused startup-failure check used by the published-consumer matrix. On Unix it supplies a nonexistent `DotNetHostPath` to `PtyProcess` and `PtySession` under both ownership policies, requires a bounded failure, and verifies that failed session startup leaves caller streams open. On Windows it verifies that the Unix-only host override does not affect either ConPTY ownership path.
@@ -127,7 +187,7 @@ Expected output is `PTY terminal configuration smoke check passed.` Repeat for n
 dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --invalid-host-smoke
 ```
 
-Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application support table](../README.md#published-application-support) for verified RIDs, frameworks, external helper files, and runtime prerequisites.
+Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application forms table](../README.md#published-application-forms) for verified RIDs, frameworks, external helper files, and runtime prerequisites.
 
 ## Recording and replay acceptance
 
@@ -168,7 +228,11 @@ From SH:
 dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --timed-playback-smoke
 ```
 
-Expected output is `PTY timed playback smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. This is a noninteractive best-effort timing check; deterministic scheduler tests cover exact wait decisions. Manual Windows laptop results are unreported.
+Expected output is `PTY timed playback smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are
+installed. This is a noninteractive best-effort timing check; deterministic scheduler tests cover exact wait
+decisions. On 2026-10-07, from exact PR #10 head
+`6d45dbfb69ca9b94de9533e569c6e7ee724efb25`, the user ran this Release check successfully on net8.0, net9.0,
+and net10.0 on the identified Windows x64 laptop.
 
 ## Live automation acceptance
 

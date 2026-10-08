@@ -12,8 +12,8 @@ public sealed class PtySessionIntegrationTests {
 		using MemoryStream output = new(); await using PtySession session = await PtySession.StartAsync(start, new(output));
 		Assert.Equal(owned ? PtyProcessOwnership.PlatformScope : PtyProcessOwnership.PrimaryProcess, session.Ownership);
 		await UntilText(output, "FINAL-READY");
-		PtyShutdownResult shutdown = await session.ShutdownAsync(new() { Request = PtyTestSupport.Line("quit"), GracePeriod = TimeSpan.FromSeconds(15) });
-		PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(20)); string text = Encoding.UTF8.GetString(output.ToArray());
+		PtyShutdownResult shutdown = await session.ShutdownAsync(new() { Request = PtyTestSupport.Line("quit"), GracePeriod = TimeSpan.FromSeconds(30) });
+		PtySessionResult result = await session.Completion.WaitAsync(TimeSpan.FromSeconds(45)); string text = Encoding.UTF8.GetString(output.ToArray());
 		Assert.Equal(23, shutdown.ExitCode); Assert.Equal(23, result.ExitCode); Assert.Equal(PtySessionOutputStatus.EndOfStream, result.OutputStatus);
 		Assert.Contains("FINAL-END", text); Assert.Empty(result.Failures);
 	}

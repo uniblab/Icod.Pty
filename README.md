@@ -1,17 +1,43 @@
-# Icod.Pty
+# ICOD.PTY(3)
 
-Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output, launch-time terminal configuration, a reusable session owner, bounded live byte matching and send/expect scripts, bounded output/resize recording and replay, terminal resizing, Ctrl+C input, controlled shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and deterministic cleanup.
+## NAME
+
+Icod.Pty — cross-platform pseudoterminal process hosting for .NET.
+
+## SYNOPSIS
+
+```sh
+dotnet add package Icod.Pty --version 1.0.0
+```
+
+```csharp
+using Icod.Pty;
+
+var start = new PtyStartInfo(
+    OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh");
+await using PtyProcess process = await PtyProcess.StartAsync(start);
+```
+
+## DESCRIPTION
+
+Icod.Pty hosts child processes in a pseudoterminal. It provides asynchronous startup, raw byte input/output,
+launch-time terminal configuration, a reusable session owner, bounded live byte matching and send/expect scripts,
+bounded output/resize recording and immediate or timed replay, terminal resizing, Ctrl+C input, controlled
+shutdown, explicit process-scope ownership, native Unix signals, exit status, bounded lifecycle diagnostics, and
+deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-Development direction and deferred alternatives are recorded in the [main roadmap](ROADMAP.md), and curated
-unreleased changes and deployment prerequisites are in the [changelog](CHANGELOG.md). Initial terminal
-configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md).
-Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
-Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
-Timed recording playback is specified by the [timed playback design](docs/Timed-Playback-Design.md).
+The stable package version is **1.0.0**. Development direction and deferred alternatives are recorded in
+the [main roadmap](https://github.com/uniblab/Icod.Pty/blob/main/ROADMAP.md), and the complete chronological
+feature history, deployment prerequisites, and compatibility notes are in the
+[changelog](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md). Initial terminal configuration is
+specified by the [terminal configuration design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Terminal-Configuration-Design.md).
+Recording format and lifecycle semantics are specified by the [recording/replay design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Recording-Replay-Design.md).
+Live matching and scripting are specified by the [focused automation design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Focused-Automation-Design.md).
+Timed recording playback is specified by the [timed playback design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Timed-Playback-Design.md).
 
-## Platforms
+## SUPPORTED PLATFORMS
 
 | Operating system | Architectures | Backend |
 | --- | --- | --- |
@@ -30,7 +56,7 @@ GitHub uses explicit labels for Windows/Linux ARM64 and macOS Intel; the selecte
 
 **Unix requires an installed .NET 8, 9, or 10 runtime and its `dotnet` host**, including when your application is self-contained. The helper targets .NET 8 and rolls forward to the newest installed major runtime. You can set `PtyStartInfo.DotNetHostPath` explicitly. NuGet copies the `Icod.Pty.Host` directory into application build and publish output; distribute that directory with your application. Do not exclude the package's `buildTransitive` assets.
 
-### Published application support
+### Published application forms
 
 The following forms are verified from a fresh consumer of the packed NuGet artifact. CI publishes for the listed RID, moves selected complete output trees, invokes the final apphost directly, and exercises process, session, live matching/scripts, recording/replay, cancellation, interrupt, owned-scope, terminal-configuration, invalid-host, output-drain, and cleanup behavior.
 
@@ -44,7 +70,7 @@ Framework-dependent applications need their target runtime. On Unix, every form 
 
 Single-file publishing bundles the consumer while leaving `Icod.Pty.Host/Icod.Pty.Host.dll`, `.deps.json`, and `.runtimeconfig.json` beside the executable as external files. Copy the complete publish directory. Relocating that complete output tree is verified. Removing the helper DLL produces a bounded Unix startup failure and cleanup; removing either metadata file can still run on some installed hosts, so runtime success with an incomplete helper does not expand the contract. The package verifier requires all three files before recording a supported layout. Windows does not use the helper and remains independent of these files and `DotNetHostPath`.
 
-Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
+Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
 
 Run the same exact-package check from SH or PowerShell 7:
 
@@ -58,7 +84,7 @@ From CMD or Windows PowerShell 5.1:
 powershell.exe -NoProfile -File .\packaging\VerifyPortableConsumer.ps1 -ArtifactDirectory artifacts -Framework net10.0 -RuntimeIdentifier win-x64 -Mode SingleFile -Scenario Relocated
 ```
 
-## Usage
+## API GUIDE
 
 ```csharp
 using Icod.Pty;
@@ -82,7 +108,7 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 - `WorkingDirectory` defaults to the current directory. Environment variables are inherited; entries in `Environment` override them, and a null value removes one. Unix defaults `TERM` to `xterm-256color` only when absent.
 - Use one reader and one writer concurrently. The output combines standard output and standard error and may contain VT escape sequences, echo, and terminal line-ending conversions. Icod.Pty does not render or parse terminal output.
 - Coordinate direct `Input` writes, `SendInterruptAsync`, and the request-writing portion of `ShutdownAsync` as a single writer. The library does not choose ordering between competing callers.
-- Windows ConPTY can discard a fragmented terminal-query reply's prefix even when bypassing the sample. Send complete replies in one write when possible; see the [recorded native limitation and reproducer](docs/ConPTY-Input-Limitations.md). The sample forwards bytes without parsing or repairing native terminal input.
+- Windows ConPTY can discard a fragmented terminal-query reply's prefix even when bypassing the sample. Send complete replies in one write when possible; see the [recorded native limitation and reproducer](https://github.com/uniblab/Icod.Pty/blob/main/docs/ConPTY-Input-Limitations.md). The sample forwards bytes without parsing or repairing native terminal input.
 - Drain output while the process runs. A child can block when terminal buffers fill. Process exit does not mean all output has been read.
 - Cancelling I/O or `WaitForExitAsync` cancels that operation only. A cancelled write may already have sent some bytes. Unix pending I/O uses a thread-pool worker per direction and checks cancellation approximately every 50 ms while idle.
 - macOS reads output ahead into a bounded queue (16 blocks of 4 KiB, plus the active reader/writer blocks). This preserves final output across native terminal close without allowing unlimited buffering. Continue draining larger output concurrently; output can still backpressure the child.
@@ -218,7 +244,7 @@ PtyRecordingReplayResult playback = await timedReader.PlayTimedAsync(
 
 The first event waits for its recorded elapsed time. Every later event uses the same monotonic origin, so source reads and slow callbacks reduce later waits; late events are dispatched in file order without being dropped. Timing is best effort. The header's `InitialSize` remains available on the reader and is not emitted as a resize. The callback receives reader-owned immutable events and must make progress; streams or displays used by it remain caller-owned.
 
-Only one `ReadAsync`, `ReplayAsync`, or `PlayTimedAsync` operation may use a reader at a time, including from inside the callback. The elapsed-time cap defaults to one hour, is captured when playback starts, and rejects a later event before waiting or dispatching it. A valid `Complete`, `Truncated`, or `Stopped` marker returns a `PtyRecordingReplayResult`; malformed input, an exceeded cap, callback failure, or cancellation throws instead. Events delivered before a failure are not rolled back, and a failed reader is not promised to be resumable. Reader source ownership remains controlled by `PtyRecordingReaderOptions.LeaveOpen`. Manual Windows laptop acceptance for timed playback is unreported.
+Only one `ReadAsync`, `ReplayAsync`, or `PlayTimedAsync` operation may use a reader at a time, including from inside the callback. The elapsed-time cap defaults to one hour, is captured when playback starts, and rejects a later event before waiting or dispatching it. A valid `Complete`, `Truncated`, or `Stopped` marker returns a `PtyRecordingReplayResult`; malformed input, an exceeded cap, callback failure, or cancellation throws instead. Events delivered before a failure are not rolled back, and a failed reader is not promised to be resumable. Reader source ownership remains controlled by `PtyRecordingReaderOptions.LeaveOpen`. From exact PR #10 head `6d45dbfb69ca9b94de9533e569c6e7ee724efb25`, Release `--timed-playback-smoke` passed on net8.0, net9.0, and net10.0 on the identified Windows x64 laptop.
 
 ### Bounded live matching and scripts
 
@@ -357,9 +383,9 @@ termination before disposal. If Unix permissions deny primary termination, dispo
 retained observer to reap that child on natural exit; it cannot promise to kill an inaccessible child.
 Abrupt force/disposal does not guarantee lossless output or bounded native termination latency.
 
-See the [design](docs/Process-Group-Cleanup-Design.md) and [implementation evidence](docs/Process-Group-Cleanup-Implementation-Plan.md).
+See the [design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Process-Group-Cleanup-Design.md) and [implementation evidence](https://github.com/uniblab/Icod.Pty/blob/main/docs/Process-Group-Cleanup-Implementation-Plan.md).
 
-## Build and verify
+## BUILD AND VERIFY
 
 Install the .NET 10 SDK and .NET 8/9 runtimes. Run `build.cmd` from CMD on Windows, or `./build.sh` from SH on Unix with PowerShell installed. Tooling is compatible with Windows PowerShell 5.1. No C or Python source or build step is required.
 
@@ -376,9 +402,20 @@ dotnet run --project samples/Icod.Pty.Sample -f net10.0 -- --smoke
 
 The sample accepts an executable followed by arguments and forwards input immediately. With no arguments it opens the platform shell. It copies terminal dimensions, forwards resize changes, and restores host modes and Windows code pages on normal exit and handled failures. Use `--line` for line input or redirected streams, `--interactive` to state the default explicitly, or `--` before the executable. The host terminal renders output.
 
-Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`, `--terminal-config-smoke`, `--recording-smoke`, and `--automation-smoke`. The package verifier runs each against a fresh package consumer on all three frameworks and published output; internal child switches support the behavioral checks.
+Noninteractive verification switches are `--smoke`, `--lifecycle-smoke`, `--cancel-start-smoke`,
+`--invalid-host-smoke`, `--interrupt-smoke`, `--scope-smoke`, `--session-smoke`, `--session-scope-smoke`,
+`--terminal-config-smoke`, `--recording-smoke`, `--automation-smoke`, and `--timed-playback-smoke`. The package
+verifier runs each against a fresh package consumer on all three frameworks and published output; internal child
+switches support the behavioral checks.
 
-### Windows laptop acceptance
+## ACCEPTANCE
+
+Hosted pull-request validation builds, tests, packs, and executes the exact package on Windows, Linux, and macOS,
+each on x64 and ARM64. It covers all three target frameworks and every supported published application form.
+Operator observations remain separate evidence because nested automation cannot fully establish the behavior of
+the original interactive console.
+
+### Windows interactive acceptance
 
 From CMD on the minimum supported Windows build:
 
@@ -392,12 +429,66 @@ dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- cmd.exe
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLogo -NoProfile
 ```
 
-Follow the [sample acceptance guide](samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and restoration checks in the original shell. Laptop acceptance of the new interactive host remains separate from CI's nested-PTY fixture coverage.
+Follow the [sample acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
+restoration checks in the original shell. Laptop acceptance of the interactive host remains separate from CI's
+nested-PTY fixture coverage. Before tagging `1.0.0`, complete the interactive Windows procedure; immediately
+after publication, verify installation from the public package with a fresh consumer. The consolidated
+[stable release procedure](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md#10-stable-release-acceptance) records both stages.
 
-## Release
+## KNOWN LIMITATIONS
 
-The workflows are adapted from `uniblab/.github` for one DLL package. A `v<semver>` tag on the default branch must match `Version` in `Icod.Pty.csproj`. Release validation runs on all six platforms before publication to NuGet.org through trusted publishing in the `Release` environment. The workflow also publishes to GitHub Packages and creates release assets with checksums. The package includes [CHANGELOG.md](CHANGELOG.md); its `Unreleased` heading does not select a version. The helper, sample, and test programs are not separate release packages or executable archives.
+- Windows ConPTY can intermittently lose a terminal-query prefix when one logical reply is fragmented across
+  separate host writes. Send complete replies in one write when possible; see
+  [ConPTY input limitations](https://github.com/uniblab/Icod.Pty/blob/main/docs/ConPTY-Input-Limitations.md).
+- Windows reports no launch-time terminal-configuration capabilities. Null/default requests retain normal
+  ConPTY behavior; explicit unsupported requests fail before launch.
+- Unix applications require the complete external three-file helper and a compatible installed `dotnet`
+  host/runtime, including when the consumer is self-contained.
+- NativeAOT is an informational feasibility result, not a supported deployment form. Musl and other unlisted
+  Unix RIDs, 32-bit processes, input recording, terminal emulation, and screen-aware automation are outside the
+  1.0 contract.
 
-## License
+## RELEASE
 
-Copyright (c) 2026 Timothy J. Bruce <uniblab@hotmail.com>. Licensed under the GNU Lesser General Public License version 3 or later; see [LICENSE](LICENSE).
+The workflows are adapted from `uniblab/.github` for one DLL package. A `v<semver>` tag on the default branch
+must match `Version` in `Icod.Pty.csproj`. Release validation runs on all six platforms before publication to
+NuGet.org through trusted publishing in the `Release` environment. The workflow also publishes to GitHub
+Packages and creates release assets with checksums. A prerelease tag such as `v1.1.0-beta.1` creates a
+prerelease rather than the latest stable GitHub release.
+
+The package includes [CHANGELOG.md](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md),
+[LICENSE](https://github.com/uniblab/Icod.Pty/blob/main/LICENSE), and this manual. The helper, sample, and
+test programs are not separate release packages or executable archives. Tagging or publishing is an explicit
+operator action after the release-preparation pull request merges; changing the project version alone does not
+publish.
+
+## FILES
+
+| Path | Purpose |
+| --- | --- |
+| `Icod.Pty.csproj` | Library package, target frameworks, version, and NuGet metadata. |
+| `src/` | Library, helper, sample, and test source linked by their projects. |
+| `samples/Icod.Pty.Sample/` | Interactive host and noninteractive acceptance program. |
+| `packaging/` | Exact-package, consumer, published-layout, and release verification. |
+| `docs/` | Designs, implementation evidence, compatibility reports, and release plans. |
+| `ROADMAP.md` | Completed milestones, deferred options, and the selected next milestone. |
+| `CHANGELOG.md` | Complete chronological feature and compatibility history. |
+
+## SEE ALSO
+
+- [Sample and operator acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md)
+- [Release-readiness report](https://github.com/uniblab/Icod.Pty/blob/main/docs/Release-Readiness-Report.md)
+- [1.0 release design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Release-1.0-Design.md)
+- [Recording and replay design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Recording-Replay-Design.md)
+- [Focused automation design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Focused-Automation-Design.md)
+- [Timed playback design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Timed-Playback-Design.md)
+- [Deployment portability design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Deployment-Portability-Design.md)
+
+## AUTHORS
+
+Icod.Pty was written by Timothy J. Bruce <uniblab@hotmail.com>.
+
+## LICENSE
+
+Copyright (c) 2026 Timothy J. Bruce <uniblab@hotmail.com>. Licensed under the GNU Lesser General Public License
+version 3 or later; see [LICENSE](https://github.com/uniblab/Icod.Pty/blob/main/LICENSE).
