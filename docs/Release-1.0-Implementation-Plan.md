@@ -60,13 +60,13 @@ and status change after public-package and manual interactive acceptance.
 
 **Files:** `Icod.Pty.csproj`, package verification scripts or tests only if a demonstrated gap requires them.
 
-- [ ] Change the package version to `1.0.0-rc.1` and point NuGet release notes to the complete release history,
+- [x] Change the package version to `1.0.0-rc.1` and point NuGet release notes to the complete release history,
   compatibility notes, and known limitations in the packaged changelog.
-- [ ] Confirm the tag validator accepts `v1.0.0-rc.1`, classifies it as a prerelease, and the package selector
+- [x] Confirm the tag validator accepts `v1.0.0-rc.1`, classifies it as a prerelease, and the package selector
   requires an exact `1.0.0-rc.1` match.
 - [ ] Pack once, run metadata/artifact verification with `-ExpectedVersion 1.0.0-rc.1`, and inspect the package for
   README, CHANGELOG, LICENSE, all three assemblies/XML files, build target, and three Unix helper files.
-- [ ] Commit as `build: select 1.0.0-rc.1`.
+- [x] Commit as `build: select 1.0.0-rc.1`.
 
 ### Task 4 (RP04): Reconcile readiness and stable-promotion gates
 
