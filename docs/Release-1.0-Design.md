@@ -83,4 +83,3 @@ The release does not add broader signals, high-concurrency redesign, live termin
 telemetry/exporters, input recording, playback speed/pause/seek, regex or screen-aware automation, branching
 scripts, resource limits, persistent sessions, terminal emulation, 32-bit support, musl qualification, or
 NativeAOT support. These remain post-1.0 roadmap choices.
-

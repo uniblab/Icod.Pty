@@ -114,4 +114,3 @@ files only for a demonstrated defect.
   `6d45dbfb69ca9b94de9533e569c6e7ee724efb25`.
 - The execution container has no `dotnet` or `pwsh` executable. Local RP03/RP05 runtime checks therefore remain
   open until a capable runner is available; the complete hosted matrix is the pull-request gate.
-
