@@ -1,6 +1,6 @@
 # Icod.Pty 1.0 release design
 
-**Status:** amended and approved on 2026-10-08; direct-stable implementation is in progress.
+**Status:** amended and approved on 2026-10-08; direct-stable package qualification is complete and manual pre-tag acceptance remains.
 
 ## Objective
 
@@ -74,9 +74,10 @@ x64 and ARM64; all three target frameworks; exact package consumers; supported p
 PowerShell 5.1 tooling; ConPTY classification; and informational NativeAOT probes. From that exact head, the user
 also ran Windows x64 Release `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0.
 
-The direct-stable pull request must additionally pass:
+Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` passed
+[run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047), completing:
 
-1. the complete Release test suite on all three target frameworks;
+1. the Release test suite on all three target frameworks;
 2. exact-package metadata and artifact validation for `1.0.0`;
 3. fresh package consumers on all three frameworks;
 4. framework-dependent, self-contained, single-file, and trimmed consumers on all six target RIDs;

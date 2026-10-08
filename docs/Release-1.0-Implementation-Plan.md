@@ -64,9 +64,9 @@ public-package consumer confirms delivery immediately after publication.
 **Files:** `Icod.Pty.csproj`, package verification scripts or tests only if a demonstrated gap requires them.
 
 - [x] Change the package version to `1.0.0`; retain release notes that point to the packaged changelog.
-- [ ] Confirm the tag validator accepts `v1.0.0`, classifies it as stable, and the package selector requires an
+- [x] Confirm the tag validator accepts `v1.0.0`, classifies it as stable, and the package selector requires an
   exact `1.0.0` match.
-- [ ] Pack once, run metadata/artifact verification with `-ExpectedVersion 1.0.0`, and inspect the package for
+- [x] Pack once, run metadata/artifact verification with `-ExpectedVersion 1.0.0`, and inspect the package for
   README, CHANGELOG, LICENSE, all three assemblies/XML files, build target, and three Unix helper files.
 
 ### Task 4 (RP04): Reconcile readiness and publication gates
@@ -85,13 +85,13 @@ public-package consumer confirms delivery immediately after publication.
 **Files:** evidence sections in this plan and `ROADMAP.md`; production or harness files only for a demonstrated
 defect.
 
-- [ ] Run the Release solution on net8.0, net9.0, and net10.0 with zero failures and record expected skips.
-- [ ] Run exact `1.0.0` package consumers on all three frameworks and every supported published layout.
-- [ ] Run the complete pull-request matrix on Windows/Linux/macOS x64/ARM64 and record the exact head, run URL,
+- [x] Run the Release solution on net8.0, net9.0, and net10.0 with zero failures and record expected skips.
+- [x] Run exact `1.0.0` package consumers on all three frameworks and every supported published layout.
+- [x] Run the complete pull-request matrix on Windows/Linux/macOS x64/ARM64 and record the exact head, run URL,
   jobs, package version, layouts, and NativeAOT classification.
-- [ ] Review the converted branch against the design, public API baseline, packaged documents, and publication
+- [x] Review the converted branch against the design, public API baseline, packaged documents, and publication
   gates; correct Important findings with a failing regression or verification check first.
-- [ ] Record unavailable local tools separately; do not treat an unavailable runner as a pass or product failure.
+- [x] Record unavailable local tools separately; do not treat an unavailable runner as a pass or product failure.
 - [ ] Commit final stable evidence and require the resulting exact-head workflow to remain green.
 
 ### Task 6 (RP06): Publish and confirm the stable delivery
@@ -122,5 +122,16 @@ defect.
   informational NativeAOT probes.
 - From that exact pre-conversion head, the user ran Windows x64 Release `--terminal-config-smoke` successfully on
   net8.0, net9.0, and net10.0.
-- The execution container has neither `dotnet` nor `pwsh`; no local runtime result is claimed. The exact stable
-  matrix supplies the runtime and package evidence.
+- Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` passed
+  [run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047): metadata plus all six Windows, Linux, and
+  macOS x64/ARM64 jobs; net8.0/net9.0/net10.0 Release tests; exact `1.0.0` metadata, artifacts, and consumers;
+  framework-dependent, self-contained, single-file, trimmed, relocated, and intentionally incomplete layouts;
+  Windows PowerShell 5.1 tooling; bounded ConPTY classification; and informational NativeAOT probes. Ordinary
+  Release builds completed with zero warnings/errors. Linux/macOS passed 359 tests with one expected skip per
+  framework; Windows passed 357 with two expected skips per framework, plus its separately bounded ConPTY
+  classifier cases.
+- The final review found no Critical issue. Its two Important documentation contradictions and one wording
+  ambiguity were corrected in `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02`; targeted consistency checks failed
+  before the corrections and passed afterward.
+- The execution container has neither `dotnet` nor `pwsh`; no local runtime result is claimed. Run 139
+  supplies the runtime and package evidence.

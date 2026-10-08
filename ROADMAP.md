@@ -97,7 +97,10 @@ cancellation-cooperative streams.
 planning PR, preservation of the full option menu, and a proper development roadmap.
 
 **Status:** [PR #5](https://github.com/uniblab/Icod.Pty/pull/5) merged on 2026-10-06. Its final head passed
-[six-platform CI run 72, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37363586412) on all three frameworks, including exact package consumers. Manual Windows laptop execution of `--terminal-config-smoke` remains separately pending. Read the
+[six-platform CI run 72, attempt 2](https://github.com/uniblab/Icod.Pty/actions/runs/37363586412) on all three
+frameworks, including exact package consumers. On 2026-10-08, the user ran Windows x64 Release
+`--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from exact PR #11 pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755`. Read the
 [approved design](docs/Terminal-Configuration-Design.md) and
 [development roadmap and evidence](docs/Terminal-Configuration-Implementation-Plan.md), tranches TC01-TC09.
 No version, tag, or publication is selected.
@@ -274,8 +277,10 @@ on the historically named `release/1.0.0-rc.1` branch. Pre-conversion head
 exact package consumers, framework-dependent/self-contained/single-file/trimmed and relocated layouts,
 intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY classification, and informational
 NativeAOT probes. The user also ran `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from
-that exact head. Exact stable-`1.0.0` qualification is pending on the converted head. No tag or publication is
-part of this pull request.
+that exact head. Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` then passed the complete
+`1.0.0` matrix in [run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047): metadata plus all six
+platform jobs, all three target frameworks, exact package consumers and supported deployment layouts. No tag or
+publication is part of this pull request.
 
 **Goal:** deliver a coherent package manual, complete feature history through PR #10, reconciled
 release-readiness evidence, an exact stable package, and a repeatable direct-stable publication and

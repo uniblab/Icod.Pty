@@ -1,7 +1,7 @@
 # Release readiness report
 
-**Status:** Feature-complete; direct stable `1.0.0` selected and awaiting exact-version qualification plus the
-manual pre-tag acceptance gate.
+**Status:** Feature-complete and exact-package qualified for direct stable `1.0.0`; manual pre-tag Windows
+interactive acceptance remains.
 
 RS01–RS09 established prerelease readiness after PR #8. PR #10 completed the selected feature set, and PR #11
 completed a candidate-shaped qualification before the user selected direct stable publication. The package
@@ -18,12 +18,12 @@ substitute for another.
 | --- | --- | --- |
 | Audit capture commit | `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7` | Historical PR #9 audit baseline |
 | Timed-playback merge | `210d6346619b3133d58c7c3485d3dcf1cd562e97` | PR #10 merged 2026-10-08 |
-| Pre-conversion qualification head | `641d6f710f2fa01a4106076873e39e9ad7270755` | PR #11 run 137 passed |
+| Stable qualification head | `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` | PR #11 run 139 passed |
 | Package version | `1.0.0` | Selected for direct stable qualification; not tagged or published here |
 | Target frameworks | net8.0, net9.0, net10.0 | Recorded |
-| Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Pre-conversion matrix passed in run 137; exact stable requalification pending |
+| Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Exact stable package requalified in run 139 |
 | Public compatibility baseline | 381 entries; 44 exported types | Post-PR #10 stable boundary |
-| Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Pre-conversion matrix passed in run 137; exact stable requalification pending |
+| Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Exact stable package requalified in run 139 |
 | NativeAOT | Informational feasibility probe only | Nonblocking; promotion is outside this milestone |
 | Known native limitation | Windows ConPTY may lose a query prefix when the query is fragmented across host writes | Classified as ConPTY/native; documented workaround retained |
 
@@ -35,8 +35,15 @@ Windows/Linux/macOS x64/ARM64 jobs in
 Release tests. Exact package verification and consumers, framework-dependent/self-contained/single-file/trimmed
 publishes, relocated and intentionally incomplete helper layouts, Windows PowerShell 5.1 tooling, bounded ConPTY
 classification, and informational NativeAOT probes completed in the applicable jobs. This evidence qualified the
-unchanged product and release harness; the converted `1.0.0` metadata and packaged documents require a new
-exact-version run before tagging.
+unchanged product and release harness.
+
+Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` then passed
+[run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047). Metadata plus all six platform/RID jobs
+passed, including net8.0/net9.0/net10.0 Release tests, exact `1.0.0` package verification and consumers, supported
+and relocated deployment layouts, intentional incomplete-helper cases, Windows PowerShell 5.1 tooling, bounded
+ConPTY classification, and informational NativeAOT probes. Ordinary Release builds completed with zero
+warnings/errors. Linux/macOS passed 359 tests with one expected skip per framework; Windows passed 357 with two
+expected skips per framework, plus its separately bounded ConPTY classifier cases.
 
 Run 135 exposed three fixture-only timing/readiness failures while qualifying the unchanged product: a Windows
 marker could exist before its writer released the file, a session final-output stress case reached its 15-second
@@ -188,15 +195,15 @@ already-exiting cleanup race described above.
 | Windows launch-time terminal controls | Nonblocking platform capability difference; explicit unsupported requests fail before launch | Covered by automated and manual smoke checks |
 | 32-bit, musl, and unlisted Unix RIDs | Outside the advertised matrix | Do not gate the stated contract |
 | Richer signals, terminal mutation, richer recording/automation, persistence, resources, and emulation | Deferred to post-1.0 | No additional feature is required for stable 1.0 |
-| Exact `1.0.0` package and matrix | Blocking before merge/tag | Pending on the converted PR #11 head |
+| Exact `1.0.0` package and matrix | Satisfied at `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` | Run 139 passed all seven jobs |
 | Windows interactive host acceptance | Blocking before tag | Pending editing, Ctrl+C, resize, exit, and restoration observations |
 | Fresh public `1.0.0` consumer | Immediate post-publication confirmation | Cannot precede publication when no public prerelease is created |
 
 ## Readiness recommendation
 
-**Ready for exact stable-`1.0.0` qualification; not yet ready to tag or publish.** No additional product feature
-is required. Before tagging, the converted version and packaged documents must pass the complete matrix and the
-Windows interactive procedure must be recorded without a blocking defect. After merge and an explicit
-`v1.0.0` tag, a fresh consumer must immediately install the public stable package and verify a representative
-PTY operation. Because the public package does not exist beforehand, that final delivery-path confirmation is
+**Ready to merge after final documentation-head verification; not yet ready to tag or publish.** No additional
+product feature is required, and the exact stable package has passed the complete matrix. Before tagging, the
+Windows interactive procedure must be recorded without a blocking defect. After merge and an explicit `v1.0.0`
+tag, a fresh consumer must immediately install the public stable package and verify a representative PTY
+operation. Because the public package does not exist beforehand, that final delivery-path confirmation is
 recorded after publication rather than used as an intermediate-RC gate.
