@@ -121,7 +121,7 @@ From Windows PowerShell 5.1, fast-forward the PR branch and record the environme
 noninteractive sample mode:
 
 ```powershell
-git switch feature/release-stabilization-conpty-roadmap
+git switch release/1.0.0-rc.1
 git pull --ff-only
 git rev-parse HEAD
 [System.Environment]::OSVersion.Version

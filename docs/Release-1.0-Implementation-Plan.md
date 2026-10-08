@@ -12,6 +12,8 @@ and status change after public-package and manual interactive acceptance.
 
 **Spec:** `docs/Release-1.0-Design.md`
 
+**Pull request:** [#11](https://github.com/uniblab/Icod.Pty/pull/11)
+
 ## Global constraints
 
 - No new product feature or public API beyond the post-PR #10 baseline.

@@ -29,12 +29,13 @@ deterministic cleanup.
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
 The candidate package version is **1.0.0-rc.1**. Development direction and deferred alternatives are recorded in
-the [main roadmap](ROADMAP.md), and the complete chronological feature history, deployment prerequisites, and
-compatibility notes are in the [changelog](CHANGELOG.md). Initial terminal
-configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md).
-Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
-Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
-Timed recording playback is specified by the [timed playback design](docs/Timed-Playback-Design.md).
+the [main roadmap](https://github.com/uniblab/Icod.Pty/blob/main/ROADMAP.md), and the complete chronological
+feature history, deployment prerequisites, and compatibility notes are in the
+[changelog](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md). Initial terminal configuration is
+specified by the [terminal configuration design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Terminal-Configuration-Design.md).
+Recording format and lifecycle semantics are specified by the [recording/replay design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Recording-Replay-Design.md).
+Live matching and scripting are specified by the [focused automation design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Focused-Automation-Design.md).
+Timed recording playback is specified by the [timed playback design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Timed-Playback-Design.md).
 
 ## SUPPORTED PLATFORMS
 
@@ -69,7 +70,7 @@ Framework-dependent applications need their target runtime. On Unix, every form 
 
 Single-file publishing bundles the consumer while leaving `Icod.Pty.Host/Icod.Pty.Host.dll`, `.deps.json`, and `.runtimeconfig.json` beside the executable as external files. Copy the complete publish directory. Relocating that complete output tree is verified. Removing the helper DLL produces a bounded Unix startup failure and cleanup; removing either metadata file can still run on some installed hosts, so runtime success with an incomplete helper does not expand the contract. The package verifier requires all three files before recording a supported layout. Windows does not use the helper and remains independent of these files and `DotNetHostPath`.
 
-Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
+Trimmed support describes the tested Icod.Pty paths and published sample surface on these TFMs and RIDs. It does not imply that unrelated consumer code is trim-safe. NativeAOT remains a feasibility result recorded in the [deployment design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Deployment-Portability-Design.md), and musl or other unlisted Unix RIDs remain untested.
 
 Run the same exact-package check from SH or PowerShell 7:
 
@@ -107,7 +108,7 @@ For a long-lived process, write bytes to `Input` and call `Resize(new PtySize(co
 - `WorkingDirectory` defaults to the current directory. Environment variables are inherited; entries in `Environment` override them, and a null value removes one. Unix defaults `TERM` to `xterm-256color` only when absent.
 - Use one reader and one writer concurrently. The output combines standard output and standard error and may contain VT escape sequences, echo, and terminal line-ending conversions. Icod.Pty does not render or parse terminal output.
 - Coordinate direct `Input` writes, `SendInterruptAsync`, and the request-writing portion of `ShutdownAsync` as a single writer. The library does not choose ordering between competing callers.
-- Windows ConPTY can discard a fragmented terminal-query reply's prefix even when bypassing the sample. Send complete replies in one write when possible; see the [recorded native limitation and reproducer](docs/ConPTY-Input-Limitations.md). The sample forwards bytes without parsing or repairing native terminal input.
+- Windows ConPTY can discard a fragmented terminal-query reply's prefix even when bypassing the sample. Send complete replies in one write when possible; see the [recorded native limitation and reproducer](https://github.com/uniblab/Icod.Pty/blob/main/docs/ConPTY-Input-Limitations.md). The sample forwards bytes without parsing or repairing native terminal input.
 - Drain output while the process runs. A child can block when terminal buffers fill. Process exit does not mean all output has been read.
 - Cancelling I/O or `WaitForExitAsync` cancels that operation only. A cancelled write may already have sent some bytes. Unix pending I/O uses a thread-pool worker per direction and checks cancellation approximately every 50 ms while idle.
 - macOS reads output ahead into a bounded queue (16 blocks of 4 KiB, plus the active reader/writer blocks). This preserves final output across native terminal close without allowing unlimited buffering. Continue draining larger output concurrently; output can still backpressure the child.
@@ -382,7 +383,7 @@ termination before disposal. If Unix permissions deny primary termination, dispo
 retained observer to reap that child on natural exit; it cannot promise to kill an inaccessible child.
 Abrupt force/disposal does not guarantee lossless output or bounded native termination latency.
 
-See the [design](docs/Process-Group-Cleanup-Design.md) and [implementation evidence](docs/Process-Group-Cleanup-Implementation-Plan.md).
+See the [design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Process-Group-Cleanup-Design.md) and [implementation evidence](https://github.com/uniblab/Icod.Pty/blob/main/docs/Process-Group-Cleanup-Implementation-Plan.md).
 
 ## BUILD AND VERIFY
 
@@ -428,17 +429,17 @@ dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- cmd.exe
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLogo -NoProfile
 ```
 
-Follow the [sample acceptance guide](samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
+Follow the [sample acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
 restoration checks in the original shell. Laptop acceptance of the interactive host remains separate from CI's
 nested-PTY fixture coverage. Stable `1.0.0` promotion also requires a fresh consumer to install the public
 `1.0.0-rc.1` package; the consolidated
-[stable promotion procedure](samples/README.md#10-stable-promotion-acceptance) records both gates.
+[stable promotion procedure](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md#10-stable-promotion-acceptance) records both gates.
 
 ## KNOWN LIMITATIONS
 
 - Windows ConPTY can intermittently lose a terminal-query prefix when one logical reply is fragmented across
   separate host writes. Send complete replies in one write when possible; see
-  [ConPTY input limitations](docs/ConPTY-Input-Limitations.md).
+  [ConPTY input limitations](https://github.com/uniblab/Icod.Pty/blob/main/docs/ConPTY-Input-Limitations.md).
 - Windows reports no launch-time terminal-configuration capabilities. Null/default requests retain normal
   ConPTY behavior; explicit unsupported requests fail before launch.
 - Unix applications require the complete external three-file helper and a compatible installed `dotnet`
@@ -455,7 +456,8 @@ NuGet.org through trusted publishing in the `Release` environment. The workflow 
 Packages and creates release assets with checksums. A prerelease tag such as `v1.0.0-rc.1` creates a prerelease
 rather than the latest stable GitHub release.
 
-The package includes [CHANGELOG.md](CHANGELOG.md), [LICENSE](LICENSE), and this manual. The helper, sample, and
+The package includes [CHANGELOG.md](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md),
+[LICENSE](https://github.com/uniblab/Icod.Pty/blob/main/LICENSE), and this manual. The helper, sample, and
 test programs are not separate release packages or executable archives. Tagging or publishing is an explicit
 operator action after the candidate pull request merges; changing the project version alone does not publish.
 
@@ -473,13 +475,13 @@ operator action after the candidate pull request merges; changing the project ve
 
 ## SEE ALSO
 
-- [Sample and operator acceptance guide](samples/README.md)
-- [Release-readiness report](docs/Release-Readiness-Report.md)
-- [1.0 release design](docs/Release-1.0-Design.md)
-- [Recording and replay design](docs/Recording-Replay-Design.md)
-- [Focused automation design](docs/Focused-Automation-Design.md)
-- [Timed playback design](docs/Timed-Playback-Design.md)
-- [Deployment portability design](docs/Deployment-Portability-Design.md)
+- [Sample and operator acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md)
+- [Release-readiness report](https://github.com/uniblab/Icod.Pty/blob/main/docs/Release-Readiness-Report.md)
+- [1.0 release design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Release-1.0-Design.md)
+- [Recording and replay design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Recording-Replay-Design.md)
+- [Focused automation design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Focused-Automation-Design.md)
+- [Timed playback design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Timed-Playback-Design.md)
+- [Deployment portability design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Deployment-Portability-Design.md)
 
 ## AUTHORS
 
@@ -487,4 +489,5 @@ Icod.Pty was written by Timothy J. Bruce <uniblab@hotmail.com>.
 
 ## LICENSE
 
-Copyright (c) 2026 Timothy J. Bruce <uniblab@hotmail.com>. Licensed under the GNU Lesser General Public License version 3 or later; see [LICENSE](LICENSE).
+Copyright (c) 2026 Timothy J. Bruce <uniblab@hotmail.com>. Licensed under the GNU Lesser General Public License
+version 3 or later; see [LICENSE](https://github.com/uniblab/Icod.Pty/blob/main/LICENSE).

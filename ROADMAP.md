@@ -265,7 +265,8 @@ feature-complete for 1.0 and selected a no-new-features release-preparation mile
 [development roadmap](docs/Release-1.0-Implementation-Plan.md), RP01–RP06, define the candidate and stable
 promotion gates.
 
-**Status:** `release/1.0.0-rc.1` is in progress from merged PR #10. This milestone selects package version
+**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is in progress from merged PR #10 on
+`release/1.0.0-rc.1`. This milestone selects package version
 `1.0.0-rc.1`, the 381-entry/44-type post-PR #10 public compatibility baseline, and the version-1 recording format
 as the candidate contracts. It does not tag or publish the package.
 
