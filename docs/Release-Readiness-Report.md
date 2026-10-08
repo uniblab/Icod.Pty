@@ -1,6 +1,10 @@
 # Release readiness report
 
-**Status:** Ready with named nonblocking limitations — RS01–RS09 complete.
+**Status:** Feature-complete and ready for `1.0.0-rc.1` qualification with named nonblocking limitations.
+
+RS01–RS09 established prerelease readiness after PR #8. PR #10 subsequently completed the selected feature set,
+and the 1.0 release-candidate milestone updates the package manual, complete feature history, version, and stable
+promotion gates. Stable `1.0.0` is not yet selected or published.
 
 This report separates deterministic repository evidence, native hosted evidence, exact-package consumer
 evidence, published-layout evidence, and operator-observed acceptance. Evidence in one section does not
@@ -10,14 +14,31 @@ substitute for another.
 
 | Item | Current value | Status |
 | --- | --- | --- |
-| Audit capture commit | `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7` | Recorded |
-| Package version | `0.1.0-alpha.1` | Retained; version selection is outside this milestone |
+| Audit capture commit | `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7` | Historical PR #9 audit baseline |
+| Timed-playback merge | `210d6346619b3133d58c7c3485d3dcf1cd562e97` | PR #10 merged 2026-10-08 |
+| Package version | `1.0.0-rc.1` | Selected for candidate qualification; not tagged or published here |
 | Target frameworks | net8.0, net9.0, net10.0 | Recorded |
 | Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Requalified in run 128 |
-| Public compatibility baseline | 377 entries; 43 exported types | RS02 complete; unchanged and retained |
+| Public compatibility baseline | 381 entries; 44 exported types | Post-PR #10 candidate boundary |
 | Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Requalified in run 128 |
 | NativeAOT | Informational feasibility probe only | Nonblocking; promotion is outside this milestone |
 | Known native limitation | Windows ConPTY may lose a query prefix when the query is fragmented across host writes | Classified as ConPTY/native; documented workaround retained |
+
+## Post-PR #10 candidate evidence
+
+PR #10 implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed metadata and the complete
+Windows/Linux/macOS x64/ARM64 matrix in
+[run 131](https://github.com/uniblab/Icod.Pty/actions/runs/37684672876). Final evidence head
+`6d45dbfb69ca9b94de9533e569c6e7ee724efb25` repeated that matrix in
+[run 132](https://github.com/uniblab/Icod.Pty/actions/runs/37685894498). Both runs exercised net8.0, net9.0,
+and net10.0, exact-package consumers, framework-dependent, self-contained, single-file, and trimmed layouts, and
+the informational NativeAOT probes on all six RIDs.
+
+At the implementation source tree, the full Release suite passed 359 tests with one expected interactive ConPTY
+classifier skip on each framework. The focused timed-playback/reader suite passed 44/44 and its scheduler suite
+passed 8/8 on every framework. The API baseline changed additively from 377 entries/43 types to 381 entries/44
+types: one options type, its constructor/property, and `PtyRecordingReader.PlayTimedAsync`. The version-1 format
+and immediate replay signature remain unchanged.
 
 ## Repository tests
 
@@ -86,10 +107,15 @@ host/runtime. NativeAOT remains informational and does not gate readiness.
 
 ## Manual Windows acceptance
 
-After PR #8 merged, Windows x64 Release `--automation-smoke` passed on net8.0, net9.0, and net10.0. Manual
-acceptance for the exact PR #9 head, including the bounded ConPTY classification command, remains **unreported**.
-This is a visible evidence gap, not a hosted-CI or package failure, and does not block the prerelease-readiness
-recommendation.
+After PR #8 merged, Windows x64 Release `--automation-smoke` passed on net8.0, net9.0, and net10.0. From exact
+final PR #10 head `6d45dbfb69ca9b94de9533e569c6e7ee724efb25`, Windows x64 Release
+`--timed-playback-smoke` also passed on net8.0, net9.0, and net10.0. These close the timed-playback laptop gate and
+remain separate from hosted CI.
+
+Interactive Windows acceptance of command editing/history, Ctrl+C, resize forwarding, child-shell exit, and
+restoration of the original console remains unreported. This does not block publishing the release candidate,
+but it is a stable `1.0.0` promotion gate. The consolidated procedure is in
+[the sample acceptance guide](../samples/README.md#10-stable-promotion-acceptance).
 
 From Windows PowerShell 5.1, fast-forward the PR branch and record the environment before running every existing
 noninteractive sample mode:
@@ -108,7 +134,8 @@ dotnet build Icod.Pty.sln -c Release --no-restore
 $modes = @(
     '--smoke', '--lifecycle-smoke', '--cancel-start-smoke', '--invalid-host-smoke',
     '--interrupt-smoke', '--scope-smoke', '--session-smoke', '--session-scope-smoke',
-    '--terminal-config-smoke', '--recording-smoke', '--automation-smoke'
+    '--terminal-config-smoke', '--recording-smoke', '--automation-smoke',
+    '--timed-playback-smoke'
 )
 foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
     foreach ($mode in $modes) {
@@ -125,28 +152,33 @@ the intermittent limitation is absent.
 
 ## Contract and documentation audit
 
-The 43-type public inventory and seven `Retain` dispositions are recorded in
+The 43-type PR #9 public inventory and seven `Retain` dispositions are recorded in
 [Public-Contract-Audit.md](Public-Contract-Audit.md). The audit requires no public-contract correction and
-preserves the 377-entry baseline. RS06–RS07 aligned package metadata, the packaged unreleased changelog, lifecycle
-guidance, deployment prerequisites, sample acceptance, and the ConPTY operator procedure. The only production
-correction in this milestone is the private Windows already-exiting cleanup race described above; the public API
-baseline remains byte-for-byte unchanged.
+preserved its 377-entry baseline. PR #10 then made the reviewed additive change to 381 entries/44 types. No
+existing entry was removed or changed. RS06–RS07 aligned package metadata, lifecycle guidance, deployment
+prerequisites, sample acceptance, and the ConPTY operator procedure; the 1.0 candidate adds the man-page-style
+package manual and complete PR #1–#10 changelog. The only PR #9 production correction was the private Windows
+already-exiting cleanup race described above.
 
-## Named nonblocking limitations and deferred decisions
+## Candidate limitation classification
 
-- Windows ConPTY can intermittently lose a terminal-query prefix when the query is fragmented across host writes;
-  send complete replies in one write when possible, but do not treat that as a universal transport guarantee.
-- Unix published applications require the complete external helper layout and an installed compatible `dotnet`
-  host/runtime. NativeAOT remains an informational feasibility result, not a supported deployment promise.
-- Exact-head Windows laptop noninteractive and interactive-host observations remain unreported and separate from
-  the successful hosted Windows x64/ARM64 jobs.
-- Wider Unix environments, general tracing/exporters, broader terminal controls, richer automation, and other
-  roadmap options remain deferred. Merge, version selection, tagging, and publication require separate decisions.
+| Item | Candidate classification | Stable classification |
+| --- | --- | --- |
+| Fragmented ConPTY terminal-query prefix loss | Nonblocking native limitation; use one write when possible and retain the documented classifier | Nonblocking when documentation remains accurate |
+| External Unix helper and installed `dotnet` runtime | Nonblocking deployment prerequisite verified in complete and intentionally incomplete layouts | Nonblocking support boundary |
+| NativeAOT | Nonblocking informational feasibility only | Remains unsupported unless separately promoted after 1.0 |
+| Windows launch-time terminal controls | Nonblocking platform capability difference; explicit unsupported requests fail before launch | Nonblocking support boundary |
+| 32-bit, musl, and unlisted Unix RIDs | Nonblocking because they are outside the advertised matrix | Remain outside the 1.0 contract |
+| Richer signals, terminal mutation, automation, recording, persistence, resources, and emulation | Nonblocking deferred features | Post-1.0 roadmap work |
+| Exact `1.0.0-rc.1` package/matrix result | Candidate blocker until the release PR is green | Must remain green at the promoted commit |
+| Public RC installation from a fresh consumer | Does not block building the RC | Stable blocker until recorded |
+| Windows interactive host acceptance | Does not block publishing the RC | Stable blocker until editing, Ctrl+C, resize, exit, and restoration pass |
 
 ## Readiness recommendation
 
-**Ready with named nonblocking limitations.** The audited public contract, exact package, six supported RIDs,
-three target frameworks, and supported published layouts are suitable for a separately selected prerelease.
-The verified package still identifies itself as `0.1.0-alpha.1`; this report does not select that version or any
-replacement. No known blocking defect remains. Merge, version selection, tagging, and publication stay separate
-user decisions.
+**Ready to qualify and publish `1.0.0-rc.1` after its exact branch is green; not yet ready to tag stable
+`1.0.0`.** No additional product feature is required. The candidate must first prove its selected version and
+packaged documents through the complete matrix. After candidate publication, a fresh consumer must install the
+public package and the remaining Windows interactive acceptance must be recorded. If both succeed without a
+blocking defect, stable promotion should change only the version, changelog/readiness status, and tag; it should
+not add or alter the feature/API contract.

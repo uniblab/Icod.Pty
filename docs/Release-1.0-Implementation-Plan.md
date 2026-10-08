@@ -72,13 +72,13 @@ and status change after public-package and manual interactive acceptance.
 
 **Files:** `docs/Release-Readiness-Report.md`, `ROADMAP.md`, `README.md`, `samples/README.md`
 
-- [ ] Update the readiness report for the post-PR #10 surface, run 132, and exact-head manual timed-playback runs.
-- [ ] Classify all named platform and deployment limitations as blocking or nonblocking for the candidate.
-- [ ] Provide one Windows interactive acceptance procedure covering command editing/history, Ctrl+C, resize, clean
+- [x] Update the readiness report for the post-PR #10 surface, run 132, and exact-head manual timed-playback runs.
+- [x] Classify all named platform and deployment limitations as blocking or nonblocking for the candidate.
+- [x] Provide one Windows interactive acceptance procedure covering command editing/history, Ctrl+C, resize, clean
   shell exit, and restoration of console modes/code pages.
-- [ ] State that a fresh consumer must install the public RC package before stable promotion and that promotion
+- [x] State that a fresh consumer must install the public RC package before stable promotion and that promotion
   changes no feature/API contract unless a blocking defect is found.
-- [ ] Commit as `docs: define 1.0 promotion gates`.
+- [x] Commit as `docs: define 1.0 promotion gates`.
 
 ### Task 5 (RP05): Qualify the exact candidate
 

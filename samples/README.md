@@ -1,6 +1,6 @@
 # Interactive sample acceptance
 
-The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output. The noninteractive switches cover process lifecycle and cancellation, interrupt, scope ownership, session shutdown/drain, terminal configuration, invalid helper/host cleanup, recording/replay, and live automation; each owns and disposes its session within a bounded check.
+The default sample uses `PtySession` to forward terminal bytes immediately, including escape sequences and Ctrl+C. It copies the host's initial size and checks for size changes every 100 ms. It does not parse or render terminal output; the host terminal does that. Run it from a real terminal. Use `--line` for deliberately line-oriented or redirected input/output. The noninteractive switches cover process lifecycle and cancellation, interrupt, scope ownership, session shutdown/drain, terminal configuration, invalid helper/host cleanup, recording/replay, live automation, and timed playback; each owns and disposes its session within a bounded check.
 
 Build once from the repository root:
 
@@ -50,7 +50,34 @@ Optionally run an already installed full-screen editor, resize it, enter and lea
 
 Record OS build/architecture, host terminal, child shell/version, .NET runtime, and observations for immediate keys, no extra echo, Ctrl+C, resize, exit, and restored host state. Repeat with `-f net8.0` or `-f net9.0` when checking those runtimes.
 
-The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Acceptance of this interactive milestone on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
+The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Complete 1.0 interactive acceptance
+on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
+
+## 1.0 stable promotion acceptance
+
+Run this procedure after `1.0.0-rc.1` is available from the intended public NuGet source. Record the exact
+repository commit, package source, OS build/architecture, host terminal, .NET runtimes, CMD version, and Windows
+PowerShell version.
+
+1. In a new directory, create a net10.0 console application and run
+   `dotnet add package Icod.Pty --version 1.0.0-rc.1`. Confirm restore selects the public candidate rather than a
+   repository artifact or local feed. Start one short command with `PtyProcess`, drain its output, and verify exit
+   status. This establishes public-package installation; the exact-package matrix supplies the broader automated
+   scenarios.
+2. From a clean checkout of the candidate commit, build Release once. Run every noninteractive smoke—through
+   `--timed-playback-smoke`—on net8.0, net9.0, and net10.0. Each must print its documented success line and exit
+   zero.
+3. Run the **Windows CMD** procedure above. Require immediate editing/history, one visible echo, working Tab and
+   Escape, live resize during continuous output, Ctrl+C interrupt without killing the child shell, clean `exit`,
+   and normal editing/history in the original CMD afterward.
+4. Run the **Windows PowerShell 5.1** procedure above with the same requirements. After child `exit`, confirm the
+   original shell's code page, echo, editing, history, and Ctrl+C behavior are normal.
+5. Treat any hang, duplicated input, missing resize, unusable child after Ctrl+C, nonzero clean-exit result, or
+   altered original console as a stable-release blocker. Record a pass only when both shells satisfy every
+   observation.
+
+If these checks and the candidate's hosted matrix pass without a blocking defect, stable promotion changes
+`1.0.0-rc.1` to `1.0.0` and updates release status; it does not add another feature or public API.
 
 ## Lifetimes and limits
 

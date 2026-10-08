@@ -428,7 +428,11 @@ dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- cmd.exe
 dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLogo -NoProfile
 ```
 
-Follow the [sample acceptance guide](samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and restoration checks in the original shell. Laptop acceptance of the new interactive host remains separate from CI's nested-PTY fixture coverage.
+Follow the [sample acceptance guide](samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
+restoration checks in the original shell. Laptop acceptance of the interactive host remains separate from CI's
+nested-PTY fixture coverage. Stable `1.0.0` promotion also requires a fresh consumer to install the public
+`1.0.0-rc.1` package; the consolidated
+[stable promotion procedure](samples/README.md#10-stable-promotion-acceptance) records both gates.
 
 ## KNOWN LIMITATIONS
 
