@@ -127,7 +127,7 @@ Expected output is `PTY terminal configuration smoke check passed.` Repeat for n
 dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --invalid-host-smoke
 ```
 
-Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application support table](../README.md#published-application-support) for verified RIDs, frameworks, external helper files, and runtime prerequisites.
+Expected output is `PTY invalid-host cleanup smoke check passed.` The package harness also runs this check from framework-dependent, self-contained, single-file, and trimmed final apphosts. It moves complete publish trees and mutates copied helper layouts; it does not execute the sample or library from repository build output. See the [published application forms table](../README.md#published-application-forms) for verified RIDs, frameworks, external helper files, and runtime prerequisites.
 
 ## Recording and replay acceptance
 
@@ -168,7 +168,11 @@ From SH:
 dotnet run --project samples/Icod.Pty.Sample -c Release -f net10.0 --no-build -- --timed-playback-smoke
 ```
 
-Expected output is `PTY timed playback smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. This is a noninteractive best-effort timing check; deterministic scheduler tests cover exact wait decisions. Manual Windows laptop results are unreported.
+Expected output is `PTY timed playback smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are
+installed. This is a noninteractive best-effort timing check; deterministic scheduler tests cover exact wait
+decisions. On 2026-10-07, from exact PR #10 head
+`6d45dbfb69ca9b94de9533e569c6e7ee724efb25`, the user ran this Release check successfully on net8.0, net9.0,
+and net10.0 on the identified Windows x64 laptop.
 
 ## Live automation acceptance
 

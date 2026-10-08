@@ -31,7 +31,7 @@ and status change after public-package and manual interactive acceptance.
 
 ---
 
-## RP01: Select and record the candidate
+### Task 1 (RP01): Select and record the candidate
 
 **Files:** `ROADMAP.md`, `docs/Release-1.0-Design.md`, `docs/Release-1.0-Implementation-Plan.md`
 
@@ -41,22 +41,22 @@ and status change after public-package and manual interactive acceptance.
 - [x] Update the main roadmap with PR #10 merge evidence and the selected 1.0 release-candidate milestone.
 - [x] Commit the planning tranche as `docs: plan the 1.0 release candidate`.
 
-## RP02: Publish a man-page-style package manual and complete history
+### Task 2 (RP02): Publish a man-page-style package manual and complete history
 
 **Files:** `README.md`, `CHANGELOG.md`, `samples/README.md`
 
-- [ ] Reorganize `README.md` under man-page-style sections without removing behavioral guidance or examples.
-- [ ] Add the package version, verified platform boundary, deployment prerequisites, known limitations, files,
+- [x] Reorganize `README.md` under man-page-style sections without removing behavioral guidance or examples.
+- [x] Add the package version, verified platform boundary, deployment prerequisites, known limitations, files,
   references, authorship, and release procedure in their canonical sections.
-- [ ] Write a dated `1.0.0-rc.1` changelog entry covering PRs #1–#10 in chronological order; leave a new empty
+- [x] Write a dated `1.0.0-rc.1` changelog entry covering PRs #1–#10 in chronological order; leave a new empty
   `Unreleased` section for later changes.
-- [ ] Record the exact-head net8.0/net9.0/net10.0 timed-playback laptop results in the manual, sample guide, roadmap,
+- [x] Record the exact-head net8.0/net9.0/net10.0 timed-playback laptop results in the manual, sample guide, roadmap,
   and timed-playback evidence plan.
-- [ ] Scan the live release documents for stale statements that timed playback is deferred or manual acceptance is
+- [x] Scan the live release documents for stale statements that timed playback is deferred or manual acceptance is
   unreported. Preserve historical statements only where their historical context is explicit.
-- [ ] Commit as `docs: prepare the 1.0 package manual and history`.
+- [x] Commit as `docs: prepare the 1.0 package manual and history`.
 
-## RP03: Select and protect the candidate package version
+### Task 3 (RP03): Select and protect the candidate package version
 
 **Files:** `Icod.Pty.csproj`, package verification scripts or tests only if a demonstrated gap requires them.
 
@@ -68,7 +68,7 @@ and status change after public-package and manual interactive acceptance.
   README, CHANGELOG, LICENSE, all three assemblies/XML files, build target, and three Unix helper files.
 - [ ] Commit as `build: select 1.0.0-rc.1`.
 
-## RP04: Reconcile readiness and stable-promotion gates
+### Task 4 (RP04): Reconcile readiness and stable-promotion gates
 
 **Files:** `docs/Release-Readiness-Report.md`, `ROADMAP.md`, `README.md`, `samples/README.md`
 
@@ -80,7 +80,7 @@ and status change after public-package and manual interactive acceptance.
   changes no feature/API contract unless a blocking defect is found.
 - [ ] Commit as `docs: define 1.0 promotion gates`.
 
-## RP05: Qualify the exact candidate
+### Task 5 (RP05): Qualify the exact candidate
 
 **Files:** evidence sections in `docs/Release-1.0-Implementation-Plan.md` and `ROADMAP.md`; production or harness
 files only for a demonstrated defect.
@@ -95,7 +95,7 @@ files only for a demonstrated defect.
 - [ ] Record any unavailable local tool separately; do not treat an unavailable runner as a pass or product failure.
 - [ ] Commit final evidence as `docs: complete 1.0 release candidate acceptance`.
 
-## RP06: Promote after external acceptance
+### Task 6 (RP06): Promote after external acceptance
 
 **Files:** `Icod.Pty.csproj`, `CHANGELOG.md`, `ROADMAP.md`, `docs/Release-Readiness-Report.md`
 
