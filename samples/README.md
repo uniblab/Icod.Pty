@@ -73,9 +73,36 @@ version, and Windows PowerShell version.
 After `1.0.0` is published to the intended public NuGet source:
 
 5. In a new directory with no repository or local-feed dependency, create a net10.0 console application and run
-   `dotnet add package Icod.Pty --version 1.0.0`. Confirm restore selects the public stable package. Start one
-   short command with `PtyProcess`, drain its output, and verify exit status. This confirms the public delivery
-   path; the exact-package matrix supplies the broader automated scenarios.
+   `dotnet add package Icod.Pty --version 1.0.0`. Confirm restore selects the public stable package. Replace
+   `Program.cs` with the following complete program:
+
+   ```csharp
+   using System.Text;
+   using Icod.Pty;
+
+   const string expected = "Icod.Pty public package check";
+   var start = new PtyStartInfo(
+       OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh");
+   start.ArgumentList.Add(OperatingSystem.IsWindows() ? "/c" : "-c");
+   start.ArgumentList.Add($"echo {expected}");
+
+   await using PtyProcess process = await PtyProcess.StartAsync(start);
+   using var output = new MemoryStream();
+   Task drain = process.Output.CopyToAsync(output);
+   int exitCode = await process.WaitForExitAsync();
+   await drain;
+
+   string text = Encoding.UTF8.GetString(output.ToArray());
+   if ((exitCode != 0) || !text.Contains(expected, StringComparison.Ordinal))
+       throw new InvalidOperationException(
+           $"PTY check failed: exit={exitCode}; output={text}");
+
+   Console.WriteLine("Icod.Pty public package check passed.");
+   ```
+
+   Run `dotnet run -c Release` and require
+   `Icod.Pty public package check passed.` with exit code zero. This confirms the public delivery path; the
+   exact-package matrix supplies the broader automated scenarios.
 
 No public prerelease is introduced. The fresh public consumer therefore follows stable publication and cannot be
 used as prepublication evidence. A failure requires prompt corrective action through a reviewed patch release; it
