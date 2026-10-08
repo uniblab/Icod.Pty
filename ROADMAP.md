@@ -265,8 +265,13 @@ feature-complete for 1.0 and selected a no-new-features release-preparation mile
 [development roadmap](docs/Release-1.0-Implementation-Plan.md), RP01–RP06, define the candidate and stable
 promotion gates.
 
-**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is in progress from merged PR #10 on
-`release/1.0.0-rc.1`. This milestone selects package version
+**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is qualified from merged PR #10 on
+`release/1.0.0-rc.1`. Exact candidate head `371df2c986d710e8d47975884bbbe52e6b812e97` passed metadata and all six
+Windows/Linux/macOS x64/ARM64 jobs in
+[run 136](https://github.com/uniblab/Icod.Pty/actions/runs/37780272079). The run covered all three target
+frameworks, exact `1.0.0-rc.1` package consumers, framework-dependent/self-contained/single-file/trimmed and
+relocated layouts, intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY classification,
+and informational NativeAOT probes. This milestone selects package version
 `1.0.0-rc.1`, the 381-entry/44-type post-PR #10 public compatibility baseline, and the version-1 recording format
 as the candidate contracts. It does not tag or publish the package.
 
@@ -278,9 +283,11 @@ Broader signals, high-concurrency redesign, live terminal changes, generic telem
 resource controls, persistence, terminal emulation, NativeAOT promotion, and wider platform qualification remain
 post-1.0 choices.
 
-**Promotion gate:** publish `1.0.0-rc.1` only after this branch passes the complete matrix. Promote to `1.0.0`
-only after a fresh public-package consumer succeeds, the remaining Windows interactive acceptance is recorded,
-and no blocking defect remains. Stable promotion should otherwise change version and release status only.
+**Promotion gate:** the complete candidate matrix has passed, so PR #11 is ready for review and the
+`1.0.0-rc.1` package is ready to publish after merge when the operator intends the release workflow to run.
+Promote to `1.0.0` only after a fresh public-package consumer succeeds, the remaining Windows interactive
+acceptance is recorded, and no blocking defect remains. Stable promotion should otherwise change version and
+release status only.
 
 ## Full current menu
 

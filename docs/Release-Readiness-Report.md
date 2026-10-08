@@ -1,6 +1,6 @@
 # Release readiness report
 
-**Status:** Feature-complete and ready for `1.0.0-rc.1` qualification with named nonblocking limitations.
+**Status:** Feature-complete, qualified, and ready to publish `1.0.0-rc.1` with named nonblocking limitations.
 
 RS01–RS09 established prerelease readiness after PR #8. PR #10 subsequently completed the selected feature set,
 and the 1.0 release-candidate milestone updates the package manual, complete feature history, version, and stable
@@ -16,15 +16,30 @@ substitute for another.
 | --- | --- | --- |
 | Audit capture commit | `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7` | Historical PR #9 audit baseline |
 | Timed-playback merge | `210d6346619b3133d58c7c3485d3dcf1cd562e97` | PR #10 merged 2026-10-08 |
+| Candidate qualification head | `371df2c986d710e8d47975884bbbe52e6b812e97` | PR #11 run 136 passed |
 | Package version | `1.0.0-rc.1` | Selected for candidate qualification; not tagged or published here |
 | Target frameworks | net8.0, net9.0, net10.0 | Recorded |
-| Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Requalified in run 128 |
+| Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Requalified in run 136 |
 | Public compatibility baseline | 381 entries; 44 exported types | Post-PR #10 candidate boundary |
-| Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Requalified in run 128 |
+| Deployment layouts | framework-dependent, self-contained, single-file, trimmed | Requalified in run 136 |
 | NativeAOT | Informational feasibility probe only | Nonblocking; promotion is outside this milestone |
 | Known native limitation | Windows ConPTY may lose a query prefix when the query is fragmented across host writes | Classified as ConPTY/native; documented workaround retained |
 
 ## Post-PR #10 candidate evidence
+
+Exact `1.0.0-rc.1` candidate head `371df2c986d710e8d47975884bbbe52e6b812e97` passed metadata and all six
+Windows/Linux/macOS x64/ARM64 jobs in
+[run 136](https://github.com/uniblab/Icod.Pty/actions/runs/37780272079). All three target frameworks passed their
+Release tests. Exact package verification and consumers, framework-dependent/self-contained/single-file/trimmed
+publishes, relocated and intentionally incomplete helper layouts, Windows PowerShell 5.1 tooling, bounded ConPTY
+classification, and informational NativeAOT probes completed in the applicable jobs.
+
+Run 135 exposed three fixture-only timing/readiness failures while qualifying the unchanged product: a Windows
+marker could exist before its writer released the file, a session final-output stress case reached its 15-second
+grace period under load, and a macOS helper-readiness watchdog expired before the assertion it guarded. The
+corrections wait until the Windows marker contains a readable PID and use bounded 30-second readiness/grace
+windows for the stress paths. Run 136 passed all three previously failing platform/framework combinations. No
+production source or public API changed.
 
 PR #10 implementation head `1a02ab33477244f7c15273cae0a4727054bbeec2` passed metadata and the complete
 Windows/Linux/macOS x64/ARM64 matrix in
@@ -170,15 +185,15 @@ already-exiting cleanup race described above.
 | Windows launch-time terminal controls | Nonblocking platform capability difference; explicit unsupported requests fail before launch | Nonblocking support boundary |
 | 32-bit, musl, and unlisted Unix RIDs | Nonblocking because they are outside the advertised matrix | Remain outside the 1.0 contract |
 | Richer signals, terminal mutation, automation, recording, persistence, resources, and emulation | Nonblocking deferred features | Post-1.0 roadmap work |
-| Exact `1.0.0-rc.1` package/matrix result | Candidate blocker until the release PR is green | Must remain green at the promoted commit |
+| Exact `1.0.0-rc.1` package/matrix result | Satisfied at `371df2c986d710e8d47975884bbbe52e6b812e97` in run 136 | Must remain green at the promoted commit |
 | Public RC installation from a fresh consumer | Does not block building the RC | Stable blocker until recorded |
 | Windows interactive host acceptance | Does not block publishing the RC | Stable blocker until editing, Ctrl+C, resize, exit, and restoration pass |
 
 ## Readiness recommendation
 
-**Ready to qualify and publish `1.0.0-rc.1` after its exact branch is green; not yet ready to tag stable
-`1.0.0`.** No additional product feature is required. The candidate must first prove its selected version and
-packaged documents through the complete matrix. After candidate publication, a fresh consumer must install the
-public package and the remaining Windows interactive acceptance must be recorded. If both succeed without a
-blocking defect, stable promotion should change only the version, changelog/readiness status, and tag; it should
-not add or alter the feature/API contract.
+**Ready to publish `1.0.0-rc.1` after PR #11 is reviewed and merged; not yet ready to tag stable `1.0.0`.** No
+additional product feature is required. The exact candidate version and packaged documents have passed the
+complete matrix. After candidate publication, a fresh consumer must install the public package and the remaining
+Windows interactive acceptance must be recorded. If both succeed without a blocking defect, stable promotion
+should change only the version, changelog/readiness status, and tag; it should not add or alter the feature/API
+contract.

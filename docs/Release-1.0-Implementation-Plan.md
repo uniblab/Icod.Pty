@@ -66,7 +66,7 @@ and status change after public-package and manual interactive acceptance.
   compatibility notes, and known limitations in the packaged changelog.
 - [x] Confirm the tag validator accepts `v1.0.0-rc.1`, classifies it as a prerelease, and the package selector
   requires an exact `1.0.0-rc.1` match.
-- [ ] Pack once, run metadata/artifact verification with `-ExpectedVersion 1.0.0-rc.1`, and inspect the package for
+- [x] Pack once, run metadata/artifact verification with `-ExpectedVersion 1.0.0-rc.1`, and inspect the package for
   README, CHANGELOG, LICENSE, all three assemblies/XML files, build target, and three Unix helper files.
 - [x] Commit as `build: select 1.0.0-rc.1`.
 
@@ -87,15 +87,15 @@ and status change after public-package and manual interactive acceptance.
 **Files:** evidence sections in `docs/Release-1.0-Implementation-Plan.md` and `ROADMAP.md`; production or harness
 files only for a demonstrated defect.
 
-- [ ] Run the Release solution on net8.0, net9.0, and net10.0 with zero failures and record expected skips.
-- [ ] Run the exact `1.0.0-rc.1` package consumer on all three frameworks and the locally available published and
+- [x] Run the Release solution on net8.0, net9.0, and net10.0 with zero failures and record expected skips.
+- [x] Run the exact `1.0.0-rc.1` package consumer on all three frameworks and the locally available published and
   relocated layouts.
-- [ ] Run the complete pull-request matrix on Windows/Linux/macOS x64/ARM64 and record the exact head, run URL,
+- [x] Run the complete pull-request matrix on Windows/Linux/macOS x64/ARM64 and record the exact head, run URL,
   jobs, package version, layouts, and NativeAOT classification.
-- [ ] Review the whole branch against the design, public API baseline, packaged documents, and promotion gates;
+- [x] Review the whole branch against the design, public API baseline, packaged documents, and promotion gates;
   correct Important findings with a failing regression or verification check first.
-- [ ] Record any unavailable local tool separately; do not treat an unavailable runner as a pass or product failure.
-- [ ] Commit final evidence as `docs: complete 1.0 release candidate acceptance`.
+- [x] Record any unavailable local tool separately; do not treat an unavailable runner as a pass or product failure.
+- [x] Commit final evidence as `docs: complete 1.0 release candidate acceptance`.
 
 ### Task 6 (RP06): Promote after external acceptance
 
@@ -112,5 +112,16 @@ files only for a demonstrated defect.
 
 - PR #10 merged at `210d6346619b3133d58c7c3485d3dcf1cd562e97` from reviewed head
   `6d45dbfb69ca9b94de9533e569c6e7ee724efb25`.
-- The execution container has no `dotnet` or `pwsh` executable. Local RP03/RP05 runtime checks therefore remain
-  open until a capable runner is available; the complete hosted matrix is the pull-request gate.
+- Initial candidate run 135 exposed three harness-only timing/readiness defects: a Windows marker-file sharing
+  race, a session final-output stress deadline reached under load, and a macOS helper-readiness watchdog reached
+  before the intended assertion. Production code and the public API were unchanged. The release branch now waits
+  for a readable Windows PID marker and gives the two stress fixtures bounded 30-second readiness/grace windows.
+- Exact candidate head `371df2c986d710e8d47975884bbbe52e6b812e97` passed
+  [run 136](https://github.com/uniblab/Icod.Pty/actions/runs/37780272079): metadata plus Windows, Linux, and macOS
+  on x64 and ARM64; net8.0/net9.0/net10.0 Release tests; exact `1.0.0-rc.1` artifacts and consumers;
+  framework-dependent, self-contained, single-file, trimmed, relocated, and intentionally incomplete layouts;
+  Windows PowerShell 5.1 tooling; ConPTY classification; and informational NativeAOT probes.
+- The branch review found no production or public-API delta from merged PR #10. The release changes are package
+  metadata, manual/history/readiness documentation, and the three demonstrated fixture corrections.
+- The execution container has no `dotnet` or `pwsh` executable. No local runtime result is claimed; run 136 is the
+  complete hosted qualification evidence.
