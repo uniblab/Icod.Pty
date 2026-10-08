@@ -279,8 +279,10 @@ intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY c
 NativeAOT probes. The user also ran `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from
 that exact head. Exact stable head `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` then passed the complete
 `1.0.0` matrix in [run 139](https://github.com/uniblab/Icod.Pty/actions/runs/37797487047): metadata plus all six
-platform jobs, all three target frameworks, exact package consumers and supported deployment layouts. No tag or
-publication is part of this pull request.
+platform jobs, all three target frameworks, exact package consumers and supported deployment layouts. Final
+evidence head `94689f3843934318c25e4bc3a68d94a0d309f8c9` repeated all seven jobs successfully in
+[run 140](https://github.com/uniblab/Icod.Pty/actions/runs/37799284372). No tag or publication is part of this
+pull request.
 
 **Goal:** deliver a coherent package manual, complete feature history through PR #10, reconciled
 release-readiness evidence, an exact stable package, and a repeatable direct-stable publication and

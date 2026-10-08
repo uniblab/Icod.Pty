@@ -19,6 +19,7 @@ substitute for another.
 | Audit capture commit | `a7e4f4367b5701eaa5b64e8740f7040eeaa6baf7` | Historical PR #9 audit baseline |
 | Timed-playback merge | `210d6346619b3133d58c7c3485d3dcf1cd562e97` | PR #10 merged 2026-10-08 |
 | Stable qualification head | `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02` | PR #11 run 139 passed |
+| Final evidence head | `94689f3843934318c25e4bc3a68d94a0d309f8c9` | PR #11 run 140 passed |
 | Package version | `1.0.0` | Selected for direct stable qualification; not tagged or published here |
 | Target frameworks | net8.0, net9.0, net10.0 | Recorded |
 | Qualified RIDs | `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` | Exact stable package requalified in run 139 |
@@ -201,8 +202,8 @@ already-exiting cleanup race described above.
 
 ## Readiness recommendation
 
-**Ready to merge after final documentation-head verification; not yet ready to tag or publish.** No additional
-product feature is required, and the exact stable package has passed the complete matrix. Before tagging, the
+**Ready to merge; not yet ready to tag or publish.** No additional product feature is required. The exact stable
+package and final evidence head have passed the complete matrix. Before tagging, the
 Windows interactive procedure must be recorded without a blocking defect. After merge and an explicit `v1.0.0`
 tag, a fresh consumer must immediately install the public stable package and verify a representative PTY
 operation. Because the public package does not exist beforehand, that final delivery-path confirmation is

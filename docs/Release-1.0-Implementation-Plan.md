@@ -92,7 +92,7 @@ defect.
 - [x] Review the converted branch against the design, public API baseline, packaged documents, and publication
   gates; correct Important findings with a failing regression or verification check first.
 - [x] Record unavailable local tools separately; do not treat an unavailable runner as a pass or product failure.
-- [ ] Commit final stable evidence and require the resulting exact-head workflow to remain green.
+- [x] Commit final stable evidence and require the resulting exact-head workflow to remain green.
 
 ### Task 6 (RP06): Publish and confirm the stable delivery
 
@@ -133,5 +133,7 @@ defect.
 - The final review found no Critical issue. Its two Important documentation contradictions and one wording
   ambiguity were corrected in `080c45cc12bbfc5f3e6dcced74773aaf7edf4e02`; targeted consistency checks failed
   before the corrections and passed afterward.
-- The execution container has neither `dotnet` nor `pwsh`; no local runtime result is claimed. Run 139
-  supplies the runtime and package evidence.
+- Final evidence head `94689f3843934318c25e4bc3a68d94a0d309f8c9` repeated metadata and all six platform jobs
+  successfully in [run 140](https://github.com/uniblab/Icod.Pty/actions/runs/37799284372).
+- The execution container has neither `dotnet` nor `pwsh`; no local runtime result is claimed. Runs 139 and 140
+  supply the runtime and package evidence.
