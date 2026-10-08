@@ -10,8 +10,8 @@ No changes.
 ## 1.0.0 - 2026-10-08
 
 This is the first stable Icod.Pty release. It freezes the post-PR #10 public API baseline and the version-1
-recording format after complete exact-package qualification across the supported platform matrix. The package has
-no third-party runtime package dependency or checked-in native helper binary.
+recording format. Publication is gated by complete exact-package qualification across the supported platform
+matrix. The package has no third-party runtime package dependency or checked-in native helper binary.
 
 ### Feature history
 

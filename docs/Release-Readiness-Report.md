@@ -136,12 +136,11 @@ Interactive Windows acceptance of command editing/history, Ctrl+C, resize forwar
 restoration of the original console remains unreported. It is a pre-tag stable `1.0.0` gate. The consolidated
 procedure is in [the sample acceptance guide](../samples/README.md#10-stable-release-acceptance).
 
-From Windows PowerShell 5.1, fast-forward the PR branch and record the environment before running every existing
-noninteractive sample mode:
+From Windows PowerShell 5.1, check out the exact reviewed release commit and record the environment before
+running every existing noninteractive sample mode. Do not substitute a moving branch name for the reviewed SHA.
 
 ```powershell
-git switch release/1.0.0-rc.1
-git pull --ff-only
+git status --short
 git rev-parse HEAD
 [System.Environment]::OSVersion.Version
 $env:PROCESSOR_ARCHITECTURE
@@ -188,7 +187,7 @@ already-exiting cleanup race described above.
 | NativeAOT | Unsupported; informational feasibility only | Does not gate stable 1.0 |
 | Windows launch-time terminal controls | Nonblocking platform capability difference; explicit unsupported requests fail before launch | Covered by automated and manual smoke checks |
 | 32-bit, musl, and unlisted Unix RIDs | Outside the advertised matrix | Do not gate the stated contract |
-| Richer signals, terminal mutation, automation, recording, persistence, resources, and emulation | Deferred to post-1.0 | No additional feature is required for stable 1.0 |
+| Richer signals, terminal mutation, richer recording/automation, persistence, resources, and emulation | Deferred to post-1.0 | No additional feature is required for stable 1.0 |
 | Exact `1.0.0` package and matrix | Blocking before merge/tag | Pending on the converted PR #11 head |
 | Windows interactive host acceptance | Blocking before tag | Pending editing, Ctrl+C, resize, exit, and restoration observations |
 | Fresh public `1.0.0` consumer | Immediate post-publication confirmation | Cannot precede publication when no public prerelease is created |
