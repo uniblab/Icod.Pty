@@ -9,6 +9,7 @@ unreleased changes and deployment prerequisites are in the [changelog](CHANGELOG
 configuration is specified by the [terminal configuration design](docs/Terminal-Configuration-Design.md).
 Recording format and lifecycle semantics are specified by the [recording/replay design](docs/Recording-Replay-Design.md).
 Live matching and scripting are specified by the [focused automation design](docs/Focused-Automation-Design.md).
+Timed recording playback is specified by the [timed playback design](docs/Timed-Playback-Design.md).
 
 ## Platforms
 
@@ -197,6 +198,27 @@ The version 1 binary file stores the initial size, output byte frames of at most
 `MaxBytes` includes the file and frame headers and defaults to 16 MiB; 32 bytes is the minimum valid file. The writer reserves room for a terminal marker. Reaching the cap produces a valid `Truncated` prefix and leaves the live session running. `Complete`, `Truncated`, `Stopped`, and `Faulted` are reported through `RecordingCompletion` independently of `Completion` and `OutputCompletion`. A slow or cancellation-uncooperative recording stream can delay output, synchronous `Resize`, and finalization. `LeaveOpen = false` transfers disposal to the successfully started session; failed startup leaves the supplied stream open.
 
 The reader validates magic, version, reserved fields, sizes, lengths, timestamp order, terminal marker, and trailing data before accepting a complete file. Its independent defaults are 64 MiB total input and 16 KiB per output frame. `ReplayAsync` copies output bytes in event order without timing delays or process launch; event iteration also exposes resize records. Input bytes are never captured. The file can contain passwords or other sensitive terminal output, so protect it as application data. Format errors and session diagnostics do not include payload bytes.
+
+Use `PlayTimedAsync` when a caller needs output and resize events paced from the recording's start:
+
+```csharp
+recording.Position = 0;
+await using var timedReader = await PtyRecordingReader.OpenAsync(recording);
+PtyRecordingReplayResult playback = await timedReader.PlayTimedAsync(
+    async (item, cancellationToken) => {
+        if (item.Kind == PtyRecordingEventKind.Output)
+            await Console.OpenStandardOutput().WriteAsync(item.Output, cancellationToken);
+        else
+            Console.WriteLine($"resize: {item.Size}");
+    },
+    new PtyRecordingTimedPlaybackOptions {
+        MaxEventElapsed = TimeSpan.FromMinutes(30)
+    });
+```
+
+The first event waits for its recorded elapsed time. Every later event uses the same monotonic origin, so source reads and slow callbacks reduce later waits; late events are dispatched in file order without being dropped. Timing is best effort. The header's `InitialSize` remains available on the reader and is not emitted as a resize. The callback receives reader-owned immutable events and must make progress; streams or displays used by it remain caller-owned.
+
+Only one `ReadAsync`, `ReplayAsync`, or `PlayTimedAsync` operation may use a reader at a time, including from inside the callback. The elapsed-time cap defaults to one hour, is captured when playback starts, and rejects a later event before waiting or dispatching it. A valid `Complete`, `Truncated`, or `Stopped` marker returns a `PtyRecordingReplayResult`; malformed input, an exceeded cap, callback failure, or cancellation throws instead. Events delivered before a failure are not rolled back, and a failed reader is not promised to be resumable. Reader source ownership remains controlled by `PtyRecordingReaderOptions.LeaveOpen`. Manual Windows laptop acceptance for timed playback is unreported.
 
 ### Bounded live matching and scripts
 
