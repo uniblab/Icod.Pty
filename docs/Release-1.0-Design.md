@@ -1,24 +1,29 @@
 # Icod.Pty 1.0 release design
 
-**Status:** approved on 2026-10-08; release-candidate implementation is in progress.
+**Status:** amended and approved on 2026-10-08; direct-stable implementation is in progress.
 
 ## Objective
 
 Ship Icod.Pty 1.0 as a stable, documented contract for cross-platform pseudoterminal process hosting.
 The product surface is feature-complete after PR #10. The remaining work is release engineering: reconcile the
-manual, history, compatibility evidence, version, package, and promotion gates without adding another feature
+manual, history, compatibility evidence, version, package, and publication gates without adding another feature
 family.
 
 ## Release shape
 
-The first deliverable is `1.0.0-rc.1`. It freezes the post-PR #10 public API and version-1 recording format,
-packages the complete supported feature set, and permits validation through the public NuGet delivery path.
-Stable `1.0.0` follows only after the release candidate has been installed by a fresh consumer, the remaining
-manual Windows interaction checks have been recorded, and no blocking defect is found. Promotion should change
-only the version, changelog/release status, and tag unless a demonstrated defect requires a reviewed correction.
+The first public 1.0 deliverable is stable `1.0.0`; no intermediate public release candidate is published. This
+decision follows a complete candidate-shaped six-platform qualification and exact-head Windows x64
+terminal-configuration smoke checks on net8.0, net9.0, and net10.0. The stable package freezes the post-PR #10
+public API and version-1 recording format.
+
+Before tagging, the exact `1.0.0` package must pass the complete hosted matrix and the remaining Windows
+interactive-host procedure must be recorded without a blocking defect. After publication, a fresh consumer must
+immediately install `1.0.0` from the intended public NuGet source and run a representative PTY operation. That
+post-publication check confirms the public delivery path; it is not represented as evidence available before the
+stable package exists.
 
 No release tag or package publication is part of this pull request. Those remain explicit operator actions after
-merge.
+merge and acceptance.
 
 ## Supported contract
 
@@ -44,18 +49,18 @@ NuGet and GitHub. Its top-level flow is NAME, SYNOPSIS, DESCRIPTION, SUPPORTED P
 VERIFY, ACCEPTANCE, RELEASE, FILES, SEE ALSO, AUTHORS, and LICENSE. Detailed behavioral and ownership guidance
 stays in the manual; the restructuring must not reduce the warnings that consumers need to use PTYs safely.
 
-The manual states the selected version and distinguishes verified support from feasibility observations. It links
+The manual states the stable version and distinguishes verified support from feasibility observations. It links
 to the full changelog and focused design documents rather than repeating milestone history.
 
 ## Release history
 
-`CHANGELOG.md` is the complete chronological feature history. The `1.0.0-rc.1` entry covers PRs #1 through #10,
-including additions, behavior changes, fixes, deployment qualification, and known limitations. It must mention
-timed playback as supported and must not leave PR #9 or PR #10 implicit. Future work returns to an empty
-`Unreleased` section above the candidate entry.
+`CHANGELOG.md` is the complete chronological feature history. The `1.0.0` entry covers PRs #1 through #10,
+including additions, behavior changes, fixes, deployment qualification, and known limitations. It names timed
+playback as supported and leaves a new empty `Unreleased` section for later work.
 
 Historical design and implementation documents retain the package versions and evidence that were accurate for
-their milestones. They are not rewritten to pretend that an earlier milestone built the release candidate.
+their milestones. The release plan and readiness documents describe the approved direct-stable amendment while
+preserving the earlier qualification runs as historical evidence.
 
 ## Acceptance and evidence
 
@@ -63,19 +68,25 @@ PR #10 was merged at `210d6346619b3133d58c7c3485d3dcf1cd562e97`. Before merge, i
 `6d45dbfb69ca9b94de9533e569c6e7ee724efb25` passed the complete six-platform, three-framework matrix and the
 user ran `--timed-playback-smoke` successfully on net8.0, net9.0, and net10.0 from that exact head.
 
-The release-candidate pull request must pass:
+PR #11 pre-conversion head `641d6f710f2fa01a4106076873e39e9ad7270755` passed
+[run 137](https://github.com/uniblab/Icod.Pty/actions/runs/37782321473): metadata plus Windows, Linux, and macOS on
+x64 and ARM64; all three target frameworks; exact package consumers; supported published layouts; Windows
+PowerShell 5.1 tooling; ConPTY classification; and informational NativeAOT probes. From that exact head, the user
+also ran Windows x64 Release `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0.
+
+The direct-stable pull request must additionally pass:
 
 1. the complete Release test suite on all three target frameworks;
-2. exact-package metadata and artifact validation for `1.0.0-rc.1`;
+2. exact-package metadata and artifact validation for `1.0.0`;
 3. fresh package consumers on all three frameworks;
 4. framework-dependent, self-contained, single-file, and trimmed consumers on all six target RIDs;
 5. Windows PowerShell 5.1 parsing and execution gates; and
 6. the informational NativeAOT probes without promoting them to supported status.
 
-The user's existing exact-head timed-playback runs close that feature's manual evidence gap. Interactive Windows
-acceptance—editing/history, Ctrl+C, resize forwarding, and restoration of the original console—remains a stable
-`1.0.0` promotion gate rather than an RC publication blocker. The manual provides the commands and observations
-to record.
+Interactive Windows acceptance—editing/history, Ctrl+C, resize forwarding, child-shell exit, and restoration of
+the original console—is a pre-tag stable gate. The sample guide provides the commands and observations to record.
+A fresh public-`1.0.0` consumer is necessarily a post-publication confirmation because no public prerelease is
+introduced.
 
 ## Non-goals
 

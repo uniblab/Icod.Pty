@@ -53,31 +53,33 @@ Record OS build/architecture, host terminal, child shell/version, .NET runtime, 
 The earlier Windows laptop smoke/CMD/PowerShell checks cover the foundation. Complete 1.0 interactive acceptance
 on that laptop is **pending**; automated nested-PTY fixtures do not substitute for these manual observations.
 
-## 1.0 stable promotion acceptance
+## 1.0 stable release acceptance
 
-Run this procedure after `1.0.0-rc.1` is available from the intended public NuGet source. Record the exact
-repository commit, package source, OS build/architecture, host terminal, .NET runtimes, CMD version, and Windows
-PowerShell version.
+Before tagging, record the exact repository commit, OS build/architecture, host terminal, .NET runtimes, CMD
+version, and Windows PowerShell version.
 
-1. In a new directory, create a net10.0 console application and run
-   `dotnet add package Icod.Pty --version 1.0.0-rc.1`. Confirm restore selects the public candidate rather than a
-   repository artifact or local feed. Start one short command with `PtyProcess`, drain its output, and verify exit
-   status. This establishes public-package installation; the exact-package matrix supplies the broader automated
-   scenarios.
-2. From a clean checkout of the candidate commit, build Release once. Run every noninteractive smoke—through
+1. From a clean checkout of the release commit, build Release once. Run every noninteractive smoke—through
    `--timed-playback-smoke`—on net8.0, net9.0, and net10.0. Each must print its documented success line and exit
    zero.
-3. Run the **Windows CMD** procedure above. Require immediate editing/history, one visible echo, working Tab and
+2. Run the **Windows CMD** procedure above. Require immediate editing/history, one visible echo, working Tab and
    Escape, live resize during continuous output, Ctrl+C interrupt without killing the child shell, clean `exit`,
    and normal editing/history in the original CMD afterward.
-4. Run the **Windows PowerShell 5.1** procedure above with the same requirements. After child `exit`, confirm the
+3. Run the **Windows PowerShell 5.1** procedure above with the same requirements. After child `exit`, confirm the
    original shell's code page, echo, editing, history, and Ctrl+C behavior are normal.
-5. Treat any hang, duplicated input, missing resize, unusable child after Ctrl+C, nonzero clean-exit result, or
-   altered original console as a stable-release blocker. Record a pass only when both shells satisfy every
-   observation.
+4. Treat any hang, duplicated input, missing resize, unusable child after Ctrl+C, nonzero clean-exit result, or
+   altered original console as a pre-tag stable-release blocker. Record a pass only when both shells satisfy
+   every observation.
 
-If these checks and the candidate's hosted matrix pass without a blocking defect, stable promotion changes
-`1.0.0-rc.1` to `1.0.0` and updates release status; it does not add another feature or public API.
+After `1.0.0` is published to the intended public NuGet source:
+
+5. In a new directory with no repository or local-feed dependency, create a net10.0 console application and run
+   `dotnet add package Icod.Pty --version 1.0.0`. Confirm restore selects the public stable package. Start one
+   short command with `PtyProcess`, drain its output, and verify exit status. This confirms the public delivery
+   path; the exact-package matrix supplies the broader automated scenarios.
+
+No public prerelease is introduced. The fresh public consumer therefore follows stable publication and cannot be
+used as prepublication evidence. A failure requires prompt corrective action through a reviewed patch release; it
+does not alter the frozen 1.0 feature/API boundary unless a demonstrated defect requires a reviewed fix.
 
 ## Lifetimes and limits
 
@@ -145,6 +147,10 @@ dotnet run --project samples\Icod.Pty.Sample -c Release -f net10.0 --no-build --
 ```
 
 Expected output is `PTY terminal configuration smoke check passed.` Repeat for net8.0 and net9.0 when those runtimes are installed. The check does not mutate the interactive host console. Record manual host restoration separately from this redirected smoke result.
+
+**Reported 2026-10-08:** from exact PR #11 pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755`, the user ran the Windows x64 Release check successfully on
+net8.0, net9.0, and net10.0. This noninteractive result does not establish interactive host restoration.
 
 ## Deployment-portability acceptance
 

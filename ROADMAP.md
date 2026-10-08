@@ -257,37 +257,40 @@ or the ConPTY compatibility promise.
 **Acceptance goal:** deterministic scheduling and failure tests, exact-package smoke on net8.0/net9.0/net10.0,
 and the complete six-platform published-consumer matrix. Record Windows laptop acceptance separately from CI.
 
-## Selected milestone: 1.0 release candidate
+## Selected milestone: stable 1.0 release
 
 **Decision, 2026-10-08:** after PR #10 merged, the user accepted the recommendation that Icod.Pty is
-feature-complete for 1.0 and selected a no-new-features release-preparation milestone. The
+feature-complete for 1.0 and selected a no-new-features release-preparation milestone. After the complete
+candidate-shaped matrix and manual terminal-configuration checks passed, the user chose to publish directly as
+stable `1.0.0` rather than introduce an intermediate public release candidate. The
 [release design](docs/Release-1.0-Design.md) and
-[development roadmap](docs/Release-1.0-Implementation-Plan.md), RP01–RP06, define the candidate and stable
-promotion gates.
+[development roadmap](docs/Release-1.0-Implementation-Plan.md), RP01–RP06, define the stable qualification and
+publication gates.
 
-**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is qualified from merged PR #10 on
-`release/1.0.0-rc.1`. Exact candidate head `371df2c986d710e8d47975884bbbe52e6b812e97` passed metadata and all six
-Windows/Linux/macOS x64/ARM64 jobs in
-[run 136](https://github.com/uniblab/Icod.Pty/actions/runs/37780272079). The run covered all three target
-frameworks, exact `1.0.0-rc.1` package consumers, framework-dependent/self-contained/single-file/trimmed and
-relocated layouts, intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY classification,
-and informational NativeAOT probes. This milestone selects package version
-`1.0.0-rc.1`, the 381-entry/44-type post-PR #10 public compatibility baseline, and the version-1 recording format
-as the candidate contracts. It does not tag or publish the package.
+**Status:** [PR #11](https://github.com/uniblab/Icod.Pty/pull/11) is preparing stable `1.0.0` from merged PR #10
+on the historically named `release/1.0.0-rc.1` branch. Pre-conversion head
+`641d6f710f2fa01a4106076873e39e9ad7270755` passed metadata and all six Windows/Linux/macOS x64/ARM64 jobs in
+[run 137](https://github.com/uniblab/Icod.Pty/actions/runs/37782321473), covering all three target frameworks,
+exact package consumers, framework-dependent/self-contained/single-file/trimmed and relocated layouts,
+intentional incomplete-layout failures, Windows PowerShell 5.1 tooling, ConPTY classification, and informational
+NativeAOT probes. The user also ran `--terminal-config-smoke` successfully on net8.0, net9.0, and net10.0 from
+that exact head. Exact stable-`1.0.0` qualification is pending on the converted head. No tag or publication is
+part of this pull request.
 
-**Goal:** deliver a coherent package manual, complete feature history through PR #10, reconciled release-readiness
-evidence, an exact candidate package, and a repeatable path from public RC validation to stable `1.0.0`.
+**Goal:** deliver a coherent package manual, complete feature history through PR #10, reconciled
+release-readiness evidence, an exact stable package, and a repeatable direct-stable publication and
+fresh-consumer confirmation procedure.
 
 **Boundary:** correct release documentation, metadata, verification, or demonstrated blocking defects only.
-Broader signals, high-concurrency redesign, live terminal changes, generic telemetry, richer recording/automation,
-resource controls, persistence, terminal emulation, NativeAOT promotion, and wider platform qualification remain
-post-1.0 choices.
+Broader signals, high-concurrency redesign, live terminal changes, generic telemetry, richer
+recording/automation, resource controls, persistence, terminal emulation, NativeAOT promotion, and wider
+platform qualification remain post-1.0 choices.
 
-**Promotion gate:** the complete candidate matrix has passed, so PR #11 is ready for review and the
-`1.0.0-rc.1` package is ready to publish after merge when the operator intends the release workflow to run.
-Promote to `1.0.0` only after a fresh public-package consumer succeeds, the remaining Windows interactive
-acceptance is recorded, and no blocking defect remains. Stable promotion should otherwise change version and
-release status only.
+**Publication gate:** the exact `1.0.0` package and complete six-platform matrix must pass, the Windows
+interactive-host procedure must be recorded without a blocking defect, and PR #11 must be reviewed and merged.
+Tagging `v1.0.0` is then an explicit operator action. Because no public prerelease is introduced, a fresh
+consumer installs the public stable package immediately after publication as delivery-path confirmation; any
+failure requires prompt corrective action and is not retroactively described as prepublication evidence.
 
 ## Full current menu
 
@@ -307,7 +310,7 @@ Effort is relative, not a schedule. Deferred options remain available and are no
 | 10 | Resource controls | Deferred; large | Platform-supported process, CPU and memory limits, with separate contracts and no security-sandbox claim. |
 | 11 | Persistent sessions and detach/reattach | Deferred; very large | Separate broker, buffering, reconnect protocol and access controls to survive client disconnects. |
 | 12 | Terminal emulation and rendering integration | Deferred; very large | Screen model/custom rendering and adjacent Icod integration above byte transport; graphics protocols remain outside this milestone. |
-| 13 | Release stabilization and compatibility hardening | Completed in PR #9; 1.0 release-candidate preparation selected after PR #10 | The audited contract and six-platform qualification now feed a documentation, package-version, exact-candidate, and stable-promotion gate with no new feature surface. |
+| 13 | Release stabilization and compatibility hardening | Completed in PR #9; direct stable 1.0 preparation selected after PR #10 | The audited contract and six-platform qualification now feed documentation, exact stable-package, interactive-acceptance, publication, and fresh-consumer confirmation gates with no new feature surface. |
 
 The earlier combined high-concurrency/deployment option is now split into options 5 and 6.
 Interactive hosting, scoped process ownership, reusable session orchestration, launch-time terminal configuration,

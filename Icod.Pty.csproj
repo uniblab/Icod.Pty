@@ -11,7 +11,7 @@
 		<AssemblyName>Icod.Pty</AssemblyName>
 		<RootNamespace>Icod.Pty</RootNamespace>
 		<Configurations>Debug;Staging;Release</Configurations>
-		<Version>1.0.0-rc.1</Version>
+		<Version>1.0.0</Version>
 		<Authors>Timothy J. Bruce</Authors>
 		<Copyright>Copyright (c) 2026 Timothy J. Bruce</Copyright>
 		<Description>Cross-platform pseudoterminal process hosting for .NET.</Description>

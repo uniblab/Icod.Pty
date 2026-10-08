@@ -7,7 +7,7 @@ Icod.Pty — cross-platform pseudoterminal process hosting for .NET.
 ## SYNOPSIS
 
 ```sh
-dotnet add package Icod.Pty --version 1.0.0-rc.1
+dotnet add package Icod.Pty --version 1.0.0
 ```
 
 ```csharp
@@ -28,7 +28,7 @@ deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-The candidate package version is **1.0.0-rc.1**. Development direction and deferred alternatives are recorded in
+The stable package version is **1.0.0**. Development direction and deferred alternatives are recorded in
 the [main roadmap](https://github.com/uniblab/Icod.Pty/blob/main/ROADMAP.md), and the complete chronological
 feature history, deployment prerequisites, and compatibility notes are in the
 [changelog](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md). Initial terminal configuration is
@@ -431,9 +431,9 @@ dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLog
 
 Follow the [sample acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
 restoration checks in the original shell. Laptop acceptance of the interactive host remains separate from CI's
-nested-PTY fixture coverage. Stable `1.0.0` promotion also requires a fresh consumer to install the public
-`1.0.0-rc.1` package; the consolidated
-[stable promotion procedure](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md#10-stable-promotion-acceptance) records both gates.
+nested-PTY fixture coverage. Before tagging `1.0.0`, complete the interactive Windows procedure; immediately
+after publication, verify installation from the public package with a fresh consumer. The consolidated
+[stable release procedure](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md#10-stable-release-acceptance) records both stages.
 
 ## KNOWN LIMITATIONS
 
@@ -453,13 +453,14 @@ nested-PTY fixture coverage. Stable `1.0.0` promotion also requires a fresh cons
 The workflows are adapted from `uniblab/.github` for one DLL package. A `v<semver>` tag on the default branch
 must match `Version` in `Icod.Pty.csproj`. Release validation runs on all six platforms before publication to
 NuGet.org through trusted publishing in the `Release` environment. The workflow also publishes to GitHub
-Packages and creates release assets with checksums. A prerelease tag such as `v1.0.0-rc.1` creates a prerelease
-rather than the latest stable GitHub release.
+Packages and creates release assets with checksums. A prerelease tag such as `v1.1.0-beta.1` creates a
+prerelease rather than the latest stable GitHub release.
 
 The package includes [CHANGELOG.md](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md),
 [LICENSE](https://github.com/uniblab/Icod.Pty/blob/main/LICENSE), and this manual. The helper, sample, and
 test programs are not separate release packages or executable archives. Tagging or publishing is an explicit
-operator action after the candidate pull request merges; changing the project version alone does not publish.
+operator action after the release-preparation pull request merges; changing the project version alone does not
+publish.
 
 ## FILES
 
