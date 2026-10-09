@@ -7,7 +7,7 @@ Icod.Pty — cross-platform pseudoterminal process hosting for .NET.
 ## SYNOPSIS
 
 ```sh
-dotnet add package Icod.Pty --version 1.0.0
+dotnet add package Icod.Pty --version 1.0.1
 ```
 
 ```csharp
@@ -28,7 +28,7 @@ deterministic cleanup.
 
 The library is written in **C# 13**, targets **net8.0, net9.0, and net10.0**, and builds as **AnyCPU**. One NuGet package contains all three library targets and the managed Unix helper. There are no third-party runtime packages or native binaries to build.
 
-The stable package version is **1.0.0**. Development direction and deferred alternatives are recorded in
+This source tree builds package version **1.0.1**. Development direction and deferred alternatives are recorded in
 the [main roadmap](https://github.com/uniblab/Icod.Pty/blob/main/ROADMAP.md), and the complete chronological
 feature history, deployment prerequisites, and compatibility notes are in the
 [changelog](https://github.com/uniblab/Icod.Pty/blob/main/CHANGELOG.md). Initial terminal configuration is
@@ -36,6 +36,24 @@ specified by the [terminal configuration design](https://github.com/uniblab/Icod
 Recording format and lifecycle semantics are specified by the [recording/replay design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Recording-Replay-Design.md).
 Live matching and scripting are specified by the [focused automation design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Focused-Automation-Design.md).
 Timed recording playback is specified by the [timed playback design](https://github.com/uniblab/Icod.Pty/blob/main/docs/Timed-Playback-Design.md).
+
+## APPLICATIONS
+
+Icod.Pty supplies a process and its raw terminal byte streams to applications that provide their own
+presentation, transport, or test harness. Examples include:
+
+- **Embedded shells and developer tools:** host a shell, REPL, debugger, or interactive command-line program
+  inside an IDE, desktop application, or other terminal interface. The application supplies terminal
+  rendering, input handling, and any remote transport it needs.
+- **Interactive CLI testing and automation:** drive a child through byte-based send/expect steps, bounded
+  matching, resize events, exit observation, and controlled shutdown.
+- **Session capture and playback:** record output bytes and successful resizes for diagnostics, demonstrations,
+  or playback with optional timing. Recording does not capture input.
+- **Process supervision:** opt into Windows job or Unix initial-process-group ownership to clean up the
+  selected scope when a hosted session ends, subject to the limits described below.
+
+The library does not implement SSH, a terminal emulator, screen parsing, or an arbitrary-binary transport
+through ConPTY. See KNOWN LIMITATIONS and the API GUIDE for platform-specific behavior.
 
 ## SUPPORTED PLATFORMS
 
@@ -431,8 +449,8 @@ dotnet run --project samples\Icod.Pty.Sample -f net10.0 -- powershell.exe -NoLog
 
 Follow the [sample acceptance guide](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md) for editing/history/Tab/Escape, Ctrl+C, resize, and
 restoration checks in the original shell. Laptop acceptance of the interactive host remains separate from CI's
-nested-PTY fixture coverage. Before tagging `1.0.0`, complete the interactive Windows procedure; immediately
-after publication, verify installation from the public package with a fresh consumer. The consolidated
+nested-PTY fixture coverage. For each release, complete the interactive Windows procedure before tagging; immediately after
+publication, verify installation from the public package with a fresh consumer. The consolidated
 [stable release procedure](https://github.com/uniblab/Icod.Pty/blob/main/samples/README.md#10-stable-release-acceptance) records both stages.
 
 ## KNOWN LIMITATIONS

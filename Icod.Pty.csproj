@@ -11,10 +11,10 @@
 		<AssemblyName>Icod.Pty</AssemblyName>
 		<RootNamespace>Icod.Pty</RootNamespace>
 		<Configurations>Debug;Staging;Release</Configurations>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<Authors>Timothy J. Bruce</Authors>
 		<Copyright>Copyright (c) 2026 Timothy J. Bruce</Copyright>
-		<Description>Cross-platform pseudoterminal process hosting for .NET.</Description>
+		<Description>Cross-platform C#/.NET pseudoterminal (PTY) process hosting with Windows ConPTY and Unix PTYs, interactive I/O, automation, recording, and replay.</Description>
 		<PackageId>Icod.Pty</PackageId>
 		<PackageProjectUrl>https://github.com/uniblab/Icod.Pty</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/uniblab/Icod.Pty</RepositoryUrl>
@@ -23,7 +23,7 @@
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>See CHANGELOG.md for release history, compatibility notes, and known limitations.</PackageReleaseNotes>
-		<PackageTags>pty;pseudoterminal;conpty;terminal;process;cross-platform</PackageTags>
+		<PackageTags>pty;pseudoterminal;pseudo-terminal;tty;conpty;terminal;console;terminal-io;terminal-session;interactive-process;interactive-shell;shell;cli;command-line;process;process-hosting;process-control;process-group;terminal-resize;terminal-automation;expect;send-expect;terminal-recording;terminal-replay;transcript;termios;cross-platform;dotnet;csharp;windows;linux;macos</PackageTags>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
