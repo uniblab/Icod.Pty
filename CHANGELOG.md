@@ -12,8 +12,8 @@ No changes.
 - Expanded NuGet search tags and package description for PTY, ConPTY, Unix terminal I/O, interactive
   process hosting, automation, session recording, and replay.
 - Documented representative applications and clarified which surrounding technologies consumers must supply.
-- Updated exact-package metadata verification. This metadata and documentation release does not change the
-  public API or runtime behavior.
+- Included the declared NuGet icon in the package and updated exact-package verification to require it.
+  This metadata and documentation release does not change the public API or runtime behavior.
 
 ## 1.0.0 - 2026-10-08
 

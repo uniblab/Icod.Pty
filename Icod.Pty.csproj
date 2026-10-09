@@ -37,6 +37,7 @@
 	<ItemGroup>
 		<Compile Include="src/**/*.cs" Exclude="src/Host/**;src/Tests/**;src/Sample/**" />
 		<None Include="README.md" Pack="true" PackagePath="" />
+		<None Include="icon.png" Pack="true" PackagePath="" />
 		<None Include="CHANGELOG.md" Pack="true" PackagePath="" />
 		<None Include="LICENSE" Pack="true" PackagePath="" />
 		<None Include="packaging/buildTransitive/Icod.Pty.targets" Pack="true" PackagePath="buildTransitive/Icod.Pty.targets" />

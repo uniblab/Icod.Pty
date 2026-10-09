@@ -68,7 +68,7 @@ foreach ($package in $packages) {
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
-        $required = @('CHANGELOG.md', 'LICENSE', 'README.md', 'buildTransitive/Icod.Pty.targets',
+        $required = @('CHANGELOG.md', 'LICENSE', 'README.md', 'icon.png', 'buildTransitive/Icod.Pty.targets',
             'tools/net8.0/Icod.Pty.Host.dll', 'tools/net8.0/Icod.Pty.Host.deps.json',
             'tools/net8.0/Icod.Pty.Host.runtimeconfig.json')
         foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
