@@ -52,7 +52,7 @@ foreach ($package in $packages) {
     $metadata = Get-PackageMetadata -PackagePath $package.FullName
     if ($metadata.Id -ne 'Icod.Pty') { throw "Unexpected package: $($metadata.Id)" }
     if ($metadata.Authors -ne 'Timothy J. Bruce') { throw "Unexpected package authors: $($metadata.Authors)" }
-    if ($metadata.Description -ne 'Cross-platform pseudoterminal process hosting for .NET.') { throw "Unexpected package description: $($metadata.Description)" }
+    if ($metadata.Description -ne 'Cross-platform C#/.NET pseudoterminal (PTY) process hosting with Windows ConPTY and Unix PTYs, interactive I/O, automation, recording, and replay.') { throw "Unexpected package description: $($metadata.Description)" }
     if ($metadata.ProjectUrl -ne 'https://github.com/uniblab/Icod.Pty') { throw "Unexpected package project URL: $($metadata.ProjectUrl)" }
     if ($metadata.RepositoryUrl -ne 'https://github.com/uniblab/Icod.Pty') { throw "Unexpected package repository URL: $($metadata.RepositoryUrl)" }
     if ($metadata.RepositoryType -ne 'git') { throw "Unexpected package repository type: $($metadata.RepositoryType)" }
@@ -61,14 +61,14 @@ foreach ($package in $packages) {
     if ($metadata.Readme -ne 'README.md') { throw "Unexpected package readme: $($metadata.Readme)" }
     if ([string]::IsNullOrWhiteSpace($metadata.ReleaseNotes)) { throw 'Package release notes are empty.' }
     $tags = @($metadata.Tags -split '[\s;,]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    foreach ($tag in @('pty', 'pseudoterminal', 'conpty', 'terminal', 'process', 'cross-platform')) {
+    foreach ($tag in @('pty', 'pseudoterminal', 'pseudo-terminal', 'tty', 'conpty', 'terminal', 'console', 'terminal-io', 'terminal-session', 'interactive-process', 'interactive-shell', 'shell', 'cli', 'command-line', 'process', 'process-hosting', 'process-control', 'process-group', 'terminal-resize', 'terminal-automation', 'expect', 'send-expect', 'terminal-recording', 'terminal-replay', 'transcript', 'termios', 'cross-platform', 'dotnet', 'csharp', 'windows', 'linux', 'macos')) {
         if ($tag -notin $tags) { throw "Required package tag missing: $tag" }
     }
     Write-Host "Verifying $($metadata.Id) $($metadata.Version): $($package.FullName)"
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
-        $required = @('CHANGELOG.md', 'LICENSE', 'README.md', 'buildTransitive/Icod.Pty.targets',
+        $required = @('CHANGELOG.md', 'LICENSE', 'README.md', 'icon.png', 'buildTransitive/Icod.Pty.targets',
             'tools/net8.0/Icod.Pty.Host.dll', 'tools/net8.0/Icod.Pty.Host.deps.json',
             'tools/net8.0/Icod.Pty.Host.runtimeconfig.json')
         foreach ($framework in @('net8.0', 'net9.0', 'net10.0')) {
